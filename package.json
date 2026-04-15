@@ -1,0 +1,8 @@
+{
+  "name": "jprez-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp para Constructora JPREZ - Powered by Claude API",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}
