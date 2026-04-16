@@ -138,7 +138,24 @@ Mensaje: "Dale, te conecto con nuestro equipo de ventas para que te atienda pers
 // Se configuran desde variables de entorno
 // en Vercel. Para Google Drive usar formato:
 // https://drive.google.com/uc?export=download&id=FILE_ID
+//
+// NOTA: Las URLs de Google Drive se convierten
+// automaticamente a nuestro proxy /api/pdf
+// para que WhatsApp reciba el PDF real y no HTML
 // ============================================
+
+// Dominio de nuestro Vercel para el proxy de PDFs
+const VERCEL_DOMAIN = "https://v0-meta-whatsapp-webhook.vercel.app";
+
+// Convierte URL de Google Drive a URL de nuestro proxy
+function toProxyUrl(driveUrl) {
+  if (!driveUrl) return null;
+  const match = driveUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return VERCEL_DOMAIN + "/api/pdf?id=" + match[1];
+  }
+  return driveUrl;
+}
   
 const PROJECT_DOCS = {
   crux: {
@@ -163,7 +180,6 @@ const PROJECT_DOCS = {
   },
 };
  
-// Nombres bonitos de los proyectos para el nombre del archivo
 const PROJECT_NAMES = {
   crux: "Crux del Prado",
   pr3: "Prado Residences III",
@@ -171,7 +187,6 @@ const PROJECT_NAMES = {
   puertoPlata: "Prado Suites Puerto Plata",
 };
  
-// Nombres bonitos para cada tipo de documento
 const DOC_TYPE_NAMES = {
   brochure: "Brochure",
   precios: "Listado de Precios",
@@ -187,19 +202,17 @@ function detectDocumentRequest(botReply, userMessage) {
   const userText = userMessage.toLowerCase();
   const combined = botText + " " + userText;
  
-  // Frases que indican que el BOT confirma envio
   const botSendPhrases = [
     "te lo envio", "te lo mando", "te envio", "aqui te mando",
     "te lo paso", "te mando el", "te mando la", "te mando los",
     "te envio el", "te envio la", "te envio los",
   ];
  
-  // Palabras que indican que el CLIENTE pide documentos
   const clientRequestWords = [
     "pdf", "brochure", "plano", "planos", "precio", "precios",
-    "listado", "documento", "informacion", "información", "info",
-    "ficha", "catalogo", "catálogo", "enviame", "envíame",
-    "mandame", "mándame", "pasame", "pásame", "quiero ver",
+    "listado", "documento", "informacion", "informaci\u00f3n", "info",
+    "ficha", "catalogo", "cat\u00e1logo", "enviame", "env\u00edame",
+    "mandame", "m\u00e1ndame", "pasame", "p\u00e1same", "quiero ver",
     "me puedes enviar", "me puedes mandar", "tienes material",
   ];
  
@@ -208,10 +221,9 @@ function detectDocumentRequest(botReply, userMessage) {
  
   if (!botConfirmsSend && !clientRequestsDoc) return null;
  
-  // Detectar proyecto
   const projectKeywords = {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
-    pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "paraíso", "ensanche paraiso"],
+    pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "para\u00edso", "ensanche paraiso"],
     pr4: ["pr4", "prado 4", "prado residences 4", "prado residences iv", "prado iv", "evaristo", "evaristo morales"],
     puertoPlata: ["puerto plata", "playa dorada", "prado suites", "prado suites puerto plata"],
   };
@@ -225,22 +237,20 @@ function detectDocumentRequest(botReply, userMessage) {
   return null;
 }
  
-// Detectar que TIPO de documento piden
 function detectDocumentType(botReply, userMessage) {
   const combined = (botReply + " " + userMessage).toLowerCase();
   const types = [];
  
-  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("catálogo") || combined.includes("ficha")) {
+  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("cat\u00e1logo") || combined.includes("ficha")) {
     types.push("brochure");
   }
-  if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto") || combined.includes("cuánto")) {
+  if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto") || combined.includes("cu\u00e1nto")) {
     types.push("precios");
   }
-  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("distribución") || combined.includes("layout")) {
+  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("distribuci\u00f3n") || combined.includes("layout")) {
     types.push("planos");
   }
  
-  // Si no piden nada especifico, enviar TODO lo disponible
   if (types.length === 0) {
     return ["brochure", "precios", "planos"];
   }
@@ -315,13 +325,14 @@ async function processMessage(body) {
       for (const docType of requestedTypes) {
         const docUrl = docs[docType];
         if (docUrl) {
-          // Pausa entre documentos para que lleguen en orden
           if (sentCount > 0) {
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
  
           const filename = PROJECT_NAMES[project] + " - " + DOC_TYPE_NAMES[docType] + " - JPREZ.pdf";
-          await sendWhatsAppDocument(senderPhone, docUrl, filename);
+          // Convertir URL de Google Drive a nuestro proxy para que WhatsApp reciba el PDF real
+          const proxyUrl = toProxyUrl(docUrl);
+          await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
           sentCount++;
           console.log("PDF enviado: " + docType + " de " + project + " a " + senderPhone);
         }
@@ -429,5 +440,4 @@ async function sendWhatsAppDocument(to, documentUrl, filename) {
   }
  
   return response.json();
-}
- 
+     }
