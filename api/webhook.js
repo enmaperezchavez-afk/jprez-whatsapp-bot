@@ -14,7 +14,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 // CONFIGURACION DE PERSONAL INTERNO
 // ============================================
 
-const ENMANUEL_PHONE = "8299943102";
+const ENMANUEL_PHONE = "18299943102";
 const STAFF_PHONES = {
   [ENMANUEL_PHONE]: {
     name: "Enmanuel Pérez Chávez",
