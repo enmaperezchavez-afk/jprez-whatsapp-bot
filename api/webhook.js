@@ -145,7 +145,7 @@ function detectDocumentRequest(botReply, userMessage) {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
     pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "churchill", "paraiso"],
     pr4: ["pr4", "prado 4", "prado residences 4", "prado residences iv", "evaristo"],
-    puertoPlata: ["puerto plata", "playa dorada", "prado suites"],
+    puertoPlata: ["puerto plata", "playa dorada", "prado suites", "zona norte"],
   };
 
   const docKeywords = ["pdf", "brochure", "plano", "planos", "precio", "listado", "documento", "informacion", "info", "ficha", "catalogo", "enviar", "mandar", "manda"];
