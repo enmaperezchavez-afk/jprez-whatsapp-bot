@@ -175,6 +175,7 @@ const PROJECT_DOCS = {
   },
   puertoPlata: {
     brochure: process.env.PDF_PP_BROCHURE || null,
+    brochureE4: process.env.PDF_PP_BROCHURE_E4 || null,
     precios: process.env.PDF_PP_PRECIOS || null,
     preciosE4: process.env.PDF_PP_PRECIOS_E4 || null,
     planos: process.env.PDF_PP_PLANOS || null,
@@ -332,7 +333,10 @@ async function processMessage(body) {
  
           let filename = PROJECT_NAMES[project] + " - " + DOC_TYPE_NAMES[docType] + " - JPREZ.pdf";
           // Para puertoPlata, distinguir Etapa 3 en el nombre
-          if (project === "puertoPlata" && docType === "precios") {
+          if (project === "puertoPlata" && docType === "brochure") {
+              filename = PROJECT_NAMES[project] + " - Brochure Etapa 3 - JPREZ.pdf";
+            }
+            if (project === "puertoPlata" && docType === "precios") {
             filename = PROJECT_NAMES[project] + " - Precios Etapa 3 - JPREZ.pdf";
           }
           // Convertir URL de Google Drive a nuestro proxy para que WhatsApp reciba el PDF real
@@ -354,6 +358,18 @@ async function processMessage(body) {
         sentCount++;
         console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
       }
+
+    // Envio especial: Prado Suites Etapa 4 brochure
+    if (project === "puertoPlata" && requestedTypes.includes("brochure") && docs.brochureE4) {
+      if (sentCount > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+      const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
+      await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
+      sentCount++;
+      console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
+    }
 
       if (sentCount === 0) {
         console.log("AVISO: Solicitud de docs para " + project + " pero no hay URLs configuradas en las variables de entorno");
