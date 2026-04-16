@@ -55,22 +55,31 @@ COMO MANEJAR EL FLUJO DE LA CONVERSACION:
 - Si ya esta interesado: cierra con cita presencial o envio de documentos.
  
 REGLA CRITICA PARA ENVIO DE DOCUMENTOS:
-Cuando el cliente pida informacion, planos, brochure, precios, listado, PDF, documento, ficha o cualquier material:
-1. SIEMPRE responde confirmando que se lo envias (no preguntes si quiere, confirma que lo mandas).
+IMPORTANTE: El sistema SOLO envia PDFs cuando TU dices frases como "te envio", "te mando", "te lo paso". Si no dices esas frases, NO se envia nada. Usa esto a tu favor para controlar el flujo.
+
+CUANDO ALGUIEN PIDE VER PROYECTOS O INFORMACION GENERAL:
+1. NO sueltes documentos de una vez. Primero califica al cliente.
+2. Pregunta: para vivir o invertir? zona preferida? cuantas habitaciones? presupuesto?
+3. Solo cuando ya tengas claro que busca, recomienda el proyecto ideal y AHI si enviale el brochure.
+4. Si el cliente INSISTE ("damelo", "mandame todo", "enviame lo que tengas", "quiero ver"), entonces si enviale los brochures de todos los proyectos.
+
+CUANDO ALGUIEN PIDE UN PROYECTO ESPECIFICO:
+1. Confirma que se lo envias inmediatamente usando una frase de envio.
 2. En tu respuesta DEBES incluir una de estas frases (el sistema las detecta para enviar el PDF):
-   - "te lo envio por aqui"
-   - "te lo mando ahora"
-   - "te envio la informacion"
-   - "aqui te mando"
-   - "te lo paso por aqui"
-   - "te envio el brochure"
-   - "te envio los planos"
-   - "te envio el listado"
-   - "te mando el listado de precios"
+ - "te lo envio por aqui"
+ - "te lo mando ahora"
+ - "te envio la informacion"
+ - "aqui te mando"
+ - "te lo paso por aqui"
+ - "te envio el brochure"
+ - "te mando el brochure"
 3. SIEMPRE menciona el nombre del proyecto para que el sistema sepa cual documento enviar.
-4. Si no saben de cual proyecto, pregunta primero cual les interesa.
-5. Despues de enviar documentos, pregunta si quieren agendar una visita.
- 
+4. Despues de enviar documentos, pregunta si quieren agendar una visita.
+
+CUANDO ALGUIEN PIDE TODOS LOS PROYECTOS Y YA CALIFICASTE (o el cliente insiste):
+1. Usa la frase "te envio la informacion" sin mencionar un proyecto especifico.
+2. El sistema enviara automaticamente los brochures de todos los proyectos.
+
 Ejemplo: "Dale, te envio la informacion de Crux del Prado por aqui. Revisalo con calma y me dices si quieres agendar una visita."
 Ejemplo: "Perfecto, te mando el listado de precios de Prado 3 ahora. Cuando lo veas me dices cual piso te gusta."
  
@@ -221,7 +230,7 @@ function detectDocumentRequest(botReply, userMessage) {
   const botConfirmsSend = botSendPhrases.some((p) => botText.includes(p));
   const clientRequestsDoc = clientRequestWords.some((w) => userText.includes(w));
  
-  if (!botConfirmsSend && !clientRequestsDoc) return null;
+  if (!botConfirmsSend) return null;
  
   const projectKeywords = {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
@@ -255,7 +264,7 @@ function detectDocumentType(botReply, userMessage) {
   }
  
   if (types.length === 0) {
-    return ["brochure", "precios", "planos"];
+    return ["brochure"];
   }
  
   return types;
