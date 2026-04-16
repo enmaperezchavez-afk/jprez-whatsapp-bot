@@ -5,7 +5,6 @@
 // ============================================
 
 const Anthropic = require("@anthropic-ai/sdk");
-const { waitUntil } = require("@vercel/functions");
 
 const SYSTEM_PROMPT = `Eres el vendedor estrella de Constructora JPREZ. Respondes mensajes de WhatsApp a clientes potenciales interesados en comprar apartamentos en Republica Dominicana. Tu objetivo es llevar cada conversacion hacia el cierre de venta o hacia una cita presencial.
 
@@ -34,3 +33,91 @@ PROYECTOS ACTIVOS:
    Para inversion/Airbnb. 1 hab, equipado (nevera, estufa, A/A, cerradura smart). Desde US$99,000. Entrega agosto 2026. Solo 13/60 disponibles.
 
 3. PRADO RESIDENCES IV — Evaristo Morales
+   Familias/profesionales. Desde lofts 52m2 hasta aptos 130m2 de 3 hab. Desde US$89,000. Entrega agosto 2027. 13/72 disponibles.
+
+4. PRADO SUITES PUERTO PLATA — Frente a Playa Dorada
+   Inversion turistica/diaspora. Estudios desde US$73,000. PH duplex hasta US$285,000. Entrega marzo 2029. 63/126 disponibles.
+
+GUIA RAPIDA:
+- "Para mi familia" -> Crux del Prado (3 hab desde US$98K)
+- "Quiero invertir" -> PR3 (retorno rapido) o Puerto Plata (turistico)
+- "Poco presupuesto" -> Puerto Plata (US$73K) o Crux (US$98K)
+- "Algo premium" -> PR4 en Evaristo Morales
+- "Soy de la diaspora" -> Puerto Plata (inversion + vacaciones)
+- "Entrega pronto" -> PR3 (agosto 2026, equipado)
+
+ESCALAMIENTO A HUMANO cuando: pidan hablar con persona, queja formal, tema legal, negociar descuento, +10 mensajes sin avance.
+Mensaje: "Dale, te conecto con nuestro equipo de ventas para que te atienda personalmente. Te van a escribir en unos minutos."`;
+
+async function processMessage(body) {
+  try {
+    const entry = body?.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
+    if (!messages || messages.length === 0) {
+      console.log("Evento sin mensajes");
+      return;
+    }
+    const message = messages[0];
+    const senderPhone = message.from;
+    const messageType = message.type;
+    if (messageType !== "text") {
+      await sendWhatsAppMessage(senderPhone, "Hola! Por el momento solo puedo leer mensajes de texto. En que te puedo ayudar?");
+      return;
+    }
+    const userMessage = message.text.body;
+    console.log("Mensaje de " + senderPhone + ": " + userMessage);
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    const botReply = response.content[0].text;
+    console.log("Respuesta del bot: " + botReply);
+    await sendWhatsAppMessage(senderPhone, botReply);
+    console.log("Respuesta enviada a " + senderPhone);
+  } catch (error) {
+    console.error("Error procesando mensaje:", error);
+  }
+}
+
+module.exports = async function handler(req, res) {
+  if (req.method === "GET") {
+    const mode = req.query["hub.mode"];
+    const token = req.query["hub.verify_token"];
+    const challenge = req.query["hub.challenge"];
+    if (mode === "subscribe" && token === process.env.WEBHOOK_VERIFY_TOKEN) {
+      console.log("Webhook verificado correctamente");
+      return res.status(200).send(challenge);
+    } else {
+      return res.status(403).send("Forbidden");
+    }
+  }
+  if (req.method === "POST") {
+    const body = req.body;
+    // Procesar ANTES de responder (Meta permite hasta 20s)
+    await processMessage(body);
+    return res.status(200).send("EVENT_RECEIVED");
+  }
+  return res.status(405).send("Method Not Allowed");
+};
+
+async function sendWhatsAppMessage(to, text) {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_TOKEN;
+  const url = "https://graph.facebook.com/v21.0/" + phoneNumberId + "/messages";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to: to, type: "text", text: { body: text } }),
+  });
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error("Error enviando WhatsApp:", errorData);
+    throw new Error("WhatsApp API error: " + response.status);
+  }
+  return response.json();
+}
