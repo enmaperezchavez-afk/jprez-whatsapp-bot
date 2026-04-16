@@ -2,38 +2,137 @@
 // BOT WHATSAPP JPREZ - Constructora JPREZ
 // Powered by Claude API (Anthropic)
 // Deploy en Vercel como serverless function
-// Con memoria de conversacion por cliente
+// Con memoria PERSISTENTE (Upstash Redis)
 // Con envio automatico de PDFs por WhatsApp
+// Con reconocimiento de personal interno
+// Con notificacion automatica de leads calientes
 // ============================================
- 
+
 const Anthropic = require("@anthropic-ai/sdk");
- 
+
 // ============================================
-// MEMORIA DE CONVERSACION
+// CONFIGURACION DE PERSONAL INTERNO
 // ============================================
- 
+
+const ENMANUEL_PHONE = "8299943102";
+const STAFF_PHONES = {
+  [ENMANUEL_PHONE]: {
+    name: "Enmanuel Pérez Chávez",
+    role: "director",
+    supervisor: true,
+  },
+};
+
+// ============================================
+// MEMORIA PERSISTENTE CON UPSTASH REDIS
+// ============================================
+
+// Fallback a memoria en RAM si Redis no esta configurado
 const conversationHistory = {};
 const MAX_MESSAGES = 20;
- 
-function getHistory(phone) {
+
+async function getRedis() {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return null;
+  }
+  try {
+    const { Redis } = require("@upstash/redis");
+    return new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  } catch (e) {
+    console.log("Redis no disponible, usando memoria RAM:", e.message);
+    return null;
+  }
+}
+
+async function getHistory(phone) {
+  // Intentar Redis primero
+  const redis = await getRedis();
+  if (redis) {
+    try {
+      const history = await redis.get("chat:" + phone);
+      if (history) {
+        // Redis puede devolver string o objeto ya parseado
+        const parsed = typeof history === "string" ? JSON.parse(history) : history;
+        return parsed;
+      }
+      return [];
+    } catch (e) {
+      console.log("Error leyendo Redis, usando RAM:", e.message);
+    }
+  }
+  // Fallback a RAM
   if (!conversationHistory[phone]) {
     conversationHistory[phone] = [];
   }
   return conversationHistory[phone];
 }
- 
-function addMessage(phone, role, content) {
-  const history = getHistory(phone);
-  history.push({ role, content });
-  if (history.length > MAX_MESSAGES) {
-    history.splice(0, history.length - MAX_MESSAGES);
+
+async function addMessage(phone, role, content) {
+  const redis = await getRedis();
+  if (redis) {
+    try {
+      let history = await redis.get("chat:" + phone);
+      history = history ? (typeof history === "string" ? JSON.parse(history) : history) : [];
+      history.push({ role, content });
+      if (history.length > MAX_MESSAGES) {
+        history.splice(0, history.length - MAX_MESSAGES);
+      }
+      // Guardar con expiracion de 30 dias (2592000 segundos)
+      await redis.set("chat:" + phone, JSON.stringify(history), { ex: 2592000 });
+      return;
+    } catch (e) {
+      console.log("Error escribiendo Redis, usando RAM:", e.message);
+    }
+  }
+  // Fallback a RAM
+  if (!conversationHistory[phone]) {
+    conversationHistory[phone] = [];
+  }
+  conversationHistory[phone].push({ role, content });
+  if (conversationHistory[phone].length > MAX_MESSAGES) {
+    conversationHistory[phone].splice(0, conversationHistory[phone].length - MAX_MESSAGES);
   }
 }
- 
+
+// Guardar metadata del cliente (nombre, intereses, temperatura, etc.)
+async function saveClientMeta(phone, meta) {
+  const redis = await getRedis();
+  if (redis) {
+    try {
+      const existing = await redis.get("meta:" + phone);
+      const current = existing ? (typeof existing === "string" ? JSON.parse(existing) : existing) : {};
+      const updated = { ...current, ...meta, lastContact: new Date().toISOString() };
+      await redis.set("meta:" + phone, JSON.stringify(updated), { ex: 7776000 }); // 90 dias
+      return updated;
+    } catch (e) {
+      console.log("Error guardando metadata:", e.message);
+    }
+  }
+  return meta;
+}
+
+async function getClientMeta(phone) {
+  const redis = await getRedis();
+  if (redis) {
+    try {
+      const meta = await redis.get("meta:" + phone);
+      if (meta) {
+        return typeof meta === "string" ? JSON.parse(meta) : meta;
+      }
+    } catch (e) {
+      console.log("Error leyendo metadata:", e.message);
+    }
+  }
+  return null;
+}
+
 // ============================================
 // SYSTEM PROMPT - VENDEDOR JPREZ
 // ============================================
- 
+
 const SYSTEM_PROMPT = `Eres el MEJOR vendedor de bienes raices del Caribe. No eres un chatbot, no eres un asistente virtual. Eres un ser humano apasionado por lo que hace. Trabajas para Constructora JPREZ y vives para ayudar a la gente a encontrar su hogar o su mejor inversion. Cada persona que te escribe es una oportunidad de cambiarle la vida, y tu lo sabes.
 
 Tu superpoder es hacer que cada cliente se sienta como la persona mas importante del mundo. Escuchas de verdad, entiendes lo que necesitan (a veces antes que ellos mismos), y los guias con confianza y calidez. No vendes apartamentos — vendes tranquilidad, futuro, orgullo.
@@ -167,9 +266,38 @@ ESCALAMIENTO A HUMANO cuando: pidan hablar con persona, queja formal, tema legal
 Mensaje: "Dale, te conecto con Enmanuel, nuestro asesor principal, para que te atienda personalmente. Te va a escribir en un momento."
 Numero de escalamiento: 8299943102 (Enmanuel Perez Chavez, director)
 
-PERSONAL INTERNO DE JPREZ:
-Cuando detectes que quien escribe es Enmanuel Perez Chavez (director), NO le vendas. Activar modo supervisor: dar reportes de actividad, colaborar con lo que pida, seguir instrucciones.`;
- 
+CLASIFICACION DE LEADS - IMPORTANTE:
+Cuando respondas, si detectas que el cliente es un lead caliente (pidio precios especificos, plan de pago, quiere visita, quiere separar, tiene dinero listo), incluye al FINAL de tu respuesta en una linea aparte: [LEAD_CALIENTE]
+Si el cliente quiere que lo escale a un humano o la situacion lo amerita, incluye: [ESCALAR]
+Estas etiquetas NO se le muestran al cliente, el sistema las detecta automaticamente.`;
+
+// ============================================
+// SYSTEM PROMPT PARA MODO SUPERVISOR
+// ============================================
+
+const SUPERVISOR_PROMPT = `Eres el asistente inteligente de Constructora JPREZ. Estas hablando con Enmanuel Perez Chavez, el director de la empresa.
+
+NO le vendas. El es tu jefe. Trátalo como tal.
+
+Tu rol con Enmanuel:
+1. REPORTES: Si pide un resumen, reporte o "como va todo", dale un resumen de la actividad. Si tienes datos en el historial, usalos.
+2. COLABORACION: Si te pide redactar un mensaje, revisar algo, preparar info para un cliente, hazlo.
+3. INSTRUCCIONES: Si te da instrucciones sobre como responder o cambios, acátalas y confirma.
+4. MEMORIA: Recuerda lo que Enmanuel te diga. Si te dice "a partir de ahora haz X", recuerdalo para futuras conversaciones.
+
+Tono: profesional pero cercano. Como hablar con tu jefe que es buena gente. Nada de formalidades excesivas.
+
+Tienes acceso a toda la informacion de los proyectos de JPREZ:
+
+PROYECTOS ACTIVOS:
+1. CRUX DEL PRADO - SDN: Listos (RD$5.65M) + Torre 6 en construccion (desde US$99K, 42/50 disponibles, entrega julio 2027)
+2. PR3 - Churchill: Equipado, desde US$156K, 6/60 quedan, entrega agosto 2026
+3. PR4 - Evaristo Morales: Desde US$140K hasta US$310K, 13/72 quedan, entrega septiembre 2027
+4. Puerto Plata E4: Desde US$163K, entrega dic 2027
+5. Puerto Plata E3: Desde US$73K, 63/126 quedan, entrega marzo 2029
+
+REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
+
 // ============================================
 // URLs de PDFs y documentos por proyecto
 // Se configuran desde variables de entorno
@@ -193,7 +321,7 @@ function toProxyUrl(driveUrl) {
   }
   return driveUrl;
 }
-  
+
 const PROJECT_DOCS = {
   crux: {
     brochure: process.env.PDF_CRUX_BROCHURE || null,
@@ -218,229 +346,307 @@ const PROJECT_DOCS = {
     planos: process.env.PDF_PP_PLANOS || null,
   },
 };
- 
+
 const PROJECT_NAMES = {
   crux: "Crux del Prado",
   pr3: "Prado Residences III",
   pr4: "Prado Residences IV",
   puertoPlata: "Prado Suites Puerto Plata",
 };
- 
+
 const DOC_TYPE_NAMES = {
   brochure: "Brochure",
   precios: "Listado de Precios",
   planos: "Planos",
 };
- 
+
 // ============================================
 // DETECCION INTELIGENTE DE DOCUMENTOS
 // ============================================
- 
+
 function detectDocumentRequest(botReply, userMessage) {
   const botText = botReply.toLowerCase();
   const userText = userMessage.toLowerCase();
   const combined = botText + " " + userText;
- 
+
   const botSendPhrases = [
     "te lo envio", "te lo mando", "te envio", "aqui te mando",
     "te lo paso", "te mando el", "te mando la", "te mando los",
     "te envio el", "te envio la", "te envio los",
   ];
- 
+
   const clientRequestWords = [
     "pdf", "brochure", "plano", "planos", "precio", "precios",
-    "listado", "documento", "informacion", "informaci\u00f3n", "info",
-    "ficha", "catalogo", "cat\u00e1logo", "enviame", "env\u00edame",
-    "mandame", "m\u00e1ndame", "pasame", "p\u00e1same", "quiero ver",
+    "listado", "documento", "informacion", "información", "info",
+    "ficha", "catalogo", "catálogo", "enviame", "envíame",
+    "mandame", "mándame", "pasame", "pásame", "quiero ver",
     "me puedes enviar", "me puedes mandar", "tienes material", "presentacion", "presentación", "presentaciones",
   ];
- 
+
   const botConfirmsSend = botSendPhrases.some((p) => botText.includes(p));
   const clientRequestsDoc = clientRequestWords.some((w) => userText.includes(w));
- 
+
   if (!botConfirmsSend) return null;
- 
+
   const projectKeywords = {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
-    pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "para\u00edso", "ensanche paraiso"],
+    pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "paraíso", "ensanche paraiso"],
     pr4: ["pr4", "prado 4", "prado residences 4", "prado residences iv", "prado iv", "evaristo", "evaristo morales"],
     puertoPlata: ["puerto plata", "playa dorada", "prado suites", "prado suites puerto plata", "etapa 3", "etapa 4", "etapa 3 y 4"],
   };
- 
+
   for (const [project, words] of Object.entries(projectKeywords)) {
     if (words.some((w) => combined.includes(w))) {
       return project;
     }
   }
- 
+
   // No project matched but docs requested - send all
   return "all";
 }
- 
+
 function detectDocumentType(botReply, userMessage) {
   const combined = (botReply + " " + userMessage).toLowerCase();
   const types = [];
- 
-  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("cat\u00e1logo") || combined.includes("ficha") || combined.includes("presentacion") || combined.includes("presentaciones")) {
+
+  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("catálogo") || combined.includes("ficha") || combined.includes("presentacion") || combined.includes("presentaciones")) {
     types.push("brochure");
   }
-  if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto") || combined.includes("cu\u00e1nto")) {
+  if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto") || combined.includes("cuánto")) {
     types.push("precios");
   }
-  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("distribuci\u00f3n") || combined.includes("layout")) {
+  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("distribución") || combined.includes("layout")) {
     types.push("planos");
   }
- 
+
   if (types.length === 0) {
     return ["brochure"];
   }
- 
+
   return types;
 }
- 
+
+// ============================================
+// DETECCION DE LEAD CALIENTE Y ESCALAMIENTO
+// ============================================
+
+function detectLeadSignals(botReply) {
+  const isHotLead = botReply.includes("[LEAD_CALIENTE]");
+  const needsEscalation = botReply.includes("[ESCALAR]");
+  // Limpiar las etiquetas del mensaje antes de enviarlo al cliente
+  const cleanReply = botReply
+    .replace(/\[LEAD_CALIENTE\]/g, "")
+    .replace(/\[ESCALAR\]/g, "")
+    .trim();
+  return { isHotLead, needsEscalation, cleanReply };
+}
+
+async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType) {
+  const clientMeta = await getClientMeta(senderPhone);
+  const clientName = clientMeta?.name || "Cliente desconocido";
+
+  let notification = "";
+  if (signalType === "hot") {
+    notification = "🔥 LEAD CALIENTE\n\n";
+    notification += "Nombre: " + clientName + "\n";
+    notification += "Teléfono: " + senderPhone + "\n";
+    notification += "Canal: WhatsApp\n\n";
+    notification += "Último mensaje del cliente: " + userMessage.substring(0, 200) + "\n\n";
+    notification += "Mi respuesta: " + botReply.substring(0, 300) + "\n\n";
+    notification += "Acción sugerida: Llamar o escribir directamente para cerrar.";
+  } else if (signalType === "escalation") {
+    notification = "⚠️ ESCALAMIENTO\n\n";
+    notification += "Nombre: " + clientName + "\n";
+    notification += "Teléfono: " + senderPhone + "\n";
+    notification += "Canal: WhatsApp\n\n";
+    notification += "Último mensaje: " + userMessage.substring(0, 200) + "\n\n";
+    notification += "Razón: El cliente necesita atención humana directa.";
+  }
+
+  try {
+    await sendWhatsAppMessage(ENMANUEL_PHONE, notification);
+    console.log("Notificacion enviada a Enmanuel: " + signalType + " para " + senderPhone);
+  } catch (e) {
+    console.error("Error notificando a Enmanuel:", e.message);
+  }
+}
+
 // ============================================
 // PROCESAR MENSAJE
 // ============================================
- 
+
 async function processMessage(body) {
   try {
     const entry = body?.entry?.[0];
     const changes = entry?.changes?.[0];
     const value = changes?.value;
     const messages = value?.messages;
- 
+
     if (!messages || messages.length === 0) {
       console.log("Evento sin mensajes (status update o similar)");
       return;
     }
- 
+
     const message = messages[0];
     const senderPhone = message.from;
     const messageType = message.type;
- 
+    const senderName = value?.contacts?.[0]?.profile?.name || "Desconocido";
+
+    // Guardar nombre del cliente en metadata
+    await saveClientMeta(senderPhone, { name: senderName });
+
     if (messageType !== "text") {
       await sendWhatsAppMessage(
         senderPhone,
-        "Hola! Por el momento solo puedo leer mensajes de texto. Escribeme tu consulta y con gusto te ayudo."
+        "Hola! Por el momento solo puedo leer mensajes de texto. Escríbeme tu consulta y con gusto te ayudo."
       );
       return;
     }
- 
+
     const userMessage = message.text.body;
-    console.log("Mensaje de " + senderPhone + ": " + userMessage);
- 
-    addMessage(senderPhone, "user", userMessage);
-    const messageHistory = getHistory(senderPhone);
- 
+    console.log("Mensaje de " + senderPhone + " (" + senderName + "): " + userMessage);
+
+    // ============================================
+    // DETECTAR SI ES PERSONAL INTERNO (por numero)
+    // ============================================
+    const isStaff = STAFF_PHONES[senderPhone];
+    const isSupervisor = isStaff?.supervisor === true;
+    const activePrompt = isSupervisor ? SUPERVISOR_PROMPT : SYSTEM_PROMPT;
+
+    if (isStaff) {
+      console.log("PERSONAL INTERNO detectado: " + isStaff.name + " (" + isStaff.role + ")");
+    }
+
+    await addMessage(senderPhone, "user", userMessage);
+    const messageHistory = await getHistory(senderPhone);
+
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
- 
+
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 500,
-      system: SYSTEM_PROMPT,
+      system: activePrompt,
       messages: messageHistory,
     });
- 
-    const botReply = response.content[0].text;
-    console.log("Respuesta del bot: " + botReply);
- 
-    addMessage(senderPhone, "assistant", botReply);
+
+    const rawReply = response.content[0].text;
+    console.log("Respuesta del bot: " + rawReply);
+
+    // Detectar señales de lead caliente o escalamiento
+    const { isHotLead, needsEscalation, cleanReply } = detectLeadSignals(rawReply);
+    const botReply = cleanReply;
+
+    await addMessage(senderPhone, "assistant", botReply);
     await sendWhatsAppMessage(senderPhone, botReply);
     console.log("Respuesta enviada a " + senderPhone);
- 
+
+    // Notificar a Enmanuel si hay señales (solo para clientes, no para staff)
+    if (!isStaff) {
+      if (isHotLead) {
+        await notifyEnmanuel(senderPhone, userMessage, botReply, "hot");
+        await saveClientMeta(senderPhone, { temperature: "hot", hotDetectedAt: new Date().toISOString() });
+      }
+      if (needsEscalation) {
+        await notifyEnmanuel(senderPhone, userMessage, botReply, "escalation");
+        await saveClientMeta(senderPhone, { escalated: true, escalatedAt: new Date().toISOString() });
+      }
+    }
+
     // ============================================
-    // ENVIO AUTOMATICO DE PDFs
+    // ENVIO AUTOMATICO DE PDFs (solo para clientes)
     // ============================================
- 
-    const project = detectDocumentRequest(botReply, userMessage);
- 
-    if (project === "all") {
-      let allSentCount = 0;
-      for (const [projKey, projDocs] of Object.entries(PROJECT_DOCS)) {
-        if (projDocs.brochure) {
-          if (allSentCount > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    if (!isStaff) {
+      const project = detectDocumentRequest(botReply, userMessage);
+
+      if (project === "all") {
+        let allSentCount = 0;
+        for (const [projKey, projDocs] of Object.entries(PROJECT_DOCS)) {
+          if (projDocs.brochure) {
+            if (allSentCount > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            const allFilename = PROJECT_NAMES[projKey] + " - Brochure - JPREZ.pdf";
+            const allProxyUrl = toProxyUrl(projDocs.brochure);
+            await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
+            allSentCount++;
+            console.log("PDF enviado (todos): brochure de " + projKey + " a " + senderPhone);
           }
-          const allFilename = PROJECT_NAMES[projKey] + " - Brochure - JPREZ.pdf";
-          const allProxyUrl = toProxyUrl(projDocs.brochure);
-          await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
-          allSentCount++;
-          console.log("PDF enviado (todos): brochure de " + projKey + " a " + senderPhone);
         }
-      }
-      if (allSentCount > 0) {
-        console.log("Total brochures enviados a " + senderPhone + ": " + allSentCount);
-      }
-    } else if (project && PROJECT_DOCS[project]) {
-      const docs = PROJECT_DOCS[project];
-      const requestedTypes = detectDocumentType(botReply, userMessage);
- 
-      let sentCount = 0;
- 
-      for (const docType of requestedTypes) {
-        const docUrl = docs[docType];
-        if (docUrl) {
+        if (allSentCount > 0) {
+          console.log("Total brochures enviados a " + senderPhone + ": " + allSentCount);
+        }
+      } else if (project && PROJECT_DOCS[project]) {
+        const docs = PROJECT_DOCS[project];
+        const requestedTypes = detectDocumentType(botReply, userMessage);
+
+        let sentCount = 0;
+
+        for (const docType of requestedTypes) {
+          const docUrl = docs[docType];
+          if (docUrl) {
+            if (sentCount > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+
+            let filename = PROJECT_NAMES[project] + " - " + DOC_TYPE_NAMES[docType] + " - JPREZ.pdf";
+            // Para puertoPlata, distinguir Etapa 3 en el nombre
+            if (project === "puertoPlata" && docType === "brochure") {
+                filename = PROJECT_NAMES[project] + " - Brochure Etapa 3 - JPREZ.pdf";
+              }
+              if (project === "puertoPlata" && docType === "precios") {
+              filename = PROJECT_NAMES[project] + " - Precios Etapa 3 - JPREZ.pdf";
+            }
+            // Convertir URL de Google Drive a nuestro proxy para que WhatsApp reciba el PDF real
+            const proxyUrl = toProxyUrl(docUrl);
+            await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
+            sentCount++;
+            console.log("PDF enviado: " + docType + " de " + project + " a " + senderPhone);
+          }
+        }
+
+        // Envio especial: Prado Suites Etapa 4 precios
+        if (project === "puertoPlata" && requestedTypes.includes("precios") && docs.preciosE4) {
           if (sentCount > 0) {
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
- 
-          let filename = PROJECT_NAMES[project] + " - " + DOC_TYPE_NAMES[docType] + " - JPREZ.pdf";
-          // Para puertoPlata, distinguir Etapa 3 en el nombre
-          if (project === "puertoPlata" && docType === "brochure") {
-              filename = PROJECT_NAMES[project] + " - Brochure Etapa 3 - JPREZ.pdf";
-            }
-            if (project === "puertoPlata" && docType === "precios") {
-            filename = PROJECT_NAMES[project] + " - Precios Etapa 3 - JPREZ.pdf";
-          }
-          // Convertir URL de Google Drive a nuestro proxy para que WhatsApp reciba el PDF real
-          const proxyUrl = toProxyUrl(docUrl);
-          await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
+          const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+          const e4ProxyUrl = toProxyUrl(docs.preciosE4);
+          await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
           sentCount++;
-          console.log("PDF enviado: " + docType + " de " + project + " a " + senderPhone);
+          console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
         }
-      }
- 
-      // Envio especial: Prado Suites Etapa 4 precios
-      if (project === "puertoPlata" && requestedTypes.includes("precios") && docs.preciosE4) {
+
+      // Envio especial: Prado Suites Etapa 4 brochure
+      if (project === "puertoPlata" && requestedTypes.includes("brochure") && docs.brochureE4) {
         if (sentCount > 0) {
           await new Promise((resolve) => setTimeout(resolve, 1500));
         }
-        const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
-        const e4ProxyUrl = toProxyUrl(docs.preciosE4);
-        await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
+        const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+        const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
+        await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
         sentCount++;
-        console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
+        console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
       }
 
-    // Envio especial: Prado Suites Etapa 4 brochure
-    if (project === "puertoPlata" && requestedTypes.includes("brochure") && docs.brochureE4) {
-      if (sentCount > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-      const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
-      const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
-      await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
-      sentCount++;
-      console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
-    }
-
-      if (sentCount === 0) {
-        console.log("AVISO: Solicitud de docs para " + project + " pero no hay URLs configuradas en las variables de entorno");
-      } else {
-        console.log("Total PDFs enviados a " + senderPhone + ": " + sentCount);
+        if (sentCount === 0) {
+          console.log("AVISO: Solicitud de docs para " + project + " pero no hay URLs configuradas en las variables de entorno");
+        } else {
+          console.log("Total PDFs enviados a " + senderPhone + ": " + sentCount);
+        }
       }
     }
   } catch (error) {
     console.error("Error procesando mensaje:", error);
   }
 }
- 
+
 // ============================================
 // HANDLER PRINCIPAL (Vercel serverless)
 // ============================================
- 
+
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -453,25 +659,25 @@ module.exports = async function handler(req, res) {
       return res.status(403).send("Forbidden");
     }
   }
- 
+
   if (req.method === "POST") {
     const body = req.body;
     await processMessage(body);
     return res.status(200).send("EVENT_RECEIVED");
   }
- 
+
   return res.status(405).send("Method Not Allowed");
 };
- 
+
 // ============================================
 // ENVIAR MENSAJE DE TEXTO POR WHATSAPP
 // ============================================
- 
+
 async function sendWhatsAppMessage(to, text) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_TOKEN;
   const url = "https://graph.facebook.com/v21.0/" + phoneNumberId + "/messages";
- 
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -485,25 +691,25 @@ async function sendWhatsAppMessage(to, text) {
       text: { body: text },
     }),
   });
- 
+
   if (!response.ok) {
     const errorData = await response.text();
     console.error("Error enviando WhatsApp:", errorData);
     throw new Error("WhatsApp API error: " + response.status);
   }
- 
+
   return response.json();
 }
- 
+
 // ============================================
 // ENVIAR DOCUMENTO PDF POR WHATSAPP
 // ============================================
- 
+
 async function sendWhatsAppDocument(to, documentUrl, filename) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_TOKEN;
   const url = "https://graph.facebook.com/v21.0/" + phoneNumberId + "/messages";
- 
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -520,12 +726,12 @@ async function sendWhatsAppDocument(to, documentUrl, filename) {
       },
     }),
   });
- 
+
   if (!response.ok) {
     const errorData = await response.text();
     console.error("Error enviando documento:", errorData);
     throw new Error("WhatsApp Document API error: " + response.status);
   }
- 
+
   return response.json();
-     }
+}
