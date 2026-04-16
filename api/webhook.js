@@ -32,14 +32,17 @@ const conversationHistory = {};
 const MAX_MESSAGES = 20;
 
 async function getRedis() {
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  // Soporta ambos formatos: el de Vercel Storage (KV_REST_API) y el manual
+  const redisUrl = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!redisUrl || !redisToken) {
     return null;
   }
   try {
     const { Redis } = require("@upstash/redis");
     return new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      url: redisUrl,
+      token: redisToken,
     });
   } catch (e) {
     console.log("Redis no disponible, usando memoria RAM:", e.message);
