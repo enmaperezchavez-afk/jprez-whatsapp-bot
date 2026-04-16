@@ -106,7 +106,7 @@ Para familias. 3 habitaciones, 2 banios, 100 m2, 2 parqueos. 13 pisos. Amenidade
 Ideal para inversion y Airbnb. 1 habitacion, 1 banio, 1 parqueo. Areas de 52 a 61 m2. Viene EQUIPADO: nevera, estufa, aire acondicionado, cerradura inteligente. Amenidades: piscina, gimnasio, co-working en piso 15. Entrega agosto 2026. Desde US$156,000 hasta US$193,500. Solo 6 de 60 unidades disponibles, casi agotado.
  
 3. PRADO RESIDENCES IV (PR4) - Evaristo Morales
-Gran variedad de unidades para todos los perfiles. Entrega 30 de agosto de 2026. 13 de 72 unidades disponibles.
+Gran variedad de unidades para todos los perfiles. Entrega septiembre 2027. 13 de 72 unidades disponibles.
    - Lofts de 52 m2 (1 habitacion, 1 banio, 1 parqueo): desde US$140,000
    - Apartamentos de 63 m2 (1 habitacion, 1.5 banios, 1 parqueo): desde US$157,500
    - Apartamentos de 115 m2 (3 habitaciones, 3 banios, 2 parqueos): desde US$299,000
@@ -127,7 +127,7 @@ GUIA RAPIDA:
 - "Poco presupuesto" -> Puerto Plata Etapa 3 (desde US$73K) o Crux Torre 6 (desde US$99K)
 - "Algo premium" -> PR4 en Evaristo Morales (desde US$140K hasta US$315K)
 - "Soy de la diaspora" -> Puerto Plata (inversion + vacaciones)
-- "Entrega pronto" -> PR3 o PR4 (agosto 2026) o Crux listos (entrega inmediata)
+- "Entrega pronto" -> PR3 (agosto 2026) o PR4 (septiembre 2027) o Crux listos (entrega inmediata)
 - "Algo listo ya" -> Crux Etapa 1 y 2 (terminados, en pesos)
 - "En pesos dominicanos?" -> Crux listos desde RD$5,650,000
  
