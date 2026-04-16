@@ -46,9 +46,16 @@ module.exports = async function handler(req, res) {
     const contentType = response.headers.get("content-type") || "application/pdf";
     const buffer = Buffer.from(await response.arrayBuffer());
 
+    // Detectar HTML por content-type O por contenido real (sin limite de tamano)
+    const bufferStart = buffer.slice(0, 200).toString("utf-8").toLowerCase();
+    const isHtml =
+      contentType.includes("text/html") ||
+      bufferStart.includes("<!doctype") ||
+      bufferStart.includes("<html");
+
     // Si Google Drive devolvio HTML en vez del PDF, intentar otra URL
-    if (contentType.includes("text/html") && buffer.length < 500000) {
-      console.log("Google Drive retorno HTML, intentando URL alternativa...");
+    if (isHtml) {
+      console.log("Google Drive retorno HTML (" + buffer.length + " bytes), intentando URL alternativa...");
 
       const altUrl =
         "https://drive.google.com/uc?export=download&confirm=t&id=" + id;
@@ -66,22 +73,28 @@ module.exports = async function handler(req, res) {
           altResponse.headers.get("content-type") || "application/pdf";
         const altBuffer = Buffer.from(await altResponse.arrayBuffer());
 
-        // Verificar que ahora si es un PDF (no HTML)
-        if (!altContentType.includes("text/html")) {
+        // Verificar que ahora si es un archivo real (no HTML)
+        const altStart = altBuffer.slice(0, 200).toString("utf-8").toLowerCase();
+        const altIsHtml =
+          altContentType.includes("text/html") ||
+          altStart.includes("<!doctype") ||
+          altStart.includes("<html");
+
+        if (!altIsHtml) {
           res.setHeader("Content-Type", altContentType);
-          res.setHeader("Cache-Control", "public, max-age=86400");
+          res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
           return res.send(altBuffer);
         }
       }
 
       // Si ambos intentos retornan HTML, devolver error
       console.error("Ambas URLs retornaron HTML para file ID: " + id);
-      return res.status(502).send("Could not fetch PDF from Google Drive");
+      return res.status(502).send("Could not fetch PDF from Google Drive - file may not be shared publicly");
     }
 
-    // Exito - enviar el PDF
+    // Exito - enviar el archivo
     res.setHeader("Content-Type", contentType);
-    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
     return res.send(buffer);
   } catch (error) {
     console.error("Error en proxy PDF:", error.message);
