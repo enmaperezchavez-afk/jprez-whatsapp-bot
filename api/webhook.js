@@ -5,6 +5,7 @@
 // ============================================
 
 const Anthropic = require("@anthropic-ai/sdk");
+const { waitUntil } = require("@vercel/functions");
 
 const SYSTEM_PROMPT = `Eres el vendedor estrella de Constructora JPREZ. Respondes mensajes de WhatsApp a clientes potenciales interesados en comprar apartamentos en Republica Dominicana. Tu objetivo es llevar cada conversacion hacia el cierre de venta o hacia una cita presencial.
 
@@ -49,6 +50,41 @@ GUIA RAPIDA:
 ESCALAMIENTO A HUMANO cuando: pidan hablar con persona, queja formal, tema legal, negociar descuento, +10 mensajes sin avance.
 Mensaje: "Dale, te conecto con nuestro equipo de ventas para que te atienda personalmente. Te van a escribir en unos minutos."`;
 
+async function processMessage(body) {
+  try {
+    const entry = body?.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
+    if (!messages || messages.length === 0) {
+      console.log("Evento sin mensajes");
+      return;
+    }
+    const message = messages[0];
+    const senderPhone = message.from;
+    const messageType = message.type;
+    if (messageType !== "text") {
+      await sendWhatsAppMessage(senderPhone, "Hola! Por el momento solo puedo leer mensajes de texto. En que te puedo ayudar?");
+      return;
+    }
+    const userMessage = message.text.body;
+    console.log("Mensaje de " + senderPhone + ": " + userMessage);
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5-20250514",
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    const botReply = response.content[0].text;
+    console.log("Respuesta del bot: " + botReply);
+    await sendWhatsAppMessage(senderPhone, botReply);
+    console.log("Respuesta enviada a " + senderPhone);
+  } catch (error) {
+    console.error("Error procesando mensaje:", error);
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -61,40 +97,10 @@ module.exports = async function handler(req, res) {
       return res.status(403).send("Forbidden");
     }
   }
-
   if (req.method === "POST") {
     const body = req.body;
-    res.status(200).send("EVENT_RECEIVED");
-    try {
-      const entry = body?.entry?.[0];
-      const changes = entry?.changes?.[0];
-      const value = changes?.value;
-      const messages = value?.messages;
-      if (!messages || messages.length === 0) {
-        return;
-      }
-      const message = messages[0];
-      const senderPhone = message.from;
-      const messageType = message.type;
-      if (messageType !== "text") {
-        await sendWhatsAppMessage(senderPhone, "Hola! Por el momento solo puedo leer mensajes de texto. En que te puedo ayudar?");
-        return;
-      }
-      const userMessage = message.text.body;
-      console.log("Mensaje de " + senderPhone + ": " + userMessage);
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 500,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMessage }],
-      });
-      const botReply = response.content[0].text;
-      await sendWhatsAppMessage(senderPhone, botReply);
-    } catch (error) {
-      console.error("Error procesando mensaje:", error);
-    }
-    return;
+    waitUntil(processMessage(body));
+    return res.status(200).send("EVENT_RECEIVED");
   }
   return res.status(405).send("Method Not Allowed");
 };
