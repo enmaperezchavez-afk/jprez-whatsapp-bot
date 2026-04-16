@@ -215,7 +215,7 @@ function detectDocumentRequest(botReply, userMessage) {
     "listado", "documento", "informacion", "informaci\u00f3n", "info",
     "ficha", "catalogo", "cat\u00e1logo", "enviame", "env\u00edame",
     "mandame", "m\u00e1ndame", "pasame", "p\u00e1same", "quiero ver",
-    "me puedes enviar", "me puedes mandar", "tienes material",
+    "me puedes enviar", "me puedes mandar", "tienes material", "presentacion", "presentación", "presentaciones",
   ];
  
   const botConfirmsSend = botSendPhrases.some((p) => botText.includes(p));
@@ -236,14 +236,15 @@ function detectDocumentRequest(botReply, userMessage) {
     }
   }
  
-  return null;
+  // No project matched but docs requested - send all
+  return "all";
 }
  
 function detectDocumentType(botReply, userMessage) {
   const combined = (botReply + " " + userMessage).toLowerCase();
   const types = [];
  
-  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("cat\u00e1logo") || combined.includes("ficha")) {
+  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("cat\u00e1logo") || combined.includes("ficha") || combined.includes("presentacion") || combined.includes("presentaciones")) {
     types.push("brochure");
   }
   if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto") || combined.includes("cu\u00e1nto")) {
@@ -318,7 +319,24 @@ async function processMessage(body) {
  
     const project = detectDocumentRequest(botReply, userMessage);
  
-    if (project && PROJECT_DOCS[project]) {
+    if (project === "all") {
+      let allSentCount = 0;
+      for (const [projKey, projDocs] of Object.entries(PROJECT_DOCS)) {
+        if (projDocs.brochure) {
+          if (allSentCount > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          const allFilename = PROJECT_NAMES[projKey] + " - Brochure - JPREZ.pdf";
+          const allProxyUrl = toProxyUrl(projDocs.brochure);
+          await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
+          allSentCount++;
+          console.log("PDF enviado (todos): brochure de " + projKey + " a " + senderPhone);
+        }
+      }
+      if (allSentCount > 0) {
+        console.log("Total brochures enviados a " + senderPhone + ": " + allSentCount);
+      }
+    } else if (project && PROJECT_DOCS[project]) {
       const docs = PROJECT_DOCS[project];
       const requestedTypes = detectDocumentType(botReply, userMessage);
  
