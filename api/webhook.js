@@ -176,6 +176,7 @@ const PROJECT_DOCS = {
   puertoPlata: {
     brochure: process.env.PDF_PP_BROCHURE || null,
     precios: process.env.PDF_PP_PRECIOS || null,
+    preciosE4: process.env.PDF_PP_PRECIOS_E4 || null,
     planos: process.env.PDF_PP_PLANOS || null,
   },
 };
@@ -225,7 +226,7 @@ function detectDocumentRequest(botReply, userMessage) {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
     pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "para\u00edso", "ensanche paraiso"],
     pr4: ["pr4", "prado 4", "prado residences 4", "prado residences iv", "prado iv", "evaristo", "evaristo morales"],
-    puertoPlata: ["puerto plata", "playa dorada", "prado suites", "prado suites puerto plata"],
+    puertoPlata: ["puerto plata", "playa dorada", "prado suites", "prado suites puerto plata", "etapa 3", "etapa 4", "etapa 3 y 4"],
   };
  
   for (const [project, words] of Object.entries(projectKeywords)) {
@@ -329,7 +330,11 @@ async function processMessage(body) {
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
  
-          const filename = PROJECT_NAMES[project] + " - " + DOC_TYPE_NAMES[docType] + " - JPREZ.pdf";
+          let filename = PROJECT_NAMES[project] + " - " + DOC_TYPE_NAMES[docType] + " - JPREZ.pdf";
+          // Para puertoPlata, distinguir Etapa 3 en el nombre
+          if (project === "puertoPlata" && docType === "precios") {
+            filename = PROJECT_NAMES[project] + " - Precios Etapa 3 - JPREZ.pdf";
+          }
           // Convertir URL de Google Drive a nuestro proxy para que WhatsApp reciba el PDF real
           const proxyUrl = toProxyUrl(docUrl);
           await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
@@ -338,6 +343,18 @@ async function processMessage(body) {
         }
       }
  
+      // Envio especial: Prado Suites Etapa 4 precios
+      if (project === "puertoPlata" && requestedTypes.includes("precios") && docs.preciosE4) {
+        if (sentCount > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+        const e4ProxyUrl = toProxyUrl(docs.preciosE4);
+        await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
+        sentCount++;
+        console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
+      }
+
       if (sentCount === 0) {
         console.log("AVISO: Solicitud de docs para " + project + " pero no hay URLs configuradas en las variables de entorno");
       } else {
