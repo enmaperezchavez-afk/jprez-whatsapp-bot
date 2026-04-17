@@ -995,21 +995,14 @@ async function processMessage(body) {
         // la siguiente interaccion sera con Enmanuel cara a cara.
       }
 
-      // Reprogramar seguimiento: el cliente escribio, reseteamos el ciclo.
-      // Si es lead caliente -> 24h. Si no, consideramos "warm" -> 2 dias.
-      // Si hay booking, NO programamos followup automatico (Enmanuel toma el chat).
-      if (!needsEscalation && !booking) {
-        const isHotNow = isHotLead || clientMeta?.temperature === "hot";
-        const nextFollowupAt = isHotNow
-          ? new Date(Date.now() + 24 * 3600000).toISOString()
-          : new Date(Date.now() + 2 * 86400000).toISOString();
+      // Cliente respondio -> resetear contador de followups.
+      // El calendario del cron se dispara a partir de lastContact + dias segun
+      // temperatura, asi que no hace falta programar un timestamp especifico.
+      if (!needsEscalation) {
         await saveClientMeta(senderPhone, {
-          followupStage: 0,
-          nextFollowupAt,
+          followUpCount: 0,
+          followUpStage: 0,
         });
-      } else if (booking) {
-        // Limpiar followup para que el cron no moleste con un cliente ya agendado
-        await saveClientMeta(senderPhone, { nextFollowupAt: null });
       }
     }
 
