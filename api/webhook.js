@@ -568,6 +568,71 @@ async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType) {
 }
 
 // ============================================
+// CONTEXTO DINAMICO DEL CLIENTE + ESCALAMIENTO
+// ============================================
+
+const ESCALATION_SILENCE_HOURS = 4;
+const REMINDER_THROTTLE_HOURS = 1;
+
+function buildClientContext(meta) {
+  if (!meta) return "";
+  const parts = [];
+  if (meta.name && meta.name !== "Desconocido") {
+    parts.push("- Nombre: " + meta.name);
+  }
+  if (meta.temperature) {
+    parts.push("- Temperatura del lead: " + meta.temperature);
+  }
+  if (meta.sentDocs && Object.keys(meta.sentDocs).length > 0) {
+    const labels = Object.keys(meta.sentDocs).map((k) => {
+      const [proj, type] = k.split(".");
+      const projName = PROJECT_NAMES[proj] || proj;
+      const typeName = DOC_TYPE_NAMES[type] || type;
+      return projName + " (" + typeName + ")";
+    });
+    parts.push("- Documentos ya enviados antes: " + labels.join(", "));
+  }
+  if (meta.lastContact) {
+    const hoursAgo = (Date.now() - new Date(meta.lastContact).getTime()) / 3600000;
+    if (hoursAgo > 1) {
+      const label = hoursAgo < 24
+        ? Math.round(hoursAgo) + " horas"
+        : Math.round(hoursAgo / 24) + " dias";
+      parts.push("- Ultimo contacto previo: hace " + label);
+    }
+  }
+  if (meta.escalated === false && meta.escalatedAt) {
+    parts.push("- Nota: fue escalado a Enmanuel antes. Retoma de forma natural, sin saludar de nuevo.");
+  }
+  if (parts.length === 0) return "";
+  return "\n\n---\nCONTEXTO DEL CLIENTE (uso interno, NO menciones estos datos literalmente al cliente):\n" +
+    parts.join("\n") +
+    "\n\nReglas segun este contexto:\n" +
+    "- Si hay historial previo, NO saludes como primera vez. Continua la conversacion.\n" +
+    "- NO re-envies documentos que figuran como ya enviados, salvo que el cliente lo pida de forma explicita.\n" +
+    "- Usa el nombre si lo conoces, pero sin abusar (no en cada mensaje).";
+}
+
+function isEscalationActive(meta) {
+  if (!meta || meta.escalated !== true || !meta.escalatedAt) return false;
+  const ageMs = Date.now() - new Date(meta.escalatedAt).getTime();
+  return ageMs < ESCALATION_SILENCE_HOURS * 3600000;
+}
+
+function shouldRemindEnmanuel(meta) {
+  const last = meta?.lastReminderAt;
+  if (!last) return true;
+  const ageMs = Date.now() - new Date(last).getTime();
+  return ageMs > REMINDER_THROTTLE_HOURS * 3600000;
+}
+
+async function markDocSent(phone, docKey) {
+  const meta = (await getClientMeta(phone)) || {};
+  const sentDocs = { ...(meta.sentDocs || {}), [docKey]: new Date().toISOString() };
+  await saveClientMeta(phone, { sentDocs });
+}
+
+// ============================================
 // PROCESAR MENSAJE
 // ============================================
 
@@ -613,8 +678,45 @@ async function processMessage(body) {
       console.log("PERSONAL INTERNO detectado: " + isStaff.name + " (" + isStaff.role + ")");
     }
 
+    // Cargar metadata del cliente (para contexto dinamico + gestion de escalamiento)
+    const clientMeta = !isStaff ? await getClientMeta(senderPhone) : null;
+
+    // Si hay un escalamiento activo (< 4h), el bot se silencia.
+    // Guarda el mensaje en historial y avisa a Enmanuel (con throttle de 1h).
+    if (!isStaff && isEscalationActive(clientMeta)) {
+      await addMessage(senderPhone, "user", userMessage);
+      botLog("info", "Bot silenciado: escalamiento activo", {
+        phone: senderPhone,
+        escalatedAt: clientMeta.escalatedAt,
+      });
+      if (shouldRemindEnmanuel(clientMeta)) {
+        try {
+          const clientLabel = clientMeta.name && clientMeta.name !== "Desconocido"
+            ? clientMeta.name
+            : senderPhone;
+          await sendWhatsAppMessage(
+            ENMANUEL_PHONE,
+            "Recordatorio: " + clientLabel + " (" + senderPhone + ") sigue escribiendo. Sigue en modo escalado."
+          );
+          await saveClientMeta(senderPhone, { lastReminderAt: new Date().toISOString() });
+        } catch (e) {
+          console.log("Error recordando a Enmanuel:", e.message);
+        }
+      }
+      return;
+    }
+
+    // Si el escalamiento ya vencio (> 4h), limpiar flag y seguir flujo normal
+    if (!isStaff && clientMeta?.escalated === true && !isEscalationActive(clientMeta)) {
+      await saveClientMeta(senderPhone, { escalated: false });
+    }
+
     await addMessage(senderPhone, "user", userMessage);
     const messageHistory = await getHistory(senderPhone);
+
+    // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente)
+    const clientContext = !isSupervisor ? buildClientContext(clientMeta) : "";
+    const finalPrompt = activePrompt + clientContext;
 
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
@@ -623,7 +725,7 @@ async function processMessage(body) {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 500,
-      system: activePrompt,
+      system: finalPrompt,
       messages: messageHistory,
     });
 
@@ -648,6 +750,19 @@ async function processMessage(body) {
         await notifyEnmanuel(senderPhone, userMessage, botReply, "escalation");
         await saveClientMeta(senderPhone, { escalated: true, escalatedAt: new Date().toISOString() });
       }
+
+      // Reprogramar seguimiento: el cliente escribio, reseteamos el ciclo.
+      // Si es lead caliente -> 24h. Si no, consideramos "warm" -> 2 dias.
+      if (!needsEscalation) {
+        const isHotNow = isHotLead || clientMeta?.temperature === "hot";
+        const nextFollowupAt = isHotNow
+          ? new Date(Date.now() + 24 * 3600000).toISOString()
+          : new Date(Date.now() + 2 * 86400000).toISOString();
+        await saveClientMeta(senderPhone, {
+          followupStage: 0,
+          nextFollowupAt,
+        });
+      }
     }
 
     // ============================================
@@ -669,6 +784,7 @@ async function processMessage(body) {
             const allProxyUrl = toProxyUrl(projDocs.brochure);
             await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
             allSentCount++;
+            await markDocSent(senderPhone, projKey + ".brochure");
             console.log("PDF enviado (todos): brochure de " + projKey + " a " + senderPhone);
           }
         }
@@ -700,6 +816,7 @@ async function processMessage(body) {
             const proxyUrl = toProxyUrl(docUrl);
             await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
             sentCount++;
+            await markDocSent(senderPhone, project + "." + docType);
             console.log("PDF enviado: " + docType + " de " + project + " a " + senderPhone);
           }
         }
@@ -713,6 +830,7 @@ async function processMessage(body) {
           const e4ProxyUrl = toProxyUrl(docs.preciosE4);
           await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
           sentCount++;
+          await markDocSent(senderPhone, project + ".preciosE4");
           console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
         }
 
@@ -725,6 +843,7 @@ async function processMessage(body) {
         const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
         await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
         sentCount++;
+        await markDocSent(senderPhone, project + ".brochureE4");
         console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
       }
 
