@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Verificar sintaxis de todos los archivos JS en api/
 for file in $(git diff --cached --name-only --diff-filter=ACM | grep '^api/.*\.js$'); do
   echo "Checking syntax: $file"
