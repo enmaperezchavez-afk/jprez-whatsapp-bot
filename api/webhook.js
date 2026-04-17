@@ -8,7 +8,7 @@
 // Con notificacion automatica de leads calientes
 // ============================================
 
-const Anthropic = require("@anthropic-ai/sdk");
+const Anthropic = require("@anthropic-ai/sdk");h
 const crypto = require("crypto");
 
 // ============================================
@@ -1149,7 +1149,7 @@ async function handler(req, res) {
       return res.status(400).json({ error: "Could not read body" });
     }
 
-    // 2. Validar firma HMAC sobre el body crudo exacto
+    // 2. Validar firma HMAC sobre el body crudo exactoh
     const signatureHeader = req.headers["x-hub-signature-256"];
     const hmac = verifyWebhookSignature(rawBody, signatureHeader);
     const clientIp = req.headers["x-forwarded-for"] || null;
@@ -1159,13 +1159,14 @@ async function handler(req, res) {
     } else if (hmac.status === "missing_secret") {
       botLog("warn", "HMAC no validado (META_APP_SECRET ausente)", { ip: clientIp });
     } else {
-      // "invalid" o "missing_signature" - por ahora seguimos SOLO logueando (warning-only).
-      // El enforcement real (responder 401) viene en la Fase 2.
-      botLog("warn", "HMAC rechazable (warning-only aun)", {
+      // Fase 2: enforcement activo. Firma invalida o ausente = rechazar con 401.
+      // Solo requests firmados correctamente por Meta pueden pasar.
+      botLog("warn", "Request rechazado por HMAC invalido", {
         status: hmac.status,
         reason: hmac.reason,
         ip: clientIp,
       });
+            return res.status(401).json({ error: "Unauthorized: invalid webhook signature" });
     }
 
     // 3. Parsear JSON manualmente DESPUES de la verificacion HMAC.
