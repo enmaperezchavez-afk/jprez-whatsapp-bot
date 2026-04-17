@@ -347,7 +347,31 @@ Numero de escalamiento: 8299943102 (Enmanuel Perez Chavez, director)
 CLASIFICACION DE LEADS - IMPORTANTE:
 Cuando respondas, si detectas que el cliente es un lead caliente (pidio precios especificos, plan de pago, quiere visita, quiere separar, tiene dinero listo), incluye al FINAL de tu respuesta en una linea aparte: [LEAD_CALIENTE]
 Si el cliente quiere que lo escale a un humano o la situacion lo amerita, incluye: [ESCALAR]
-Estas etiquetas NO se le muestran al cliente, el sistema las detecta automaticamente.`;
+Estas etiquetas NO se le muestran al cliente, el sistema las detecta automaticamente.
+
+AGENDAR VISITA PRESENCIAL (IMPORTANTE: flujo de cierre real):
+Tu mision numero uno es convertir conversaciones en visitas. Cuando el cliente muestre intencion de visitar:
+1. Pregunta que dia le va bien (hoy, manana, sabado, etc.) y hora aproximada.
+2. Confirma cual proyecto quiere ver.
+3. Cuando ya tengas dia + hora + proyecto, incluye al FINAL de tu respuesta en linea aparte:
+   [AGENDAR|proyecto|fecha_iso|notas]
+   proyecto: uno de crux, pr3, pr4, puertoPlata
+   fecha_iso: formato ISO 8601 con zona horaria Santo Domingo (UTC-4), ejemplo 2026-04-19T10:00:00-04:00
+   notas: cualquier detalle util (opcional)
+   Ejemplo: [AGENDAR|pr3|2026-04-19T10:00:00-04:00|cliente quiere ver unidad piso alto]
+4. En tu mensaje al cliente, confirma de forma natural: "Dale, listo, agendado para el sabado 10am en PR3. Enmanuel te escribe manana para confirmar detalles."
+5. Esta etiqueta NO se le muestra al cliente, el sistema la detecta y le avisa a Enmanuel con los datos estructurados.
+6. Si el cliente no te da dia/hora claro aun, NO pongas la etiqueta. Sigue conversando para obtener los datos.
+
+CALCULADORA DE CUOTAS (herramienta disponible):
+Tienes una herramienta llamada calcular_plan_pago. USALA cuando el cliente pregunte:
+- "cuanto pago al mes"
+- "cuotas", "mensualidad", "financiamiento"
+- "cuanto es la inicial"
+- Cualquier variante donde pida numeros concretos de pago
+Le pasas proyecto + precio_usd, te devuelve el desglose exacto. Luego explicaselo al cliente en lenguaje natural, tipo:
+"Para PR3 a US$156K: separacion 10% = US$15,600. Durante la construccion pagas como US$X al mes. Contra entrega 60% = US$93,600 (con banco o directo)."
+NO inventes numeros. Si no tienes la herramienta, di "dejame calcularte los numeros" y usa la herramienta.`;
 
 // ============================================
 // SYSTEM PROMPT PARA MODO SUPERVISOR
@@ -457,6 +481,79 @@ const DOC_TYPE_NAMES = {
 };
 
 // ============================================
+// CALCULADORA DE PLAN DE PAGO (Tool use)
+// ============================================
+
+// Planes de pago por proyecto (porcentajes)
+const PAYMENT_PLANS = {
+  crux: { separacion: 0.10, completivo: 0.20, entrega: 0.70 }, // Torre 6
+  pr3: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
+  pr4: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
+  puertoPlata: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
+};
+
+// Fechas aproximadas de entrega para calcular meses de cuota
+const DELIVERY_DATES = {
+  crux: "2027-07-01",
+  pr3: "2026-08-01",
+  pr4: "2027-09-01",
+  puertoPlata: "2027-12-01",
+};
+
+function calcularPlanPago(proyecto, precioUsd) {
+  const plan = PAYMENT_PLANS[proyecto];
+  const delivery = DELIVERY_DATES[proyecto];
+  if (!plan || !delivery) {
+    return { error: "Proyecto no reconocido: " + proyecto };
+  }
+  const now = new Date();
+  const deliveryDate = new Date(delivery);
+  const monthsRemaining = Math.max(1, Math.round((deliveryDate - now) / (30 * 86400 * 1000)));
+  const separacion = Math.round(precioUsd * plan.separacion);
+  const completivoTotal = Math.round(precioUsd * plan.completivo);
+  const contraEntrega = Math.round(precioUsd * plan.entrega);
+  const cuotaMensual = Math.round(completivoTotal / monthsRemaining);
+  return {
+    proyecto: PROJECT_NAMES[proyecto] || proyecto,
+    precio_total_usd: precioUsd,
+    separacion_usd: separacion,
+    separacion_pct: Math.round(plan.separacion * 100),
+    completivo_total_usd: completivoTotal,
+    completivo_pct: Math.round(plan.completivo * 100),
+    meses_hasta_entrega: monthsRemaining,
+    cuota_mensual_usd: cuotaMensual,
+    contra_entrega_usd: contraEntrega,
+    contra_entrega_pct: Math.round(plan.entrega * 100),
+    nota: "Cuota mensual = completivo total / meses hasta entrega. Contra entrega se cubre con banco o pago directo.",
+  };
+}
+
+const TOOLS = [
+  {
+    name: "calcular_plan_pago",
+    description:
+      "Calcula el plan de pago desglosado de una unidad JPREZ: separacion, cuota mensual durante construccion, y monto contra entrega. " +
+      "Usalo SIEMPRE que el cliente pregunte 'cuanto pago al mes', 'cuotas', 'financiamiento', 'inicial', 'mensualidad', o pida numeros concretos de pago. " +
+      "Devuelve JSON con los montos exactos para que puedas mostrarlos al cliente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        proyecto: {
+          type: "string",
+          enum: ["crux", "pr3", "pr4", "puertoPlata"],
+          description: "Codigo del proyecto: crux=Crux del Prado Torre 6, pr3=Prado Residences III, pr4=Prado Residences IV, puertoPlata=Prado Suites Puerto Plata",
+        },
+        precio_usd: {
+          type: "number",
+          description: "Precio total de la unidad en USD. Usa el precio base del proyecto si no sabes uno especifico.",
+        },
+      },
+      required: ["proyecto", "precio_usd"],
+    },
+  },
+];
+
+// ============================================
 // DETECCION INTELIGENTE DE DOCUMENTOS
 // ============================================
 
@@ -529,12 +626,33 @@ function detectDocumentType(botReply, userMessage) {
 function detectLeadSignals(botReply) {
   const isHotLead = botReply.includes("[LEAD_CALIENTE]");
   const needsEscalation = botReply.includes("[ESCALAR]");
+
+  // Parseo de agendamiento: [AGENDAR|proyecto|fecha_iso|notas]
+  // notas puede estar vacio y no contener "]"
+  let booking = null;
+  const bookingMatch = botReply.match(/\[AGENDAR\|([^|\]]+)\|([^|\]]+)\|([^\]]*)\]/);
+  if (bookingMatch) {
+    const proyecto = bookingMatch[1].trim();
+    const fechaIso = bookingMatch[2].trim();
+    const notas = (bookingMatch[3] || "").trim();
+    const at = new Date(fechaIso);
+    booking = {
+      project: proyecto,
+      at: isNaN(at.getTime()) ? null : at.toISOString(),
+      atRaw: fechaIso,
+      notas,
+      scheduledAt: new Date().toISOString(),
+    };
+  }
+
   // Limpiar las etiquetas del mensaje antes de enviarlo al cliente
   const cleanReply = botReply
     .replace(/\[LEAD_CALIENTE\]/g, "")
     .replace(/\[ESCALAR\]/g, "")
+    .replace(/\[AGENDAR\|[^\]]*\]/g, "")
     .trim();
-  return { isHotLead, needsEscalation, cleanReply };
+
+  return { isHotLead, needsEscalation, booking, cleanReply };
 }
 
 async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType) {
@@ -564,6 +682,48 @@ async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType) {
     botLog("info", "Notificacion enviada a Enmanuel", { type: signalType, clientPhone: senderPhone });
   } catch (e) {
     console.error("Error notificando a Enmanuel:", e.message);
+  }
+}
+
+async function notifyEnmanuelBooking(senderPhone, booking) {
+  const clientMeta = await getClientMeta(senderPhone);
+  const clientName = clientMeta?.name && clientMeta.name !== "Desconocido" ? clientMeta.name : "Cliente";
+  const projectName = PROJECT_NAMES[booking.project] || booking.project;
+
+  let fechaLegible = booking.atRaw;
+  if (booking.at) {
+    try {
+      fechaLegible = new Date(booking.at).toLocaleString("es-DO", {
+        timeZone: "America/Santo_Domingo",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (e) {
+      fechaLegible = booking.atRaw;
+    }
+  }
+
+  // wa.me link para que Enmanuel abra el chat con un tap
+  const waLink = "https://wa.me/" + senderPhone;
+
+  let notif = "NUEVA VISITA AGENDADA\n\n";
+  notif += "Cliente: " + clientName + "\n";
+  notif += "Telefono: " + senderPhone + "\n";
+  notif += "Proyecto: " + projectName + "\n";
+  notif += "Cuando: " + fechaLegible + "\n";
+  if (booking.notas) notif += "Notas: " + booking.notas + "\n";
+  notif += "\nAbrir chat: " + waLink + "\n\n";
+  notif += "Accion sugerida: confirmar manana con el cliente y preparar la visita.";
+
+  try {
+    await sendWhatsAppMessage(ENMANUEL_PHONE, notif);
+    botLog("info", "Visita agendada notificada", { phone: senderPhone, project: booking.project, at: booking.at });
+  } catch (e) {
+    console.error("Error notificando visita:", e.message);
   }
 }
 
@@ -722,18 +882,49 @@ async function processMessage(body) {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 500,
-      system: finalPrompt,
-      messages: messageHistory,
-    });
+    // Loop de tool use: Claude puede pedir la calculadora hasta MAX_TOOL_ITERATIONS veces.
+    // Cada iteracion es una llamada a la API. En la mayoria de casos solo hay 1 o 2.
+    const MAX_TOOL_ITERATIONS = 3;
+    let workingMessages = [...messageHistory];
+    let response;
+    let iteration = 0;
+    while (iteration < MAX_TOOL_ITERATIONS) {
+      response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 500,
+        system: finalPrompt,
+        tools: TOOLS,
+        messages: workingMessages,
+      });
+      if (response.stop_reason !== "tool_use") break;
 
-    const rawReply = response.content[0].text;
+      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
+      workingMessages.push({ role: "assistant", content: response.content });
+      const toolResults = toolUseBlocks.map((block) => {
+        let result;
+        if (block.name === "calcular_plan_pago") {
+          result = calcularPlanPago(block.input.proyecto, block.input.precio_usd);
+        } else {
+          result = { error: "Herramienta desconocida: " + block.name };
+        }
+        botLog("info", "Tool use", { phone: senderPhone, tool: block.name, input: block.input, result });
+        return {
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: JSON.stringify(result),
+        };
+      });
+      workingMessages.push({ role: "user", content: toolResults });
+      iteration++;
+    }
+
+    // Extraer el texto final (ignorando bloques tool_use residuales)
+    const textBlocks = response.content.filter((b) => b.type === "text");
+    const rawReply = textBlocks.map((b) => b.text).join("\n").trim() || "Dejame un momento, te respondo en seguida.";
     console.log("Respuesta del bot: " + rawReply);
 
-    // Detectar seÃ±ales de lead caliente o escalamiento
-    const { isHotLead, needsEscalation, cleanReply } = detectLeadSignals(rawReply);
+    // Detectar senales de lead caliente, escalamiento y agendamiento
+    const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(rawReply);
     const botReply = cleanReply;
 
     await addMessage(senderPhone, "assistant", botReply);
@@ -751,9 +942,21 @@ async function processMessage(body) {
         await saveClientMeta(senderPhone, { escalated: true, escalatedAt: new Date().toISOString() });
       }
 
+      // Agendamiento de visita: guardar + notificar con tarjeta estructurada
+      if (booking) {
+        await notifyEnmanuelBooking(senderPhone, booking);
+        await saveClientMeta(senderPhone, {
+          scheduledVisit: booking,
+          temperature: "hot", // quien agenda visita es lead caliente por definicion
+        });
+        // Al agendar, suspendemos el followup automatico:
+        // la siguiente interaccion sera con Enmanuel cara a cara.
+      }
+
       // Reprogramar seguimiento: el cliente escribio, reseteamos el ciclo.
       // Si es lead caliente -> 24h. Si no, consideramos "warm" -> 2 dias.
-      if (!needsEscalation) {
+      // Si hay booking, NO programamos followup automatico (Enmanuel toma el chat).
+      if (!needsEscalation && !booking) {
         const isHotNow = isHotLead || clientMeta?.temperature === "hot";
         const nextFollowupAt = isHotNow
           ? new Date(Date.now() + 24 * 3600000).toISOString()
@@ -762,6 +965,9 @@ async function processMessage(body) {
           followupStage: 0,
           nextFollowupAt,
         });
+      } else if (booking) {
+        // Limpiar followup para que el cron no moleste con un cliente ya agendado
+        await saveClientMeta(senderPhone, { nextFollowupAt: null });
       }
     }
 

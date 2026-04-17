@@ -130,20 +130,25 @@ const FOLLOWUP_SYSTEM_PROMPT = `Eres el MEJOR vendedor de bienes raices del Cari
 Reglas del mensaje:
 - Maximo 3 lineas de WhatsApp. Texto plano, sin markdown, sin bullets.
 - NO saludes como si fuera primera vez. El cliente ya te conoce.
-- Referencia algo concreto de la conversacion previa (proyecto que le intereso, pregunta pendiente, visita que hablaron).
-- Da un motivo real para responder: una novedad, una disponibilidad, una pregunta clara.
+- Referencia algo CONCRETO de la conversacion previa (el proyecto exacto que le intereso, la pregunta pendiente, la visita que hablaron).
+- Da un motivo real para responder. Opciones poderosas:
+  a) ESCASEZ real por proyecto (ver lista abajo) - ideal si ya le mandaste ese brochure
+  b) Una pregunta concreta sobre su decision
+  c) Disponibilidad de unidad o visita
 - Nada de presion. Tono calido, cercano, dominicano profesional.
 - Maximo 1 emoji, solo si es natural. Nunca forzado.
-- NO inventes datos ni novedades falsas. Si no tienes novedad concreta, usa una pregunta abierta ("como van tus planes?", "pudiste revisar el material?").
-- NO incluyas ningun prefacio tipo "aqui va el mensaje:". Devuelve SOLO el texto que se le enviara al cliente.
+- NO inventes datos ni novedades falsas. Si no tienes novedad concreta de ese cliente especifico, usa la escasez real del proyecto.
+- NO incluyas ningun prefacio tipo "aqui va el mensaje:". Devuelve SOLO el texto que se enviara.
 
-Proyectos activos (por si los necesitas):
-1. CRUX DEL PRADO (SDN, 3 hab, listos desde RD$5.65M o Torre 6 desde US$99K)
-2. PRADO RESIDENCES III (Av. Churchill, 1 hab equipado, desde US$156K, solo 6 unidades)
-3. PRADO RESIDENCES IV (Evaristo Morales, 1 y 3 hab, desde US$140K)
-4. PRADO SUITES PUERTO PLATA (frente a Playa Dorada, 1-3 hab, desde US$73K)
+ESCASEZ REAL POR PROYECTO (usa estos datos, son reales):
+- Crux del Prado (crux): Etapa 1 y 2 listos, SOLO 4 UNIDADES DISPONIBLES desde RD$5.65M. Torre 6 en construccion, 42 de 50 disponibles (84%).
+- Prado Residences III (pr3): SOLO 6 DE 60 UNIDADES DISPONIBLES, entrega agosto 2026 (ya faltan pocos meses). Equipado y listo para Airbnb.
+- Prado Residences IV (pr4): 13 de 72 unidades disponibles (82% vendido), entrega septiembre 2027.
+- Prado Suites Puerto Plata (puertoPlata): Etapa 3 con 63 de 126 disponibles (50% vendido), desde US$73K.
 
-NUNCA incluyas etiquetas [LEAD_CALIENTE] ni [ESCALAR] en el mensaje.`;
+Si el cliente recibio un brochure especifico, DA PRIORIDAD a mencionar la escasez de ESE proyecto en particular ("en PR3 solo quedan 6 unidades y ya se acerca la entrega de agosto").
+
+NUNCA incluyas etiquetas [LEAD_CALIENTE], [ESCALAR], ni [AGENDAR] en el mensaje.`;
 
 function buildFollowupUserPrompt(meta, stage, temperature) {
   const parts = [];
@@ -226,9 +231,59 @@ module.exports = async function handler(req, res) {
     closed: 0,
     skipped: 0,
     errors: 0,
+    visitReminders: 0,
     details: [],
   };
 
+  // ============================================
+  // PASE 1: RECORDATORIOS DE VISITA (24h antes)
+  // ============================================
+  for (const key of keys) {
+    const phone = key.replace("meta:", "");
+    try {
+      if (STAFF_PHONES[phone]) continue;
+      const meta = await getClientMeta(redis, phone);
+      if (!meta?.scheduledVisit?.at) continue;
+      if (meta.scheduledVisit.reminder24hSent) continue;
+
+      const visitAt = new Date(meta.scheduledVisit.at).getTime();
+      const now = Date.now();
+      const hoursUntil = (visitAt - now) / 3600000;
+
+      // Ventana amplia (entre 12h y 36h antes) para cubrir cualquier hora del cron
+      if (hoursUntil < 12 || hoursUntil > 36) continue;
+
+      const projectName = (function () {
+        const names = {
+          crux: "Crux del Prado", pr3: "Prado Residences III",
+          pr4: "Prado Residences IV", puertoPlata: "Prado Suites Puerto Plata",
+        };
+        return names[meta.scheduledVisit.project] || meta.scheduledVisit.project;
+      })();
+      const horaLegible = new Date(visitAt).toLocaleString("es-DO", {
+        timeZone: "America/Santo_Domingo",
+        weekday: "long", hour: "numeric", minute: "2-digit", hour12: true,
+      });
+
+      const reminderText = "Hola! Recordatorio: manana tenemos tu visita al proyecto " + projectName + " (" + horaLegible + "). Si necesitas cambiar algo, avisame por aqui. Te esperamos!";
+      await sendWhatsAppMessage(phone, reminderText);
+      await appendAssistantMessage(redis, phone, reminderText);
+      await saveClientMeta(redis, phone, {
+        scheduledVisit: { ...meta.scheduledVisit, reminder24hSent: true, reminder24hSentAt: new Date().toISOString() },
+      });
+
+      summary.visitReminders++;
+      summary.details.push({ phone, action: "visit_reminder_24h", project: meta.scheduledVisit.project });
+    } catch (e) {
+      summary.errors++;
+      summary.details.push({ phone, action: "visit_reminder_error", error: e.message });
+      console.error("Visit reminder error para " + phone + ":", e.message);
+    }
+  }
+
+  // ============================================
+  // PASE 2: FOLLOWUPS POR TEMPERATURA
+  // ============================================
   for (const key of keys) {
     const phone = key.replace("meta:", "");
     try {
@@ -239,6 +294,12 @@ module.exports = async function handler(req, res) {
 
       // Cliente activamente escalado: humano se encarga, no interferimos
       if (isEscalationActive(meta)) { summary.skipped++; continue; }
+
+      // Si ya tiene visita agendada a futuro, no hacer followup adicional
+      if (meta.scheduledVisit?.at && new Date(meta.scheduledVisit.at).getTime() > Date.now()) {
+        summary.skipped++;
+        continue;
+      }
 
       // Sin schedule o aun no vence
       if (!meta.nextFollowupAt) { summary.skipped++; continue; }
