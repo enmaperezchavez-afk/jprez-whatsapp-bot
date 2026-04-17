@@ -10,6 +10,7 @@
 
 const Anthropic = require("@anthropic-ai/sdk");
 const crypto = require("crypto");
+const { waitUntil } = require("@vercel/functions");
 
 // ============================================
 // VERIFICACION HMAC (Seguridad)
@@ -81,7 +82,7 @@ function botLog(level, message, data) {
     ...data,
   };
   console.log(message, data ? JSON.stringify(data) : "");
-  logToAxiom(logEntry);
+  waitUntil(logToAxiom(logEntry));
 }
 
 // ============================================
