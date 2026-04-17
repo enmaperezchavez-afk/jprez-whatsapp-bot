@@ -58,10 +58,13 @@ function verifyWebhookSignature(rawBody, signatureHeader) {
 async function logToAxiom(events) {
   const token = process.env.AXIOM_TOKEN;
   const dataset = process.env.AXIOM_DATASET || "jprez-bot";
-  if (!token) return; // Si no hay token, solo usa console.log
+  if (!token) {
+    console.log("[axiom] AXIOM_TOKEN no configurado, saltando");
+    return;
+  }
   try {
     const payload = Array.isArray(events) ? events : [events];
-    await fetch("https://api.axiom.co/v1/datasets/" + dataset + "/ingest", {
+    const res = await fetch("https://api.axiom.co/v1/datasets/" + dataset + "/ingest", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token,
@@ -69,8 +72,14 @@ async function logToAxiom(events) {
       },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      const body = await res.text();
+      console.log("[axiom] Ingest fallo status=" + res.status + " dataset=" + dataset + " body=" + body.slice(0, 500));
+    } else {
+      console.log("[axiom] Ingest OK dataset=" + dataset + " count=" + payload.length);
+    }
   } catch (e) {
-    console.log("Error enviando a Axiom:", e.message);
+    console.log("[axiom] Error enviando a Axiom:", e.message);
   }
 }
 
