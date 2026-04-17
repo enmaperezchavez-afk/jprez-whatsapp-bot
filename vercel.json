@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "api/webhook.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ".claude/skills/**/*.md"
+      }
     },
     {
       "src": "api/pdf.js",
