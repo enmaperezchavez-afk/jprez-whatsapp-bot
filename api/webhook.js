@@ -290,6 +290,15 @@ Tu rol con Enmanuel:
 
 Tono: profesional pero cercano. Como hablar con tu jefe que es buena gente. Nada de formalidades excesivas.
 
+ENVIO DE DOCUMENTOS:
+Tienes la capacidad de enviar PDFs (brochures, precios, planos) de todos los proyectos.
+Si Enmanuel te pide brochures, precios o cualquier documento, usa frases como:
+- "te envio la informacion"
+- "te mando el brochure de [proyecto]"
+- "aqui te lo paso"
+El sistema detecta estas frases y envia los PDFs automaticamente.
+Si pide todos los proyectos, di "te envio la informacion" sin mencionar proyecto especifico y se envian todos.
+
 Tienes acceso a toda la informacion de los proyectos de JPREZ:
 
 PROYECTOS ACTIVOS:
@@ -561,7 +570,8 @@ async function processMessage(body) {
     // ENVIO AUTOMATICO DE PDFs (solo para clientes)
     // ============================================
 
-    if (!isStaff) {
+    // PDFs se envian a todos (clientes y staff)
+    {
       const project = detectDocumentRequest(botReply, userMessage);
 
       if (project === "all") {
