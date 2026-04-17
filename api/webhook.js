@@ -8,7 +8,7 @@
 // Con notificacion automatica de leads calientes
 // ============================================
 
-const Anthropic = require("@anthropic-ai/sdk");h
+const Anthropic = require("@anthropic-ai/sdk");
 const crypto = require("crypto");
 
 // ============================================
@@ -1149,7 +1149,7 @@ async function handler(req, res) {
       return res.status(400).json({ error: "Could not read body" });
     }
 
-    // 2. Validar firma HMAC sobre el body crudo exactoh
+    // 2. Validar firma HMAC sobre el body crudo exacto
     const signatureHeader = req.headers["x-hub-signature-256"];
     const hmac = verifyWebhookSignature(rawBody, signatureHeader);
     const clientIp = req.headers["x-forwarded-for"] || null;
