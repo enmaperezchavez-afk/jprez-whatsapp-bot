@@ -10,6 +10,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/img.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "api/followup.js",
       "use": "@vercel/node"
     }
@@ -22,6 +26,10 @@
     {
       "src": "/api/pdf",
       "dest": "/api/pdf.js"
+    },
+    {
+      "src": "/api/img",
+      "dest": "/api/img.js"
     },
     {
       "src": "/api/followup",

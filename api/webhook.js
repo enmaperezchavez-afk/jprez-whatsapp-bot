@@ -432,14 +432,31 @@ REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica
 // Dominio de nuestro Vercel para el proxy de PDFs
 const VERCEL_DOMAIN = "https://v0-meta-whatsapp-webhook.vercel.app";
 
-// Convierte URL de Google Drive a URL de nuestro proxy
+// Extrae el ID de una URL de Google Drive en cualquier formato comun
+// (?id=XXX, /file/d/XXX/, /open?id=XXX, etc.)
+function extractDriveId(url) {
+  if (!url) return null;
+  const queryMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (queryMatch) return queryMatch[1];
+  const pathMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (pathMatch) return pathMatch[1];
+  return null;
+}
+
+// Convierte URL de Google Drive a URL de nuestro proxy de PDFs
 function toProxyUrl(driveUrl) {
   if (!driveUrl) return null;
-  const match = driveUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (match) {
-    return VERCEL_DOMAIN + "/api/pdf?id=" + match[1];
-  }
+  const id = extractDriveId(driveUrl);
+  if (id) return VERCEL_DOMAIN + "/api/pdf?id=" + id;
   return driveUrl;
+}
+
+// Convierte URL de Google Drive a URL de nuestro proxy de imagenes
+function toImageProxyUrl(url) {
+  if (!url) return null;
+  const id = extractDriveId(url);
+  if (id) return VERCEL_DOMAIN + "/api/img?id=" + id;
+  return url;
 }
 
 // Parsea env vars con URLs separadas por coma (IMG_CRUX="url1,url2,url3")
@@ -1239,7 +1256,9 @@ async function sendProjectImages(phone, project) {
   for (const imgUrl of docs.images) {
     if (sent > 0) await new Promise((r) => setTimeout(r, 1000));
     try {
-      await sendWhatsAppImage(phone, imgUrl);
+      // Si es link de Drive, lo pasamos por nuestro proxy de imagenes
+      const finalUrl = toImageProxyUrl(imgUrl);
+      await sendWhatsAppImage(phone, finalUrl);
       sent++;
     } catch (e) {
       console.log("Error enviando imagen de " + project + ":", e.message);
