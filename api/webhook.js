@@ -9,6 +9,65 @@
 // ============================================
 
 const Anthropic = require("@anthropic-ai/sdk");
+const crypto = require("crypto");
+
+// ============================================
+// VERIFICACION HMAC (Seguridad)
+// ============================================
+
+function verifyWebhookSignature(req) {
+  const appSecret = process.env.META_APP_SECRET;
+  if (!appSecret) {
+    console.log("AVISO: META_APP_SECRET no configurado, saltando verificacion HMAC");
+    return true; // Si no hay secret, permitir (para no romper el bot existente)
+  }
+  const signature = req.headers["x-hub-signature-256"];
+  if (!signature) {
+    console.log("SEGURIDAD: Request sin firma X-Hub-Signature-256");
+    return false;
+  }
+  const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  const expectedSignature = "sha256=" + crypto.createHmac("sha256", appSecret).update(body).digest("hex");
+  const isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  if (!isValid) {
+    console.log("SEGURIDAD: Firma HMAC invalida - posible request falso");
+  }
+  return isValid;
+}
+
+// ============================================
+// AXIOM LOGGING (Logs profesionales)
+// ============================================
+
+async function logToAxiom(events) {
+  const token = process.env.AXIOM_TOKEN;
+  const dataset = process.env.AXIOM_DATASET || "jprez-bot";
+  if (!token) return; // Si no hay token, solo usa console.log
+  try {
+    const payload = Array.isArray(events) ? events : [events];
+    await fetch("https://api.axiom.co/v1/datasets/" + dataset + "/ingest", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.log("Error enviando a Axiom:", e.message);
+  }
+}
+
+function botLog(level, message, data) {
+  const logEntry = {
+    _time: new Date().toISOString(),
+    level: level,
+    message: message,
+    ...data,
+  };
+  console.log(message, data ? JSON.stringify(data) : "");
+  logToAxiom(logEntry);
+}
 
 // ============================================
 // CONFIGURACION DE PERSONAL INTERNO
@@ -502,7 +561,7 @@ async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType) {
 
   try {
     await sendWhatsAppMessage(ENMANUEL_PHONE, notification);
-    console.log("Notificacion enviada a Enmanuel: " + signalType + " para " + senderPhone);
+    botLog("info", "Notificacion enviada a Enmanuel", { type: signalType, clientPhone: senderPhone });
   } catch (e) {
     console.error("Error notificando a Enmanuel:", e.message);
   }
@@ -541,7 +600,7 @@ async function processMessage(body) {
     }
 
     const userMessage = message.text.body;
-    console.log("Mensaje de " + senderPhone + " (" + senderName + "): " + userMessage);
+    botLog("info", "Mensaje recibido", { phone: senderPhone, name: senderName, message: userMessage, isStaff: !!isStaff });
 
     // ============================================
     // DETECTAR SI ES PERSONAL INTERNO (por numero)
@@ -577,7 +636,7 @@ async function processMessage(body) {
 
     await addMessage(senderPhone, "assistant", botReply);
     await sendWhatsAppMessage(senderPhone, botReply);
-    console.log("Respuesta enviada a " + senderPhone);
+    botLog("info", "Respuesta enviada", { phone: senderPhone, responseLength: botReply.length });
 
     // Notificar a Enmanuel si hay señales (solo para clientes, no para staff)
     if (!isStaff) {
@@ -677,7 +736,7 @@ async function processMessage(body) {
       }
     }
   } catch (error) {
-    console.error("Error procesando mensaje:", error);
+    botLog("error", "Error procesando mensaje", { error: error.message, stack: error.stack });
   }
 }
 
@@ -699,6 +758,11 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    // Verificar firma HMAC de Meta
+    if (!verifyWebhookSignature(req)) {
+      botLog("warn", "Request rechazado por firma HMAC invalida", { ip: req.headers["x-forwarded-for"] });
+      return res.status(401).send("Unauthorized");
+    }
     const body = req.body;
     await processMessage(body);
     return res.status(200).send("EVENT_RECEIVED");
