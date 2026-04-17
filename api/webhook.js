@@ -15,24 +15,39 @@ const crypto = require("crypto");
 // VERIFICACION HMAC (Seguridad)
 // ============================================
 
-function verifyWebhookSignature(req) {
+// Lee el body HTTP crudo (raw) como string UTF-8 directo del stream,
+// ANTES de cualquier parseo. Requiere bodyParser desactivado via export config.
+async function readRawBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+// Verifica la firma HMAC SHA256 sobre el body crudo exacto que envio Meta.
+// Retorna { status, reason } donde status = "valid" | "invalid" | "missing_secret" | "missing_signature"
+// Importante: la comparacion usa timingSafeEqual para evitar timing attacks.
+function verifyWebhookSignature(rawBody, signatureHeader) {
   const appSecret = process.env.META_APP_SECRET;
   if (!appSecret) {
-    console.log("AVISO: META_APP_SECRET no configurado, saltando verificacion HMAC");
-    return true; // Si no hay secret, permitir (para no romper el bot existente)
+    return { status: "missing_secret", reason: "META_APP_SECRET no configurado" };
   }
-  const signature = req.headers["x-hub-signature-256"];
-  if (!signature) {
-    console.log("SEGURIDAD: Request sin firma X-Hub-Signature-256");
-    return false;
+  if (!signatureHeader) {
+    return { status: "missing_signature", reason: "Request sin header x-hub-signature-256" };
   }
-  const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-  const expectedSignature = "sha256=" + crypto.createHmac("sha256", appSecret).update(body).digest("hex");
-  const isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
-  if (!isValid) {
-    console.log("SEGURIDAD: Firma HMAC invalida - posible request falso");
+  const expected = "sha256=" + crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
+  // timingSafeEqual requiere que ambos buffers sean del mismo largo; si difieren
+  // retornamos invalid sin comparar (evita throw).
+  const sigBuf = Buffer.from(signatureHeader);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length) {
+    return { status: "invalid", reason: "Firma de largo inesperado" };
   }
-  return isValid;
+  const isValid = crypto.timingSafeEqual(sigBuf, expBuf);
+  return isValid
+    ? { status: "valid" }
+    : { status: "invalid", reason: "Firma HMAC no coincide con body crudo" };
 }
 
 // ============================================
@@ -1111,7 +1126,7 @@ async function processMessage(body) {
 // HANDLER PRINCIPAL (Vercel serverless)
 // ============================================
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
@@ -1125,18 +1140,60 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    // Verificar firma HMAC de Meta
-    if (!verifyWebhookSignature(req)) {
-      botLog("warn", "Firma HMAC no coincide (Vercel parsea body)", { ip: req.headers["x-forwarded-for"] });
-      // No bloqueamos - Vercel parsea el body y cambia el string original
+    // 1. Leer el body crudo ANTES de cualquier parseo (bodyParser desactivado via config)
+    let rawBody;
+    try {
+      rawBody = await readRawBody(req);
+    } catch (e) {
+      botLog("error", "No se pudo leer raw body", { error: e.message });
+      return res.status(400).json({ error: "Could not read body" });
     }
-    const body = req.body;
+
+    // 2. Validar firma HMAC sobre el body crudo exacto
+    const signatureHeader = req.headers["x-hub-signature-256"];
+    const hmac = verifyWebhookSignature(rawBody, signatureHeader);
+    const clientIp = req.headers["x-forwarded-for"] || null;
+
+    if (hmac.status === "valid") {
+      botLog("info", "HMAC valido", { ip: clientIp });
+    } else if (hmac.status === "missing_secret") {
+      botLog("warn", "HMAC no validado (META_APP_SECRET ausente)", { ip: clientIp });
+    } else {
+      // "invalid" o "missing_signature" - por ahora seguimos SOLO logueando (warning-only).
+      // El enforcement real (responder 401) viene en la Fase 2.
+      botLog("warn", "HMAC rechazable (warning-only aun)", {
+        status: hmac.status,
+        reason: hmac.reason,
+        ip: clientIp,
+      });
+    }
+
+    // 3. Parsear JSON manualmente DESPUES de la verificacion HMAC.
+    // Si el body no es JSON valido respondemos 400 antes de procesar.
+    let body;
+    try {
+      body = rawBody ? JSON.parse(rawBody) : {};
+    } catch (e) {
+      botLog("error", "Body no es JSON valido", { error: e.message, preview: rawBody.slice(0, 120) });
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+
     await processMessage(body);
     return res.status(200).send("EVENT_RECEIVED");
   }
 
   return res.status(405).send("Method Not Allowed");
+}
+
+// Desactiva el bodyParser de Vercel para que podamos leer el stream crudo y
+// calcular HMAC sobre los bytes exactos que firmo Meta.
+handler.config = {
+  api: {
+    bodyParser: false,
+  },
 };
+
+module.exports = handler;
 
 // ============================================
 // ENVIAR MENSAJE DE TEXTO POR WHATSAPP
