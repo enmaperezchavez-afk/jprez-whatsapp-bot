@@ -158,6 +158,38 @@ async function getRedis() {
   }
 }
 
+// ============================================
+// RATE LIMITING (Upstash Ratelimit, sliding window)
+// ============================================
+// 10 mensajes por ventana de 60s por telefono. Staff bypass.
+// Instancia memoizada al module scope tras primer exito con Redis;
+// si Redis esta caido en el primer intento, NO se memoiza (para reintentar).
+// Fail-open: si Redis cae, se saltea el check y se loguea el bypass.
+
+const RATELIMIT_MAX = 10;
+const RATELIMIT_WINDOW = "60 s";
+const RATELIMIT_PREFIX = "ratelimit";
+
+let _ratelimitInstance = null;
+async function getRatelimit() {
+  if (_ratelimitInstance) return _ratelimitInstance;
+  const redis = await getRedis();
+  if (!redis) return null; // no memoizamos null: permite reintentar cuando Redis vuelva
+  try {
+    const { Ratelimit } = require("@upstash/ratelimit");
+    _ratelimitInstance = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(RATELIMIT_MAX, RATELIMIT_WINDOW),
+      prefix: RATELIMIT_PREFIX,
+      analytics: false,
+    });
+    return _ratelimitInstance;
+  } catch (e) {
+    console.log("[ratelimit] Error inicializando Ratelimit:", e.message);
+    return null;
+  }
+}
+
 async function getHistory(phone) {
   // Intentar Redis primero
   const redis = await getRedis();
@@ -1148,6 +1180,57 @@ async function handler(req, res) {
     } catch (e) {
       botLog("error", "Body no es JSON valido", { error: e.message, preview: rawBody.slice(0, 120) });
       return res.status(400).json({ error: "Invalid JSON body" });
+    }
+
+    // 4. Rate limiting por telefono (staff bypass, fail-open si Redis cae).
+    // Solo aplica a eventos con mensaje inbound real; status updates (delivery,
+    // read, etc.) no tienen `messages[0].from` y pasan sin contar.
+    const inboundPhone = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+    if (inboundPhone && !STAFF_PHONES[inboundPhone]) {
+      const ratelimit = await getRatelimit();
+      if (!ratelimit) {
+        // Fail-open: Redis no disponible. Procesamos igual pero dejamos alarma.
+        botLog("warn", "rate_limit_bypassed_redis_unavailable", {
+          event_type: "rate_limit_bypassed_redis_unavailable",
+          phone: inboundPhone,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        try {
+          const { success, limit, remaining, reset } = await ratelimit.limit(inboundPhone);
+          if (!success) {
+            const usados = limit - remaining;
+            botLog("warn", "rate_limit_exceeded", {
+              event_type: "rate_limit_exceeded",
+              phone: inboundPhone,
+              limit,
+              remaining,
+              reset,
+              usados,
+              timestamp: new Date().toISOString(),
+            });
+            // Mensaje amable al cliente. El envio es OUTBOUND a Meta -> no vuelve
+            // a entrar a este handler, asi que no hay loop posible con el limiter.
+            try {
+              await sendWhatsAppMessage(
+                inboundPhone,
+                "¡Gracias por tu interés en Constructora JPREZ! 🙌 Estoy procesando tus mensajes con calma para darte la mejor atención. En unos segundos te respondo todo con detalle."
+              );
+            } catch (sendErr) {
+              console.log("[ratelimit] Error enviando mensaje amable:", sendErr.message);
+            }
+            return res.status(200).send("EVENT_RECEIVED");
+          }
+        } catch (e) {
+          // Error del rate limiter (no del check). Fail-open tambien.
+          botLog("warn", "rate_limit_bypassed_error", {
+            event_type: "rate_limit_bypassed_error",
+            phone: inboundPhone,
+            error: e.message,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
     }
 
     await processMessage(body);
