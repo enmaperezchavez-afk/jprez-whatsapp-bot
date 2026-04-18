@@ -1137,7 +1137,7 @@ async function handler(req, res) {
         reason: hmac.reason,
         ip: clientIp,
       });
-            return res.status(401).json({ error: "Unauthorized: invalid webhook signature" });
+      return res.status(401).json({ error: "Unauthorized: invalid webhook signature" });
     }
 
     // 3. Parsear JSON manualmente DESPUES de la verificacion HMAC.
