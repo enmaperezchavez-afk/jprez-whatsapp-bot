@@ -9,7 +9,7 @@
 - Branch: main
 - Producción Vercel: deployada y respondiendo
 - Variables de entorno activas: META_APP_SECRET, AXIOM_TOKEN, AXIOM_DATASET=jprez-bot, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, WHATSAPP_TOKEN, ANTHROPIC_API_KEY
-- webhook.js: 1,259 líneas (objetivo Día 2: < 80 líneas)
+- webhook.js: 1,475 líneas (verificado 2026-04-20 con wc -l) (objetivo Día 2: < 80 líneas)
 
 ### Día 1 COMPLETADO (100%)
 - HMAC enforcement + raw body fix + 4 tests
@@ -29,18 +29,19 @@ POST /api/webhook
   200 OK
 
 ### Estado técnico
-- api/webhook.js: 1,259+ líneas (pendiente modularizar)
+- api/webhook.js: 1,475 líneas (pendiente modularizar)
 - Tests: tests/hmac.test.mjs, tests/ratelimit.test.mjs, tests/idempotency.test.mjs
 - Redis mocks: require.cache pattern + stateful Map
 - Log verification: vi.spyOn console.log síncrono
 - Env vars: UPSTASH_REDIS_*, AXIOM_*, META_APP_SECRET (configuradas)
 
 ### PRÓXIMO PASO — Día 2
-Modularización api/webhook.js en src/:
-- src/security/hmac.js, idempotency.js, ratelimit.js
-- src/prompts.js, redis.js, whatsapp.js, claude.js
-- src/handlers/message.js
-- Handler queda orquestador (< 100 líneas)
+Modularización api/webhook.js en src/ (plan canónico en .claude/skills/jprez-bot-architecture/SKILL.md §10):
+- src/security/hmac.js, ratelimit.js, idempotency.js
+- src/store/redis.js, history.js, meta.js
+- src/whatsapp.js, proxy.js, prompts.js, claude.js, detect.js, notify.js, log.js
+- src/handlers/message.js (processMessage)
+- api/webhook.js queda orquestador (< 80 líneas: HMAC → idempotency → ratelimit → message)
 Después: Whisper + Claude Vision + prompt humanizado.
 
 ### Skills disponibles en .claude/skills/
