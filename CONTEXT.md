@@ -2,6 +2,15 @@
 
 ## Última sesión: Lunes 20 abril 2026
 
+### Estado al cierre Día 1 (fecha: 2026-04-20)
+- Commit de cierre: `5345bea` (Merge branch 'feature/idempotency')
+- Snapshot de docs: `8143968` (este archivo)
+- Tests Vitest: 12/12 verdes
+- Branch: main
+- Producción Vercel: deployada y respondiendo
+- Variables de entorno activas: META_APP_SECRET, AXIOM_TOKEN, AXIOM_DATASET=jprez-bot, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, WHATSAPP_TOKEN, ANTHROPIC_API_KEY
+- webhook.js: 1,259 líneas (objetivo Día 2: < 80 líneas)
+
 ### Día 1 COMPLETADO (100%)
 - HMAC enforcement + raw body fix + 4 tests
 - Rate limiting sliding window 10/60s + staff bypass + fail-open
@@ -33,6 +42,11 @@ Modularización api/webhook.js en src/:
 - src/handlers/message.js
 - Handler queda orquestador (< 100 líneas)
 Después: Whisper + Claude Vision + prompt humanizado.
+
+### Skills disponibles en .claude/skills/
+- vendedor-whatsapp-jprez — conocimiento de venta (identidad, proyectos, precios, feria)
+- jprez-bot-architecture — flujo, convenciones, patterns del bot
+- jprez-security-patterns — HMAC, rate limit, idempotencia, testing
 
 ### Comando para retomar
 "Buenos días Claude, lee CONTEXT.md y continuamos"
