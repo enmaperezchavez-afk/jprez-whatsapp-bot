@@ -11,6 +11,7 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const crypto = require("crypto");
 const { botLog, logToAxiom } = require("../src/log");
+const { getRedis } = require("../src/store/redis");
 const fs = require("fs");
 const path = require("path");
 
@@ -95,25 +96,6 @@ const STAFF_PHONES = {
 // Fallback a memoria en RAM si Redis no esta configurado
 const conversationHistory = {};
 const MAX_MESSAGES = 20;
-
-async function getRedis() {
-  // Soporta ambos formatos: el de Vercel Storage (KV_REST_API) y el manual
-  const redisUrl = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!redisUrl || !redisToken) {
-    return null;
-  }
-  try {
-    const { Redis } = require("@upstash/redis");
-    return new Redis({
-      url: redisUrl,
-      token: redisToken,
-    });
-  } catch (e) {
-    console.log("Redis no disponible, usando memoria RAM:", e.message);
-    return null;
-  }
-}
 
 // ============================================
 // RATE LIMITING (Upstash Ratelimit, sliding window)
