@@ -21,6 +21,7 @@ const {
 } = require("../src/whatsapp");
 const { toProxyUrl, toImageProxyUrl } = require("../src/proxy");
 const { ENMANUEL_PHONE, notifyEnmanuel, notifyEnmanuelBooking } = require("../src/notify");
+const { STAFF_PHONES } = require("../src/staff");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../src/detect");
 const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../src/prompts");
 const { readRawBody, verifyWebhookSignature } = require("../src/security/hmac");
@@ -40,18 +41,6 @@ async function _notifyBookingWithMeta(senderPhone, booking) {
   const projectName = PROJECT_NAMES[booking.project] || booking.project;
   return notifyEnmanuelBooking(senderPhone, booking, clientMeta, projectName);
 }
-
-// ============================================
-// CONFIGURACION DE PERSONAL INTERNO
-// ============================================
-
-const STAFF_PHONES = {
-  [ENMANUEL_PHONE]: {
-    name: "Enmanuel PÃ©rez ChÃ¡vez",
-    role: "director",
-    supervisor: true,
-  },
-};
 
 // Parsea env vars con URLs separadas por coma (IMG_CRUX="url1,url2,url3")
 function parseImageUrls(envVar) {
