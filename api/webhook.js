@@ -8,7 +8,6 @@
 // Con notificacion automatica de leads calientes
 // ============================================
 
-const crypto = require("crypto");
 const { botLog, logToAxiom } = require("../src/log");
 const { getRedis } = require("../src/store/redis");
 const { callClaudeWithTools } = require("../src/claude");
@@ -22,6 +21,7 @@ const { toProxyUrl, toImageProxyUrl } = require("../src/proxy");
 const { ENMANUEL_PHONE, notifyEnmanuel, notifyEnmanuelBooking } = require("../src/notify");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../src/detect");
 const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../src/prompts");
+const { readRawBody, verifyWebhookSignature } = require("../src/security/hmac");
 
 // Wrappers internos que resuelven dependencias (clientMeta, projectName)
 // antes de delegar a src/notify.js. Estos se moverán a src/handlers/message.js
@@ -35,45 +35,6 @@ async function _notifyBookingWithMeta(senderPhone, booking) {
   const clientMeta = await getClientMeta(senderPhone);
   const projectName = PROJECT_NAMES[booking.project] || booking.project;
   return notifyEnmanuelBooking(senderPhone, booking, clientMeta, projectName);
-}
-
-// ============================================
-// VERIFICACION HMAC (Seguridad)
-// ============================================
-
-// Lee el body HTTP crudo (raw) como string UTF-8 directo del stream,
-// ANTES de cualquier parseo. Requiere bodyParser desactivado via export config.
-async function readRawBody(req) {
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
-  }
-  return Buffer.concat(chunks).toString("utf8");
-}
-
-// Verifica la firma HMAC SHA256 sobre el body crudo exacto que envio Meta.
-// Retorna { status, reason } donde status = "valid" | "invalid" | "missing_secret" | "missing_signature"
-// Importante: la comparacion usa timingSafeEqual para evitar timing attacks.
-function verifyWebhookSignature(rawBody, signatureHeader) {
-  const appSecret = process.env.META_APP_SECRET;
-  if (!appSecret) {
-    return { status: "missing_secret", reason: "META_APP_SECRET no configurado" };
-  }
-  if (!signatureHeader) {
-    return { status: "missing_signature", reason: "Request sin header x-hub-signature-256" };
-  }
-  const expected = "sha256=" + crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
-  // timingSafeEqual requiere que ambos buffers sean del mismo largo; si difieren
-  // retornamos invalid sin comparar (evita throw).
-  const sigBuf = Buffer.from(signatureHeader);
-  const expBuf = Buffer.from(expected);
-  if (sigBuf.length !== expBuf.length) {
-    return { status: "invalid", reason: "Firma de largo inesperado" };
-  }
-  const isValid = crypto.timingSafeEqual(sigBuf, expBuf);
-  return isValid
-    ? { status: "valid" }
-    : { status: "invalid", reason: "Firma HMAC no coincide con body crudo" };
 }
 
 // ============================================
