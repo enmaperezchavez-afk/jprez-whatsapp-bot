@@ -22,6 +22,7 @@ const { ENMANUEL_PHONE, notifyEnmanuel, notifyEnmanuelBooking } = require("../sr
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../src/detect");
 const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../src/prompts");
 const { readRawBody, verifyWebhookSignature } = require("../src/security/hmac");
+const { getRatelimit } = require("../src/security/ratelimit");
 
 // Wrappers internos que resuelven dependencias (clientMeta, projectName)
 // antes de delegar a src/notify.js. Estos se moverán a src/handlers/message.js
@@ -56,38 +57,6 @@ const STAFF_PHONES = {
 // Fallback a memoria en RAM si Redis no esta configurado
 const conversationHistory = {};
 const MAX_MESSAGES = 20;
-
-// ============================================
-// RATE LIMITING (Upstash Ratelimit, sliding window)
-// ============================================
-// 10 mensajes por ventana de 60s por telefono. Staff bypass.
-// Instancia memoizada al module scope tras primer exito con Redis;
-// si Redis esta caido en el primer intento, NO se memoiza (para reintentar).
-// Fail-open: si Redis cae, se saltea el check y se loguea el bypass.
-
-const RATELIMIT_MAX = 10;
-const RATELIMIT_WINDOW = "60 s";
-const RATELIMIT_PREFIX = "ratelimit";
-
-let _ratelimitInstance = null;
-async function getRatelimit() {
-  if (_ratelimitInstance) return _ratelimitInstance;
-  const redis = await getRedis();
-  if (!redis) return null; // no memoizamos null: permite reintentar cuando Redis vuelva
-  try {
-    const { Ratelimit } = require("@upstash/ratelimit");
-    _ratelimitInstance = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(RATELIMIT_MAX, RATELIMIT_WINDOW),
-      prefix: RATELIMIT_PREFIX,
-      analytics: false,
-    });
-    return _ratelimitInstance;
-  } catch (e) {
-    console.log("[ratelimit] Error inicializando Ratelimit:", e.message);
-    return null;
-  }
-}
 
 async function getHistory(phone) {
   // Intentar Redis primero
