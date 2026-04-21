@@ -11,6 +11,7 @@
 const { botLog, logToAxiom } = require("../src/log");
 const { getRedis } = require("../src/store/redis");
 const { getHistory, addMessage } = require("../src/store/history");
+const { saveClientMeta, getClientMeta, markDocSent } = require("../src/store/meta");
 const { callClaudeWithTools } = require("../src/claude");
 const {
   sendWhatsAppMessage,
@@ -51,43 +52,6 @@ const STAFF_PHONES = {
     supervisor: true,
   },
 };
-
-// ============================================
-// MEMORIA PERSISTENTE CON UPSTASH REDIS
-// ============================================
-
-// Guardar metadata del cliente (nombre, intereses, temperatura, etc.)
-async function saveClientMeta(phone, meta) {
-  const redis = await getRedis();
-  if (redis) {
-    try {
-      const existing = await redis.get("meta:" + phone);
-      const current = existing ? (typeof existing === "string" ? JSON.parse(existing) : existing) : {};
-      const updated = { ...current, ...meta, lastContact: new Date().toISOString() };
-      await redis.set("meta:" + phone, JSON.stringify(updated), { ex: 7776000 }); // 90 dias
-      return updated;
-    } catch (e) {
-      console.log("Error guardando metadata:", e.message);
-    }
-  }
-  return meta;
-}
-
-async function getClientMeta(phone) {
-  const redis = await getRedis();
-  if (redis) {
-    try {
-      const meta = await redis.get("meta:" + phone);
-      if (meta) {
-        return typeof meta === "string" ? JSON.parse(meta) : meta;
-      }
-    } catch (e) {
-      console.log("Error leyendo metadata:", e.message);
-    }
-  }
-  return null;
-}
-
 
 // Parsea env vars con URLs separadas por coma (IMG_CRUX="url1,url2,url3")
 function parseImageUrls(envVar) {
@@ -270,12 +234,6 @@ function shouldRemindEnmanuel(meta) {
   if (!last) return true;
   const ageMs = Date.now() - new Date(last).getTime();
   return ageMs > REMINDER_THROTTLE_HOURS * 3600000;
-}
-
-async function markDocSent(phone, docKey) {
-  const meta = (await getClientMeta(phone)) || {};
-  const sentDocs = { ...(meta.sentDocs || {}), [docKey]: new Date().toISOString() };
-  await saveClientMeta(phone, { sentDocs });
 }
 
 // ============================================
