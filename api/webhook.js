@@ -18,6 +18,7 @@ const {
   sendWhatsAppImage,
   transcribeWhatsAppAudio,
 } = require("../src/whatsapp");
+const { toProxyUrl, toImageProxyUrl } = require("../src/proxy");
 const fs = require("fs");
 const path = require("path");
 
@@ -381,53 +382,15 @@ PROYECTOS ACTIVOS:
 
 REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
 
-// ============================================
-// URLs de PDFs y documentos por proyecto
-// Se configuran desde variables de entorno
-// en Vercel. Para Google Drive usar formato:
-// https://drive.google.com/uc?export=download&id=FILE_ID
-//
-// NOTA: Las URLs de Google Drive se convierten
-// automaticamente a nuestro proxy /api/pdf
-// para que WhatsApp reciba el PDF real y no HTML
-// ============================================
-
-// Dominio de nuestro Vercel para el proxy de PDFs
-const VERCEL_DOMAIN = "https://v0-meta-whatsapp-webhook.vercel.app";
-
-// Extrae el ID de una URL de Google Drive en cualquier formato comun
-// (?id=XXX, /file/d/XXX/, /open?id=XXX, etc.)
-function extractDriveId(url) {
-  if (!url) return null;
-  const queryMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (queryMatch) return queryMatch[1];
-  const pathMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (pathMatch) return pathMatch[1];
-  return null;
-}
-
-// Convierte URL de Google Drive a URL de nuestro proxy de PDFs
-function toProxyUrl(driveUrl) {
-  if (!driveUrl) return null;
-  const id = extractDriveId(driveUrl);
-  if (id) return VERCEL_DOMAIN + "/api/pdf?id=" + id;
-  return driveUrl;
-}
-
-// Convierte URL de Google Drive a URL de nuestro proxy de imagenes
-function toImageProxyUrl(url) {
-  if (!url) return null;
-  const id = extractDriveId(url);
-  if (id) return VERCEL_DOMAIN + "/api/img?id=" + id;
-  return url;
-}
-
 // Parsea env vars con URLs separadas por coma (IMG_CRUX="url1,url2,url3")
 function parseImageUrls(envVar) {
   if (!envVar) return [];
   return envVar.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
+// PROJECT_DOCS — env vars con URLs de PDFs/imagenes por proyecto.
+// Las URLs de Drive se transforman a traves de src/proxy.js antes
+// de enviarse a WhatsApp.
 const PROJECT_DOCS = {
   crux: {
     brochure: process.env.PDF_CRUX_BROCHURE || null,
