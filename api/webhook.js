@@ -19,8 +19,23 @@ const {
   transcribeWhatsAppAudio,
 } = require("../src/whatsapp");
 const { toProxyUrl, toImageProxyUrl } = require("../src/proxy");
+const { ENMANUEL_PHONE, notifyEnmanuel, notifyEnmanuelBooking } = require("../src/notify");
 const fs = require("fs");
 const path = require("path");
+
+// Wrappers internos que resuelven dependencias (clientMeta, projectName)
+// antes de delegar a src/notify.js. Estos se moverán a src/handlers/message.js
+// cuando se extraiga store/meta.js y se elimine el problema del ciclo.
+async function _notifyWithMeta(senderPhone, userMessage, botReply, signalType) {
+  const clientMeta = await getClientMeta(senderPhone);
+  return notifyEnmanuel(senderPhone, userMessage, botReply, signalType, clientMeta);
+}
+
+async function _notifyBookingWithMeta(senderPhone, booking) {
+  const clientMeta = await getClientMeta(senderPhone);
+  const projectName = PROJECT_NAMES[booking.project] || booking.project;
+  return notifyEnmanuelBooking(senderPhone, booking, clientMeta, projectName);
+}
 
 // ============================================
 // CARGA DEL SKILL (conocimiento de venta dinamico)
@@ -87,7 +102,6 @@ function verifyWebhookSignature(rawBody, signatureHeader) {
 // CONFIGURACION DE PERSONAL INTERNO
 // ============================================
 
-const ENMANUEL_PHONE = "18299943102";
 const STAFF_PHONES = {
   [ENMANUEL_PHONE]: {
     name: "Enmanuel PÃ©rez ChÃ¡vez",
@@ -608,78 +622,6 @@ function detectLeadSignals(botReply) {
   return { isHotLead, needsEscalation, booking, cleanReply };
 }
 
-async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType) {
-  const clientMeta = await getClientMeta(senderPhone);
-  const clientName = clientMeta?.name || "Cliente desconocido";
-
-  let notification = "";
-  if (signalType === "hot") {
-    notification = "ð¥ LEAD CALIENTE\n\n";
-    notification += "Nombre: " + clientName + "\n";
-    notification += "TelÃ©fono: " + senderPhone + "\n";
-    notification += "Canal: WhatsApp\n\n";
-    notification += "Ãltimo mensaje del cliente: " + userMessage.substring(0, 200) + "\n\n";
-    notification += "Mi respuesta: " + botReply.substring(0, 300) + "\n\n";
-    notification += "AcciÃ³n sugerida: Llamar o escribir directamente para cerrar.";
-  } else if (signalType === "escalation") {
-    notification = "â ï¸ ESCALAMIENTO\n\n";
-    notification += "Nombre: " + clientName + "\n";
-    notification += "TelÃ©fono: " + senderPhone + "\n";
-    notification += "Canal: WhatsApp\n\n";
-    notification += "Ãltimo mensaje: " + userMessage.substring(0, 200) + "\n\n";
-    notification += "RazÃ³n: El cliente necesita atenciÃ³n humana directa.";
-  }
-
-  try {
-    await sendWhatsAppMessage(ENMANUEL_PHONE, notification);
-    botLog("info", "Notificacion enviada a Enmanuel", { type: signalType, clientPhone: senderPhone });
-  } catch (e) {
-    console.error("Error notificando a Enmanuel:", e.message);
-  }
-}
-
-async function notifyEnmanuelBooking(senderPhone, booking) {
-  const clientMeta = await getClientMeta(senderPhone);
-  const clientName = clientMeta?.name && clientMeta.name !== "Desconocido" ? clientMeta.name : "Cliente";
-  const projectName = PROJECT_NAMES[booking.project] || booking.project;
-
-  let fechaLegible = booking.atRaw;
-  if (booking.at) {
-    try {
-      fechaLegible = new Date(booking.at).toLocaleString("es-DO", {
-        timeZone: "America/Santo_Domingo",
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } catch (e) {
-      fechaLegible = booking.atRaw;
-    }
-  }
-
-  // wa.me link para que Enmanuel abra el chat con un tap
-  const waLink = "https://wa.me/" + senderPhone;
-
-  let notif = "NUEVA VISITA AGENDADA\n\n";
-  notif += "Cliente: " + clientName + "\n";
-  notif += "Telefono: " + senderPhone + "\n";
-  notif += "Proyecto: " + projectName + "\n";
-  notif += "Cuando: " + fechaLegible + "\n";
-  if (booking.notas) notif += "Notas: " + booking.notas + "\n";
-  notif += "\nAbrir chat: " + waLink + "\n\n";
-  notif += "Accion sugerida: confirmar manana con el cliente y preparar la visita.";
-
-  try {
-    await sendWhatsAppMessage(ENMANUEL_PHONE, notif);
-    botLog("info", "Visita agendada notificada", { phone: senderPhone, project: booking.project, at: booking.at });
-  } catch (e) {
-    console.error("Error notificando visita:", e.message);
-  }
-}
-
 // ============================================
 // CONTEXTO DINAMICO DEL CLIENTE + ESCALAMIENTO
 // ============================================
@@ -872,17 +814,17 @@ async function processMessage(body) {
     // Notificar a Enmanuel si hay seÃ±ales (solo para clientes, no para staff)
     if (!isStaff) {
       if (isHotLead) {
-        await notifyEnmanuel(senderPhone, userMessage, botReply, "hot");
+        await _notifyWithMeta(senderPhone, userMessage, botReply, "hot");
         await saveClientMeta(senderPhone, { temperature: "hot", hotDetectedAt: new Date().toISOString() });
       }
       if (needsEscalation) {
-        await notifyEnmanuel(senderPhone, userMessage, botReply, "escalation");
+        await _notifyWithMeta(senderPhone, userMessage, botReply, "escalation");
         await saveClientMeta(senderPhone, { escalated: true, escalatedAt: new Date().toISOString() });
       }
 
       // Agendamiento de visita: guardar + notificar con tarjeta estructurada
       if (booking) {
-        await notifyEnmanuelBooking(senderPhone, booking);
+        await _notifyBookingWithMeta(senderPhone, booking);
         await saveClientMeta(senderPhone, {
           scheduledVisit: booking,
           temperature: "hot", // quien agenda visita es lead caliente por definicion
