@@ -8,10 +8,10 @@
 // Con notificacion automatica de leads calientes
 // ============================================
 
-const Anthropic = require("@anthropic-ai/sdk");
 const crypto = require("crypto");
 const { botLog, logToAxiom } = require("../src/log");
 const { getRedis } = require("../src/store/redis");
+const { callClaudeWithTools } = require("../src/claude");
 const fs = require("fs");
 const path = require("path");
 
@@ -877,45 +877,15 @@ async function processMessage(body) {
     const clientContext = !isSupervisor ? buildClientContext(clientMeta) : "";
     const finalPrompt = activePrompt + clientContext;
 
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+    const response = await callClaudeWithTools({
+      system: finalPrompt,
+      messages: messageHistory,
+      tools: TOOLS,
+      phone: senderPhone,
+      toolHandlers: {
+        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd),
+      },
     });
-
-    // Loop de tool use: Claude puede pedir la calculadora hasta MAX_TOOL_ITERATIONS veces.
-    // Cada iteracion es una llamada a la API. En la mayoria de casos solo hay 1 o 2.
-    const MAX_TOOL_ITERATIONS = 3;
-    let workingMessages = [...messageHistory];
-    let response;
-    let iteration = 0;
-    while (iteration < MAX_TOOL_ITERATIONS) {
-      response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 500,
-        system: finalPrompt,
-        tools: TOOLS,
-        messages: workingMessages,
-      });
-      if (response.stop_reason !== "tool_use") break;
-
-      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
-      workingMessages.push({ role: "assistant", content: response.content });
-      const toolResults = toolUseBlocks.map((block) => {
-        let result;
-        if (block.name === "calcular_plan_pago") {
-          result = calcularPlanPago(block.input.proyecto, block.input.precio_usd);
-        } else {
-          result = { error: "Herramienta desconocida: " + block.name };
-        }
-        botLog("info", "Tool use", { phone: senderPhone, tool: block.name, input: block.input, result });
-        return {
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: JSON.stringify(result),
-        };
-      });
-      workingMessages.push({ role: "user", content: toolResults });
-      iteration++;
-    }
 
     // Extraer el texto final (ignorando bloques tool_use residuales)
     const textBlocks = response.content.filter((b) => b.type === "text");
