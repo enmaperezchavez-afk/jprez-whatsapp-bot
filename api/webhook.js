@@ -12,7 +12,7 @@ const { botLog } = require("../src/log");
 const { sendWhatsAppMessage } = require("../src/whatsapp");
 const { STAFF_PHONES } = require("../src/staff");
 const { readRawBody, verifyWebhookSignature } = require("../src/security/hmac");
-const { getRatelimit } = require("../src/security/ratelimit");
+const { enforceRateLimit } = require("../src/security/ratelimit");
 const { checkIdempotency } = require("../src/security/idempotency");
 const { processMessage } = require("../src/handlers/message");
 
@@ -90,54 +90,20 @@ async function handler(req, res) {
       // fresh | bypassed → continuar
     }
 
-    // 5. Rate limiting por telefono (staff bypass, fail-open si Redis cae).
-    // Solo aplica a eventos con mensaje inbound real; status updates (delivery,
-    // read, etc.) no tienen `messages[0].from` y pasan sin contar.
+    // 5. Rate limiting por telefono (staff bypass — ver src/security/ratelimit.js).
     const inboundPhone = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
     if (inboundPhone && !STAFF_PHONES[inboundPhone]) {
-      const ratelimit = await getRatelimit();
-      if (!ratelimit) {
-        // Fail-open: Redis no disponible. Procesamos igual pero dejamos alarma.
-        botLog("warn", "rate_limit_bypassed_redis_unavailable", {
-          event_type: "rate_limit_bypassed_redis_unavailable",
-          phone: inboundPhone,
-          timestamp: new Date().toISOString(),
-        });
-      } else {
+      const rl = await enforceRateLimit(inboundPhone);
+      if (rl.status === "exceeded") {
         try {
-          const { success, limit, remaining, reset } = await ratelimit.limit(inboundPhone);
-          if (!success) {
-            const usados = limit - remaining;
-            botLog("warn", "rate_limit_exceeded", {
-              event_type: "rate_limit_exceeded",
-              phone: inboundPhone,
-              limit,
-              remaining,
-              reset,
-              usados,
-              timestamp: new Date().toISOString(),
-            });
-            // Mensaje amable al cliente. El envio es OUTBOUND a Meta -> no vuelve
-            // a entrar a este handler, asi que no hay loop posible con el limiter.
-            try {
-              await sendWhatsAppMessage(
-                inboundPhone,
-                "¡Gracias por tu interés en Constructora JPREZ! 🙌 Estoy procesando tus mensajes con calma para darte la mejor atención. En unos segundos te respondo todo con detalle."
-              );
-            } catch (sendErr) {
-              console.log("[ratelimit] Error enviando mensaje amable:", sendErr.message);
-            }
-            return res.status(200).send("EVENT_RECEIVED");
-          }
-        } catch (e) {
-          // Error del rate limiter (no del check). Fail-open tambien.
-          botLog("warn", "rate_limit_bypassed_error", {
-            event_type: "rate_limit_bypassed_error",
-            phone: inboundPhone,
-            error: e.message,
-            timestamp: new Date().toISOString(),
-          });
+          await sendWhatsAppMessage(
+            inboundPhone,
+            "¡Gracias por tu interés en Constructora JPREZ! 🙌 Estoy procesando tus mensajes con calma para darte la mejor atención. En unos segundos te respondo todo con detalle."
+          );
+        } catch (sendErr) {
+          console.log("[ratelimit] Error enviando mensaje amable:", sendErr.message);
         }
+        return res.status(200).send("EVENT_RECEIVED");
       }
     }
 

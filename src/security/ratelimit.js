@@ -7,21 +7,28 @@
 //       (fail-open: el handler procesa igual + loguea alarma).
 //     - Si retorna null, NO memoiza — permite reintentar cuando Redis vuelva.
 //
+//   enforceRateLimit(phone): Promise<{ status }>
+//     - "allowed"  — request puede proceder.
+//     - "exceeded" — rate limit alcanzado, handler debe enviar mensaje amable + 200.
+//     - "bypassed" — Redis null / Ratelimit error (fail-open, log ya emitido).
+//     Logs internos en bypass + exceeded — handler solo decide UX.
+//
 // Parámetros: 10 mensajes por ventana de 60s por phone. Sliding window
 // (más justo que fixed: evita burst al inicio de cada minuto).
 //
 // STAFF BYPASS NO ESTÁ ACÁ: el bypass vive en el handler, que ni siquiera
 // llama a esta función si el sender es staff. Este módulo solo conoce
-// "construir el limiter".
+// "construir el limiter" y "aplicarlo al phone".
 //
 // NOTA CRÍTICA: require("@upstash/ratelimit") debe quedarse LAZY dentro
 // de la función, NO al top del módulo. Los tests de ratelimit dependen
 // de require.cache patching que solo funciona si el require no se ejecutó
 // todavía. Ver .claude/skills/jprez-security-patterns §4.1.
 //
-// NO ES LEAF: depende de src/store/redis (getRedis).
+// NO ES LEAF: depende de src/store/redis (getRedis) + src/log (botLog).
 
 const { getRedis } = require("../store/redis");
+const { botLog } = require("../log");
 
 // ============================================
 // RATE LIMITING (Upstash Ratelimit, sliding window)
@@ -55,4 +62,43 @@ async function getRatelimit() {
   }
 }
 
-module.exports = { getRatelimit };
+// enforceRateLimit: aplica el limiter a un phone y emite status discriminado.
+// Logs de bypass/exceeded internos. Handler solo decide UX (mensaje amable + 200)
+// cuando recibe "exceeded".
+async function enforceRateLimit(phone) {
+  const ratelimit = await getRatelimit();
+  if (!ratelimit) {
+    botLog("warn", "rate_limit_bypassed_redis_unavailable", {
+      event_type: "rate_limit_bypassed_redis_unavailable",
+      phone,
+      timestamp: new Date().toISOString(),
+    });
+    return { status: "bypassed" };
+  }
+  try {
+    const { success, limit, remaining, reset } = await ratelimit.limit(phone);
+    if (!success) {
+      botLog("warn", "rate_limit_exceeded", {
+        event_type: "rate_limit_exceeded",
+        phone,
+        limit,
+        remaining,
+        reset,
+        usados: limit - remaining,
+        timestamp: new Date().toISOString(),
+      });
+      return { status: "exceeded" };
+    }
+    return { status: "allowed" };
+  } catch (e) {
+    botLog("warn", "rate_limit_bypassed_error", {
+      event_type: "rate_limit_bypassed_error",
+      phone,
+      error: e.message,
+      timestamp: new Date().toISOString(),
+    });
+    return { status: "bypassed" };
+  }
+}
+
+module.exports = { getRatelimit, enforceRateLimit };
