@@ -23,6 +23,7 @@ const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require
 const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../src/prompts");
 const { readRawBody, verifyWebhookSignature } = require("../src/security/hmac");
 const { getRatelimit } = require("../src/security/ratelimit");
+const { checkIdempotency } = require("../src/security/idempotency");
 
 // Wrappers internos que resuelven dependencias (clientMeta, projectName)
 // antes de delegar a src/notify.js. Estos se moverán a src/handlers/message.js
@@ -645,50 +646,21 @@ async function handler(req, res) {
       return res.status(400).json({ error: "Invalid JSON body" });
     }
 
-    // 4. Idempotencia por message.id (SET NX EX 3600).
-    // Va ANTES del rate limit: si Meta reintenta el mismo webhook por un
-    // glitch de red, el retry no debe consumir cupo del rate limit del cliente.
-    // Status updates (delivery/read) no tienen messages[0].id -> saltan el check.
-    // Aplica a todos, incluido staff (un doble-tap igual se deduplica).
-    // Fail-open si Redis cae o tira error: se loguea alarma y se procesa igual.
+    // 4. Idempotencia (ANTES del rate limit — ver src/security/idempotency.js §ORDEN)
     const messageId = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
     if (messageId) {
-      const redisForIdem = await getRedis();
-      if (!redisForIdem) {
-        botLog("warn", "idempotency_bypassed_redis_unavailable", {
-          event_type: "idempotency_bypassed_redis_unavailable",
+      const idem = await checkIdempotency(messageId);
+      if (idem.status === "duplicate") {
+        const phone = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+        botLog("info", "duplicate_message_ignored", {
+          event_type: "duplicate_message_ignored",
           messageId,
+          phone: phone || null,
           timestamp: new Date().toISOString(),
         });
-      } else {
-        try {
-          const result = await redisForIdem.set("processed:" + messageId, "1", {
-            nx: true,
-            ex: 3600,
-          });
-          if (result !== "OK") {
-            // Key ya existia -> mensaje duplicado (retry de Meta o similar).
-            // Respondemos 200 OK para que Meta no siga reintentando y NO
-            // bajamos al rate limit ni a processMessage.
-            const phoneForLog = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
-            botLog("info", "duplicate_message_ignored", {
-              event_type: "duplicate_message_ignored",
-              messageId,
-              phone: phoneForLog || null,
-              timestamp: new Date().toISOString(),
-            });
-            return res.status(200).send("EVENT_RECEIVED");
-          }
-        } catch (e) {
-          // Error durante el SET (timeout, red, etc.). Fail-open.
-          botLog("warn", "idempotency_bypassed_redis_unavailable", {
-            event_type: "idempotency_bypassed_redis_unavailable",
-            messageId,
-            error: e.message,
-            timestamp: new Date().toISOString(),
-          });
-        }
+        return res.status(200).send("EVENT_RECEIVED");
       }
+      // fresh | bypassed → continuar
     }
 
     // 5. Rate limiting por telefono (staff bypass, fail-open si Redis cae).
