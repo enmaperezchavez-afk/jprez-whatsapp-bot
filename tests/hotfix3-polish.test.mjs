@@ -12,6 +12,7 @@ import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../src/prompts");
+const { DOC_TYPE_NAMES } = require("../src/handlers/message");
 
 describe("Fix 1 — Reglas de fluidez conversacional", () => {
   it("buildSystemPrompt incluye seccion REGLAS DE FLUIDEZ CONVERSACIONAL", () => {
@@ -169,5 +170,19 @@ describe("Fix 3b — Identidad robusta en SUPERVISOR_PROMPT", () => {
     // Sin residuos mojibake
     expect(SUPERVISOR_PROMPT).not.toContain("TrÃ");
     expect(SUPERVISOR_PROMPT).not.toContain("acÃ");
+  });
+});
+
+describe("Fix 2 parcial — Rename cosmético DOC_TYPE_NAMES", () => {
+  it("precios usa nombre descriptivo 'Precios y Disponibilidad'", () => {
+    expect(DOC_TYPE_NAMES.precios).toBe("Precios y Disponibilidad");
+  });
+
+  it("planos usa nombre descriptivo 'Planos Arquitectónicos'", () => {
+    expect(DOC_TYPE_NAMES.planos).toBe("Planos Arquitectónicos");
+  });
+
+  it("brochure conserva su label 'Brochure'", () => {
+    expect(DOC_TYPE_NAMES.brochure).toBe("Brochure");
   });
 });

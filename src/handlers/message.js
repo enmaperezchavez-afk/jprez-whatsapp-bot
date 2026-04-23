@@ -116,8 +116,8 @@ const PROJECT_NAMES = {
 
 const DOC_TYPE_NAMES = {
   brochure: "Brochure",
-  precios: "Listado de Precios",
-  planos: "Planos",
+  precios: "Precios y Disponibilidad",
+  planos: "Planos Arquitectónicos",
 };
 
 // ============================================
@@ -785,4 +785,4 @@ async function processMessage(body) {
   }
 }
 
-module.exports = { processMessage };
+module.exports = { processMessage, DOC_TYPE_NAMES };
