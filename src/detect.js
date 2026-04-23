@@ -20,9 +20,17 @@
 // DETECCION INTELIGENTE DE DOCUMENTOS
 // ============================================
 
+// stripAccents: normaliza diacriticos para que "envío" matchee contra "envio".
+// Descubierto durante el hotfix Día 3: Mateo escribe "te envío el brochure"
+// con tilde (lo correcto en español) pero las keywords estaban sin acento.
+// Normalizamos ambos lados para robustez.
+function stripAccents(s) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function detectDocumentRequest(botReply, userMessage) {
-  const botText = botReply.toLowerCase();
-  const userText = userMessage.toLowerCase();
+  const botText = stripAccents(botReply.toLowerCase());
+  const userText = stripAccents(userMessage.toLowerCase());
   const combined = botText + " " + userText;
 
   const botSendPhrases = [
@@ -62,7 +70,7 @@ function detectDocumentRequest(botReply, userMessage) {
 }
 
 function detectDocumentType(botReply, userMessage) {
-  const combined = (botReply + " " + userMessage).toLowerCase();
+  const combined = stripAccents((botReply + " " + userMessage).toLowerCase());
   const types = [];
 
   if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("catÃ¡logo") || combined.includes("ficha") || combined.includes("presentacion") || combined.includes("presentaciones")) {

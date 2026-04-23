@@ -330,6 +330,20 @@ function shouldRemindEnmanuel(meta) {
   return ageMs > REMINDER_THROTTLE_HOURS * 3600000;
 }
 
+// buildHoldingModeContext: cuando el caso esta escalado a Enmanuel, Mateo
+// NO se silencia (el cliente nunca queda en visto). En lugar de eso,
+// genera mensajes de "holding" (espera activa) con restricciones estrictas:
+// no descuentos nuevos, no cerrar ventas, no prometer fechas. SI responde
+// preguntas generales y ofrece info util para mantener al cliente calido.
+//
+// Se appenda al system prompt SOLO cuando inHoldingMode=true. Convive con
+// PERFIL_CLIENTE + buildClientContext existentes.
+const HOLDING_MODE_CONTEXT = `\n\n---\nCONTEXTO ESCALADO — MODO HOLDING:\nEste caso esta escalado a Enmanuel. Tu rol en este estado es mantener la conversacion VIVA con mensajes de "holding" (espera activa). Reglas estrictas en modo escalado:\n\n- NO ofrezcas descuentos nuevos (ninguno)\n- NO cierres ventas ni firmes nada sin Enmanuel\n- NO prometas fechas especificas de resolucion\n- SI manten al cliente calido y atendido\n- SI responde preguntas generales del proyecto\n- SI ofrece informacion adicional util\n\nMensajes tipo:\n- "Enmanuel esta revisando tu caso, pendiente que te confirma pronto. Mientras tanto, ¿hay algo mas del proyecto en que te pueda ayudar?"\n- "Enmanuel tomo tu solicitud personalmente, te respondera pronto. ¿Alguna otra duda que pueda aclararte?"\n\nNO emitas [ESCALAR] en modo holding (el cliente ya esta escalado). NO re-ofrezcas lo que disparo la escalacion original. Mantene el tono Mateo C+ dominicano de siempre.`;
+
+function buildHoldingModeContext() {
+  return HOLDING_MODE_CONTEXT;
+}
+
 // Envia todas las imagenes configuradas de un proyecto. Se usa como teaser antes
 // del brochure. Degrada a no-op si no hay imagenes en env vars.
 async function sendProjectImages(phone, project) {
@@ -437,14 +451,21 @@ async function processMessage(body) {
     // flujo cliente (staff y Enmanuel/supervisor no tienen perfil).
     const customerProfile = (!isStaff && !isSupervisor) ? await getCustomerProfile(senderPhone) : null;
 
-    // Si hay un escalamiento activo (< 4h), el bot se silencia.
-    // Guarda el mensaje en historial y avisa a Enmanuel (con throttle de 1h).
-    if (!isStaff && isEscalationActive(clientMeta)) {
-      await addMessage(senderPhone, "user", userMessage);
-      botLog("info", "Bot silenciado: escalamiento activo", {
+    // Si hay un escalamiento activo (< 4h), Mateo NO se silencia — genera
+    // holding messages para mantener al cliente calido mientras Enmanuel
+    // toma el caso. Decision comercial (hotfix 2): Mateo nunca deja al
+    // cliente en visto. Hotfix reemplaza el return temprano por una flag
+    // que inyecta HOLDING_MODE_CONTEXT al system prompt mas abajo.
+    const inHoldingMode = !isStaff && isEscalationActive(clientMeta);
+
+    if (inHoldingMode) {
+      botLog("info", "Caso escalado activo: Mateo responde en holding mode", {
         phone: senderPhone,
         escalatedAt: clientMeta.escalatedAt,
       });
+      // Recordatorio a Enmanuel con throttle de 1h. Mismo mecanismo que
+      // antes del hotfix — sigue notificando que el caso escalado tiene
+      // actividad, ahora aclarando que Mateo lo sostiene.
       if (shouldRemindEnmanuel(clientMeta)) {
         try {
           const clientLabel = clientMeta.name && clientMeta.name !== "Desconocido"
@@ -452,18 +473,15 @@ async function processMessage(body) {
             : senderPhone;
           await sendWhatsAppMessage(
             ENMANUEL_PHONE,
-            "Recordatorio: " + clientLabel + " (" + senderPhone + ") sigue escribiendo. Sigue en modo escalado."
+            "Recordatorio: " + clientLabel + " (" + senderPhone + ") sigue escribiendo. Caso escalado; Mateo lo mantiene en holding."
           );
           await saveClientMeta(senderPhone, { lastReminderAt: new Date().toISOString() });
         } catch (e) {
           console.log("Error recordando a Enmanuel:", e.message);
         }
       }
-      return;
-    }
-
-    // Si el escalamiento ya vencio (> 4h), limpiar flag y seguir flujo normal
-    if (!isStaff && clientMeta?.escalated === true && !isEscalationActive(clientMeta)) {
+    } else if (!isStaff && clientMeta?.escalated === true && !isEscalationActive(clientMeta)) {
+      // Escalamiento expirado (> 4h). Limpiar flag y seguir flujo normal.
       await saveClientMeta(senderPhone, { escalated: false });
     }
 
@@ -473,9 +491,12 @@ async function processMessage(body) {
     // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente).
     // clientContext viene de meta:<phone> (historico), profileContext viene de
     // profile:<phone> (perfil Mateo v5.2). Ambos coexisten hasta unificarse en Día 6.
+    // holdingContext se inyecta solo si el caso esta escalado activo — fuerza
+    // a Mateo a generar mensajes de espera activa (hotfix 2).
     const clientContext = !isSupervisor ? buildClientContext(clientMeta) : "";
     const profileContext = (!isStaff && !isSupervisor) ? buildProfileContext(customerProfile) : "";
-    const finalPrompt = activePrompt + clientContext + profileContext;
+    const holdingContext = inHoldingMode ? buildHoldingModeContext() : "";
+    const finalPrompt = activePrompt + clientContext + profileContext + holdingContext;
 
     const response = await callClaudeWithTools({
       system: finalPrompt,
@@ -516,13 +537,16 @@ async function processMessage(body) {
     await sendWhatsAppMessage(senderPhone, botReply);
     botLog("info", "Respuesta enviada", { phone: senderPhone, responseLength: botReply.length });
 
-    // Notificar a Enmanuel si hay seÃ±ales (solo para clientes, no para staff)
+    // Notificar a Enmanuel si hay señales (solo para clientes, no para staff).
+    // En holding mode skipeamos las notificaciones hot/escalation: el caso YA
+    // esta escalado a Enmanuel, el recordatorio throttleado se maneja arriba
+    // y no queremos duplicar avisos cada vez que el cliente escribe.
     if (!isStaff) {
-      if (isHotLead) {
+      if (isHotLead && !inHoldingMode) {
         await notifyWithMeta(senderPhone, userMessage, botReply, "hot");
         await saveClientMeta(senderPhone, { temperature: "hot", hotDetectedAt: new Date().toISOString() });
       }
-      if (needsEscalation) {
+      if (needsEscalation && !inHoldingMode) {
         await notifyWithMeta(senderPhone, userMessage, botReply, "escalation");
         await saveClientMeta(senderPhone, { escalated: true, escalatedAt: new Date().toISOString() });
       }
