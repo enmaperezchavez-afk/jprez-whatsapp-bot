@@ -82,7 +82,10 @@ const PROJECT_DOCS = {
   crux: {
     brochure: process.env.PDF_CRUX_BROCHURE || null,
     precios: process.env.PDF_CRUX_PRECIOS || null,
-    planos: process.env.PDF_CRUX_PLANOS || null,
+    // Slot "planos" eliminado en hotfix-4 FIX 3a: PDF_CRUX_PLANOS apuntaba a
+    // un archivo que contiene precios, no planos arquitectónicos. Se retira
+    // hasta que Enmanuel provea el archivo real. La env var puede seguir
+    // existiendo en Vercel sin efecto.
     images: parseImageUrls(process.env.IMG_CRUX),
   },
   pr3: {
