@@ -36,10 +36,19 @@ const {
   transcribeWhatsAppAudio,
 } = require("../whatsapp");
 const { toProxyUrl, toImageProxyUrl } = require("../proxy");
-const { ENMANUEL_PHONE, notifyEnmanuel, notifyEnmanuelBooking } = require("../notify");
+const {
+  ENMANUEL_PHONE,
+  notifyEnmanuel,
+  notifyEnmanuelBooking,
+  notifyDescuentoOfrecido,
+  notifyRecomendacionCompetencia,
+  detectDiscountOffer,
+} = require("../notify");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../detect");
 const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
+const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
+const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -123,19 +132,38 @@ const PAYMENT_PLANS = {
   puertoPlata: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
 };
 
-// Fechas aproximadas de entrega para calcular meses de cuota
+// Fechas aproximadas de entrega para calcular meses de cuota.
+// Puerto Plata tiene DOS etapas con fechas distintas — el lookup de
+// puertoPlata pasa por la rama especial en calcularPlanPago para pickear
+// la fecha correcta segun `etapa`. Sin etapa explicita la llamada retorna
+// error (obliga al modelo a desambiguar antes de calcular).
 const DELIVERY_DATES = {
   crux: "2027-07-01",
   pr3: "2026-08-01",
-  pr4: "2027-09-01",
-  puertoPlata: "2027-12-01",
+  pr4: "2027-08-01",
 };
 
-function calcularPlanPago(proyecto, precioUsd) {
+const PUERTO_PLATA_DELIVERY = {
+  E3: "2029-03-01",
+  E4: "2027-09-01",
+};
+
+function calcularPlanPago(proyecto, precioUsd, etapa) {
   const plan = PAYMENT_PLANS[proyecto];
-  const delivery = DELIVERY_DATES[proyecto];
-  if (!plan || !delivery) {
+  if (!plan) {
     return { error: "Proyecto no reconocido: " + proyecto };
+  }
+  let delivery;
+  if (proyecto === "puertoPlata") {
+    if (!etapa || !PUERTO_PLATA_DELIVERY[etapa]) {
+      return { error: "Para Puerto Plata debes especificar la etapa: 'E3' o 'E4'. Cada etapa tiene fecha de entrega distinta." };
+    }
+    delivery = PUERTO_PLATA_DELIVERY[etapa];
+  } else {
+    delivery = DELIVERY_DATES[proyecto];
+    if (!delivery) {
+      return { error: "Proyecto sin fecha de entrega configurada: " + proyecto };
+    }
   }
   const now = new Date();
   const deliveryDate = new Date(delivery);
@@ -144,8 +172,12 @@ function calcularPlanPago(proyecto, precioUsd) {
   const completivoTotal = Math.round(precioUsd * plan.completivo);
   const contraEntrega = Math.round(precioUsd * plan.entrega);
   const cuotaMensual = Math.round(completivoTotal / monthsRemaining);
+  const proyectoLabel = proyecto === "puertoPlata"
+    ? (PROJECT_NAMES[proyecto] || proyecto) + " Etapa " + etapa
+    : (PROJECT_NAMES[proyecto] || proyecto);
   return {
-    proyecto: PROJECT_NAMES[proyecto] || proyecto,
+    proyecto: proyectoLabel,
+    etapa: proyecto === "puertoPlata" ? etapa : null,
     precio_total_usd: precioUsd,
     separacion_usd: separacion,
     separacion_pct: Math.round(plan.separacion * 100),
@@ -155,6 +187,7 @@ function calcularPlanPago(proyecto, precioUsd) {
     cuota_mensual_usd: cuotaMensual,
     contra_entrega_usd: contraEntrega,
     contra_entrega_pct: Math.round(plan.entrega * 100),
+    entrega_fecha: delivery,
     nota: "Cuota mensual = completivo total / meses hasta entrega. Contra entrega se cubre con banco o pago directo.",
   };
 }
@@ -178,6 +211,11 @@ const TOOLS = [
           type: "number",
           description: "Precio total de la unidad en USD. Usa el precio base del proyecto si no sabes uno especifico.",
         },
+        etapa: {
+          type: "string",
+          enum: ["E3", "E4"],
+          description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. OBLIGATORIO cuando proyecto = 'puertoPlata'. Ignorado en otros proyectos.",
+        },
       },
       required: ["proyecto", "precio_usd"],
     },
@@ -190,6 +228,55 @@ const TOOLS = [
 
 const ESCALATION_SILENCE_HOURS = 4;
 const REMINDER_THROTTLE_HOURS = 1;
+
+// buildProfileContext: serializa el perfil Mateo (profile:<phone>) al bloque
+// PERFIL_CLIENTE que se inyecta al system prompt. Convive con buildClientContext
+// (que lee meta:<phone> histórico) — ambos se concatenan, el agente decide qué
+// usar. Si el perfil es nuevo (is_new=true), retorna bloque vacío que
+// explícitamente le dice a Mateo "cliente nuevo, presentate con un saludo".
+function buildProfileContext(profile) {
+  if (!profile) return "";
+  if (profile.is_new) {
+    return "\n\n---\nPERFIL_CLIENTE: cliente nuevo, primera conversacion. Saluda segun la hora, presentate como Mateo, haz UNA pregunta abierta para empezar a calificar.";
+  }
+  const parts = [];
+  if (profile.nombre) parts.push("- Nombre: " + profile.nombre);
+  if (profile.proyecto_interes) parts.push("- Proyecto de interes: " + profile.proyecto_interes);
+  if (profile.tipologia_interes) parts.push("- Tipologia: " + profile.tipologia_interes);
+  if (profile.presupuesto_mencionado) {
+    const moneda = profile.moneda_presupuesto || "USD";
+    parts.push("- Presupuesto mencionado: " + profile.presupuesto_mencionado + " " + moneda);
+  }
+  if (profile.ubicacion_cliente) parts.push("- Ubicacion del cliente: " + profile.ubicacion_cliente);
+  if (profile.fecha_mudanza_objetivo) parts.push("- Fecha objetivo de mudanza: " + profile.fecha_mudanza_objetivo);
+  if (profile.fuente_financiamiento) parts.push("- Fuente de financiamiento: " + profile.fuente_financiamiento);
+  if (profile.intencion_compra) parts.push("- Intencion de compra: " + profile.intencion_compra);
+  if (profile.score_lead) parts.push("- Score de lead: " + profile.score_lead);
+  if (Array.isArray(profile.tags) && profile.tags.length > 0) {
+    parts.push("- Tags: " + profile.tags.join(", "));
+  }
+  if (Array.isArray(profile.objeciones_historicas) && profile.objeciones_historicas.length > 0) {
+    parts.push("- Objeciones previas: " + profile.objeciones_historicas.slice(-5).join(" | "));
+  }
+  if (Array.isArray(profile.documentos_enviados) && profile.documentos_enviados.length > 0) {
+    parts.push("- Documentos ya enviados: " + profile.documentos_enviados.join(", "));
+  }
+  if (Array.isArray(profile.competencia_mencionada) && profile.competencia_mencionada.length > 0) {
+    parts.push("- Competencia mencionada: " + profile.competencia_mencionada.join(", "));
+  }
+  if (profile.siguiente_accion_pendiente) {
+    parts.push("- Accion pendiente de conversacion anterior: " + profile.siguiente_accion_pendiente);
+  }
+  if (profile.info_interna && typeof profile.info_interna === "object" && Object.keys(profile.info_interna).length > 0) {
+    parts.push("- Info interna (NO revelar al cliente): " + JSON.stringify(profile.info_interna));
+  }
+  if (profile.conversaciones_count) {
+    parts.push("- Conversaciones previas: " + profile.conversaciones_count);
+  }
+  if (parts.length === 0) return "";
+  return "\n\n---\nPERFIL_CLIENTE (uso interno, NO lo menciones literalmente):\n" + parts.join("\n") +
+    "\n\nUsa estos datos para NO preguntar de nuevo lo que ya sabes y personalizar la oferta.";
+}
 
 function buildClientContext(meta) {
   if (!meta) return "";
@@ -287,7 +374,16 @@ async function processMessage(body) {
     // Guardar nombre del cliente en metadata
     await saveClientMeta(senderPhone, { name: senderName });
 
-    // Soporte de audio (notas de voz) via Whisper
+    // Soporte de audio (notas de voz) via Whisper.
+    //
+    // MARKER "[audio transcrito] ": se prepende al texto que entra al history
+    // conversacional para que Mateo sepa que el cliente envio nota de voz sin
+    // que el cliente lo lea. El prompt v5.2 tiene la seccion ENTRADA DE AUDIO
+    // que le indica:
+    //   1) No mencionar al cliente que fue audio
+    //   2) Si la transcripcion se ve confusa, pedir repetir o escribir
+    //   3) Para el resto, responder normal
+    // El marker NO se envia al cliente (va solo al history y al system prompt).
     let userMessage;
     if (messageType === "text") {
       userMessage = message.text.body;
@@ -295,15 +391,24 @@ async function processMessage(body) {
       const audioId = message.audio?.id || message.voice?.id;
       botLog("info", "Audio recibido, intentando transcribir", { phone: senderPhone, audioId });
       const transcribed = audioId ? await transcribeWhatsAppAudio(audioId) : null;
-      if (!transcribed) {
+      const trimmed = (transcribed || "").trim();
+      // Fallback: si la transcripcion fallo (null) o devolvio algo inutil
+      // (string vacio o < 3 caracteres que suele ser ruido), pedimos repetir.
+      // No procesamos mensaje vacio para evitar que Claude responda a ruido.
+      if (!trimmed || trimmed.length < 3) {
         await sendWhatsAppMessage(
           senderPhone,
-          "Escuche tu audio pero tuve problemas procesandolo. Me lo puedes escribir por texto y te ayudo al instante?"
+          "Mira, no te capté bien el audio. ¿Me lo puedes repetir o escribir el mensaje?"
         );
+        botLog("warn", "Audio descartado (transcripcion vacia o muy corta)", {
+          phone: senderPhone,
+          audioId,
+          transcribedLength: trimmed.length,
+        });
         return;
       }
-      userMessage = transcribed;
-      botLog("info", "Audio transcrito", { phone: senderPhone, length: transcribed.length });
+      userMessage = "[audio transcrito] " + trimmed;
+      botLog("info", "Audio transcrito", { phone: senderPhone, length: trimmed.length });
     } else {
       await sendWhatsAppMessage(
         senderPhone,
@@ -326,6 +431,11 @@ async function processMessage(body) {
 
     // Cargar metadata del cliente (para contexto dinamico + gestion de escalamiento)
     const clientMeta = !isStaff ? await getClientMeta(senderPhone) : null;
+
+    // Cargar perfil Mateo (profile:<phone>, Día 3). Namespace separado de
+    // meta:<phone> para no interferir con followups/escalation. Solo para
+    // flujo cliente (staff y Enmanuel/supervisor no tienen perfil).
+    const customerProfile = (!isStaff && !isSupervisor) ? await getCustomerProfile(senderPhone) : null;
 
     // Si hay un escalamiento activo (< 4h), el bot se silencia.
     // Guarda el mensaje en historial y avisa a Enmanuel (con throttle de 1h).
@@ -360,9 +470,12 @@ async function processMessage(body) {
     await addMessage(senderPhone, "user", userMessage);
     const messageHistory = await getHistory(senderPhone);
 
-    // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente)
+    // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente).
+    // clientContext viene de meta:<phone> (historico), profileContext viene de
+    // profile:<phone> (perfil Mateo v5.2). Ambos coexisten hasta unificarse en Día 6.
     const clientContext = !isSupervisor ? buildClientContext(clientMeta) : "";
-    const finalPrompt = activePrompt + clientContext;
+    const profileContext = (!isStaff && !isSupervisor) ? buildProfileContext(customerProfile) : "";
+    const finalPrompt = activePrompt + clientContext + profileContext;
 
     const response = await callClaudeWithTools({
       system: finalPrompt,
@@ -370,7 +483,7 @@ async function processMessage(body) {
       tools: TOOLS,
       phone: senderPhone,
       toolHandlers: {
-        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd),
+        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd, input.etapa),
       },
     });
 
@@ -379,8 +492,24 @@ async function processMessage(body) {
     const rawReply = textBlocks.map((b) => b.text).join("\n").trim() || "Dejame un momento, te respondo en seguida.";
     console.log("Respuesta del bot: " + rawReply);
 
+    // Extraer bloque <perfil_update> ANTES que cualquier otro detect. El bloque
+    // puede contener JSON con mentions de proyectos/tags que confundirian a
+    // detectLeadSignals (que opera por regex sobre el texto). Strip primero,
+    // despues corremos el resto sobre texto limpio.
+    let profileDeltas = null;
+    let textWithoutProfile = rawReply;
+    if (!isStaff && !isSupervisor) {
+      const { json, cleanedText } = extractProfileUpdate(rawReply);
+      textWithoutProfile = cleanedText || rawReply;
+      if (json && validateProfileUpdate(json)) {
+        profileDeltas = json;
+      } else if (json) {
+        botLog("warn", "Bloque <perfil_update> invalido", { phone: senderPhone, json });
+      }
+    }
+
     // Detectar senales de lead caliente, escalamiento y agendamiento
-    const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(rawReply);
+    const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(textWithoutProfile);
     const botReply = cleanReply;
 
     await addMessage(senderPhone, "assistant", botReply);
@@ -417,6 +546,66 @@ async function processMessage(body) {
           followUpCount: 0,
           followUpStage: 0,
         });
+      }
+
+      // ============================================
+      // PIPELINE PERFIL (Día 3)
+      // ============================================
+      // Persistir deltas del bloque <perfil_update> + disparar notificaciones
+      // condicionales (descuento, recomendacion de competencia). Guard:
+      // solo flujo cliente (ya dentro de !isStaff, y isSupervisor chequeado
+      // al extraer profileDeltas).
+      if (!isSupervisor) {
+        // 1. Persistir deltas si el bloque vino valido.
+        if (profileDeltas) {
+          try {
+            await updateCustomerProfile(senderPhone, profileDeltas);
+          } catch (e) {
+            botLog("error", "Error actualizando perfil", { phone: senderPhone, error: e.message });
+          }
+        }
+
+        // 2. Detectar descuento ofrecido por Mateo en el texto limpio y
+        //    notificar a Enmanuel. Independiente del bloque — el regex puede
+        //    detectar descuentos aunque Mateo olvide marcarlo en el perfil.
+        try {
+          const discount = detectDiscountOffer(botReply);
+          if (discount) {
+            await notifyDescuentoOfrecido(senderPhone, discount.monto, discount.contexto, clientMeta);
+            botLog("info", "Descuento detectado y notificado", {
+              phone: senderPhone,
+              monto: discount.monto,
+            });
+          }
+        } catch (e) {
+          botLog("error", "Error procesando descuento", { phone: senderPhone, error: e.message });
+        }
+
+        // 3. Si Mateo indico siguiente_accion_sugerida = "recomendar_competencia"
+        //    (Trusted Advisor Nivel 3), notificar a Enmanuel con el contexto.
+        if (profileDeltas?.siguiente_accion_sugerida === "recomendar_competencia") {
+          try {
+            const motivo = userMessage.slice(0, 300);
+            await notifyRecomendacionCompetencia(senderPhone, motivo, clientMeta);
+            botLog("info", "Recomendacion de competencia detectada", {
+              phone: senderPhone,
+              tags: profileDeltas.tags_nuevos || [],
+            });
+          } catch (e) {
+            botLog("error", "Error notificando recomendacion competencia", {
+              phone: senderPhone,
+              error: e.message,
+            });
+          }
+        }
+
+        // 4. Log Axiom si Mateo detecto una objecion nueva (no en las 9 cargadas).
+        if (profileDeltas?.objecion_nueva === true && profileDeltas.objecion_nueva_texto) {
+          botLog("info", "OBJECION_NUEVA detectada", {
+            phone: senderPhone,
+            objecion: profileDeltas.objecion_nueva_texto,
+          });
+        }
       }
     }
 
