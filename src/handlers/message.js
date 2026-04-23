@@ -102,6 +102,10 @@ const PROJECT_DOCS = {
   },
   puertoPlata: {
     brochure: process.env.PDF_PP_BROCHURE || null,
+    // TODO [backlog]: PDF_PP_BROCHURE_E4 se consume en el bloque especial
+    // "brochure Etapa 4" (ver loop principal más abajo). Verificar con
+    // Enmanuel si la env var apunta a un archivo real en Drive/Blob o si
+    // hay que eliminar la env var y el consumidor.
     brochureE4: process.env.PDF_PP_BROCHURE_E4 || null,
     precios: process.env.PDF_PP_PRECIOS || null,
     preciosE4: process.env.PDF_PP_PRECIOS_E4 || null,
