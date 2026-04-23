@@ -98,4 +98,95 @@ async function notifyEnmanuelBooking(senderPhone, booking, clientMeta, projectNa
   }
 }
 
-module.exports = { ENMANUEL_PHONE, notifyEnmanuel, notifyEnmanuelBooking };
+// ============================================
+// NOTIFICACIONES NUEVAS (Día 3) — Descuento ofrecido + Recomendación competencia
+// ============================================
+// Alimentadas por el pipeline <perfil_update> en src/handlers/message.js.
+// Pattern: el caller detecta el evento y dispara la notificación. Fail-open:
+// si el envío cae, logueamos pero el flujo del cliente sigue.
+
+// Detecta si la respuesta de Mateo contiene una oferta explícita de descuento.
+// Retorna {monto, contexto} si detecta, null si no. El monto se extrae como
+// número (USD) o se infiere de palabras ("mil", "dos mil"). Solo cubre
+// patrones comunes de oferta — no pretende ser exhaustivo.
+function detectDiscountOffer(botReply) {
+  if (typeof botReply !== "string" || botReply.length === 0) return null;
+  const text = botReply.toLowerCase();
+
+  // Patrones numéricos: $500, $1,000, $2000, US$1500
+  const numericMatch = text.match(/(?:us\$|u\$|\$)\s*([0-9]{1,3}(?:[,.]?[0-9]{3})*)/);
+  if (numericMatch) {
+    const raw = numericMatch[1].replace(/[,.]/g, "");
+    const monto = parseInt(raw, 10);
+    if (!isNaN(monto) && monto >= 500 && monto <= 5000) {
+      // Rango razonable de descuento. Mayor a $5K probablemente es precio de
+      // unidad, no descuento — se ignora.
+      return { monto, contexto: botReply.slice(0, 300) };
+    }
+  }
+
+  // Patrones en letra ("mil", "dos mil") solo si co-ocurren con palabras de
+  // descuento para no gatillar por "2027" o cantidades no-descuento.
+  const discountWords = ["descuento", "rebaja", "te bajo", "te doy", "te quito"];
+  const mentionsDiscount = discountWords.some((w) => text.includes(w));
+  if (mentionsDiscount) {
+    if (/\bdos\s+mil\b/.test(text)) return { monto: 2000, contexto: botReply.slice(0, 300) };
+    if (/\bmil\b/.test(text)) return { monto: 1000, contexto: botReply.slice(0, 300) };
+    if (/\bquinientos\b/.test(text)) return { monto: 500, contexto: botReply.slice(0, 300) };
+  }
+
+  return null;
+}
+
+async function notifyDescuentoOfrecido(senderPhone, monto, contexto, clientMeta) {
+  const clientName = clientMeta?.name && clientMeta.name !== "Desconocido" ? clientMeta.name : "Cliente";
+  const waLink = "https://wa.me/" + senderPhone;
+
+  let notif = "DESCUENTO OFRECIDO POR MATEO\n\n";
+  notif += "Cliente: " + clientName + "\n";
+  notif += "Telefono: " + senderPhone + "\n";
+  notif += "Monto: US$" + monto + "\n\n";
+  if (contexto) notif += "Contexto: " + contexto.slice(0, 300) + "\n\n";
+  notif += "Abrir chat: " + waLink + "\n\n";
+  notif += "Accion sugerida: confirmar si el descuento cerro la venta.";
+
+  try {
+    await sendWhatsAppMessage(ENMANUEL_PHONE, notif);
+    botLog("info", "Descuento notificado a Enmanuel", {
+      clientPhone: senderPhone,
+      monto,
+    });
+  } catch (e) {
+    console.error("Error notificando descuento:", e.message);
+  }
+}
+
+async function notifyRecomendacionCompetencia(senderPhone, motivo, clientMeta) {
+  const clientName = clientMeta?.name && clientMeta.name !== "Desconocido" ? clientMeta.name : "Cliente";
+  const waLink = "https://wa.me/" + senderPhone;
+
+  let notif = "MATEO RECOMENDO COMPETENCIA\n\n";
+  notif += "Cliente: " + clientName + "\n";
+  notif += "Telefono: " + senderPhone + "\n";
+  if (motivo) notif += "Motivo: " + motivo.slice(0, 300) + "\n\n";
+  notif += "Abrir chat: " + waLink + "\n\n";
+  notif += "Cliente fuera de fit JPREZ. Accion sugerida: revisar si hubo oportunidad real o fue mismatch claro.";
+
+  try {
+    await sendWhatsAppMessage(ENMANUEL_PHONE, notif);
+    botLog("info", "Recomendacion de competencia notificada a Enmanuel", {
+      clientPhone: senderPhone,
+    });
+  } catch (e) {
+    console.error("Error notificando recomendacion competencia:", e.message);
+  }
+}
+
+module.exports = {
+  ENMANUEL_PHONE,
+  notifyEnmanuel,
+  notifyEnmanuelBooking,
+  notifyDescuentoOfrecido,
+  notifyRecomendacionCompetencia,
+  detectDiscountOffer,
+};
