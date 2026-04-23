@@ -517,11 +517,17 @@ async function processMessage(body) {
     // puede contener JSON con mentions de proyectos/tags que confundirian a
     // detectLeadSignals (que opera por regex sobre el texto). Strip primero,
     // despues corremos el resto sobre texto limpio.
+    //
+    // CRITICO (hotfix-2): si Mateo emite SOLO el bloque sin texto al cliente,
+    // cleanedText queda vacio. NO caemos a rawReply en ese caso porque
+    // contiene el bloque crudo y se filtraria al cliente. Dejamos
+    // textWithoutProfile vacio y el empty-reply guard mas abajo lo cubre con
+    // un fallback amable.
     let profileDeltas = null;
     let textWithoutProfile = rawReply;
     if (!isStaff && !isSupervisor) {
       const { json, cleanedText } = extractProfileUpdate(rawReply);
-      textWithoutProfile = cleanedText || rawReply;
+      textWithoutProfile = cleanedText;
       if (json && validateProfileUpdate(json)) {
         profileDeltas = json;
       } else if (json) {
@@ -531,7 +537,23 @@ async function processMessage(body) {
 
     // Detectar senales de lead caliente, escalamiento y agendamiento
     const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(textWithoutProfile);
-    const botReply = cleanReply;
+    let botReply = cleanReply;
+
+    // Empty-reply guard (hotfix-2 Día 3): si despues del strip de bloque
+    // perfil_update + tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...] el texto
+    // quedo vacio o solo whitespace, Mateo emitio solo metadata sin contenido
+    // visible. Reemplazamos por fallback amable en lugar de mandar vacio que
+    // WhatsApp rechazaria con error 4xx (que ademas seria atrapado por el
+    // catch top-level y dejaria al cliente en visto). Regla universal de
+    // Enmanuel: Mateo SIEMPRE responde.
+    if (!botReply || botReply.trim().length === 0) {
+      botLog("warn", "Reply vacio post-strip", {
+        phone: senderPhone,
+        rawReplyLength: rawReply.length,
+        rawReplyPreview: rawReply.slice(0, 200),
+      });
+      botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
+    }
 
     await addMessage(senderPhone, "assistant", botReply);
     await sendWhatsAppMessage(senderPhone, botReply);
