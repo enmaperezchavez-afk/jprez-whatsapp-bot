@@ -369,6 +369,12 @@ async function sendProjectImages(phone, project) {
 // ============================================
 
 async function processMessage(body) {
+  // senderPhone declarado fuera del try para que el catch top-level (safety net
+  // hotfix-2) tenga acceso a el y pueda enviar el mensaje de fallback al
+  // cliente correcto cuando algo falla aguas abajo (ej: Claude API tira,
+  // sendWhatsAppMessage tira, exception inesperada en el pipeline).
+  let senderPhone = null;
+
   try {
     const entry = body?.entry?.[0];
     const changes = entry?.changes?.[0];
@@ -381,7 +387,7 @@ async function processMessage(body) {
     }
 
     const message = messages[0];
-    const senderPhone = message.from;
+    senderPhone = message.from;
     const messageType = message.type;
     const senderName = value?.contacts?.[0]?.profile?.name || "Desconocido";
 
@@ -752,7 +758,30 @@ async function processMessage(body) {
       }
     }
   } catch (error) {
-    botLog("error", "Error procesando mensaje", { error: error.message, stack: error.stack });
+    botLog("error", "Error procesando mensaje", {
+      phone: senderPhone,
+      error: error.message,
+      stack: error.stack,
+    });
+    // Safety net universal (hotfix-2 Día 3): regla comercial de Enmanuel:
+    // Mateo SIEMPRE responde, nunca deja al cliente en visto. Si el flujo
+    // tiro excepcion antes de mandar respuesta (Claude API down, send
+    // fallido, etc), intentamos best-effort enviar fallback minimo. Si el
+    // safety net tambien falla, no hay mas que loguear — al menos quedo
+    // registro estructurado del fallo doble.
+    if (senderPhone) {
+      try {
+        await sendWhatsAppMessage(
+          senderPhone,
+          "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?"
+        );
+      } catch (e2) {
+        botLog("error", "Safety net tambien fallo", {
+          phone: senderPhone,
+          error: e2.message,
+        });
+      }
+    }
   }
 }
 
