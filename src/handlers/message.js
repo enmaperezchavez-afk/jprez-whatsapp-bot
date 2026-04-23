@@ -316,7 +316,16 @@ async function processMessage(body) {
     // Guardar nombre del cliente en metadata
     await saveClientMeta(senderPhone, { name: senderName });
 
-    // Soporte de audio (notas de voz) via Whisper
+    // Soporte de audio (notas de voz) via Whisper.
+    //
+    // MARKER "[audio transcrito] ": se prepende al texto que entra al history
+    // conversacional para que Mateo sepa que el cliente envio nota de voz sin
+    // que el cliente lo lea. El prompt v5.2 tiene la seccion ENTRADA DE AUDIO
+    // que le indica:
+    //   1) No mencionar al cliente que fue audio
+    //   2) Si la transcripcion se ve confusa, pedir repetir o escribir
+    //   3) Para el resto, responder normal
+    // El marker NO se envia al cliente (va solo al history y al system prompt).
     let userMessage;
     if (messageType === "text") {
       userMessage = message.text.body;
@@ -324,15 +333,24 @@ async function processMessage(body) {
       const audioId = message.audio?.id || message.voice?.id;
       botLog("info", "Audio recibido, intentando transcribir", { phone: senderPhone, audioId });
       const transcribed = audioId ? await transcribeWhatsAppAudio(audioId) : null;
-      if (!transcribed) {
+      const trimmed = (transcribed || "").trim();
+      // Fallback: si la transcripcion fallo (null) o devolvio algo inutil
+      // (string vacio o < 3 caracteres que suele ser ruido), pedimos repetir.
+      // No procesamos mensaje vacio para evitar que Claude responda a ruido.
+      if (!trimmed || trimmed.length < 3) {
         await sendWhatsAppMessage(
           senderPhone,
-          "Escuche tu audio pero tuve problemas procesandolo. Me lo puedes escribir por texto y te ayudo al instante?"
+          "Mira, no te capté bien el audio. ¿Me lo puedes repetir o escribir el mensaje?"
         );
+        botLog("warn", "Audio descartado (transcripcion vacia o muy corta)", {
+          phone: senderPhone,
+          audioId,
+          transcribedLength: trimmed.length,
+        });
         return;
       }
-      userMessage = transcribed;
-      botLog("info", "Audio transcrito", { phone: senderPhone, length: transcribed.length });
+      userMessage = "[audio transcrito] " + trimmed;
+      botLog("info", "Audio transcrito", { phone: senderPhone, length: trimmed.length });
     } else {
       await sendWhatsAppMessage(
         senderPhone,
