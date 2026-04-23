@@ -82,7 +82,10 @@ const PROJECT_DOCS = {
   crux: {
     brochure: process.env.PDF_CRUX_BROCHURE || null,
     precios: process.env.PDF_CRUX_PRECIOS || null,
-    planos: process.env.PDF_CRUX_PLANOS || null,
+    // Slot "planos" eliminado en hotfix-4 FIX 3a: PDF_CRUX_PLANOS apuntaba a
+    // un archivo que contiene precios, no planos arquitectónicos. Se retira
+    // hasta que Enmanuel provea el archivo real. La env var puede seguir
+    // existiendo en Vercel sin efecto.
     images: parseImageUrls(process.env.IMG_CRUX),
   },
   pr3: {
@@ -99,6 +102,10 @@ const PROJECT_DOCS = {
   },
   puertoPlata: {
     brochure: process.env.PDF_PP_BROCHURE || null,
+    // TODO [backlog]: PDF_PP_BROCHURE_E4 se consume en el bloque especial
+    // "brochure Etapa 4" (ver loop principal más abajo). Verificar con
+    // Enmanuel si la env var apunta a un archivo real en Drive/Blob o si
+    // hay que eliminar la env var y el consumidor.
     brochureE4: process.env.PDF_PP_BROCHURE_E4 || null,
     precios: process.env.PDF_PP_PRECIOS || null,
     preciosE4: process.env.PDF_PP_PRECIOS_E4 || null,
@@ -694,10 +701,15 @@ async function processMessage(body) {
         const requestedTypes = detectDocumentType(botReply, userMessage);
 
         let sentCount = 0;
+        // Track si las imagenes del proyecto ya fueron enviadas como teaser del
+        // brochure, para evitar duplicar envio despues del PDF de precios cuando
+        // el cliente pide brochure + precios juntos.
+        let imagesSentAsTeaser = false;
 
         // Si el primer doc que se va a mandar es el brochure, enviar imagenes teaser antes
         if (requestedTypes[0] === "brochure" && docs.images && docs.images.length > 0) {
           await sendProjectImages(senderPhone, project);
+          imagesSentAsTeaser = true;
         }
 
         for (const docType of requestedTypes) {
@@ -749,6 +761,23 @@ async function processMessage(body) {
         await markDocSent(senderPhone, project + ".brochureE4");
         console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
       }
+
+        // Si el cliente pidio precios y el proyecto tiene imagenes Y no fueron
+        // enviadas ya como teaser del brochure, mandarlas DESPUES del PDF de
+        // precios. Caso de uso: Crux tiene IMG_CRUX con JPG de listos para
+        // entrega inmediata que complementa el PDF "Precios y Disponibilidad"
+        // (el PDF tiene todo el inventario, el JPG destaca listos ya).
+        if (
+          requestedTypes.includes("precios") &&
+          docs.images &&
+          docs.images.length > 0 &&
+          !imagesSentAsTeaser
+        ) {
+          if (sentCount > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          await sendProjectImages(senderPhone, project);
+        }
 
         if (sentCount === 0) {
           console.log("AVISO: Solicitud de docs para " + project + " pero no hay URLs configuradas en las variables de entorno");
