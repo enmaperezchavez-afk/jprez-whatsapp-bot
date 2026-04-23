@@ -3,6 +3,47 @@
 
 ---
 
+## CRUX DEL PRADO — Unidades Listas para Entrega Inmediata
+
+Todas son 3 habitaciones, 2 baños, 100m², con parqueos destechados.
+
+### Etapa 1 (2 unidades disponibles)
+- **T3-2B**: RD$5,775,000 · 2 parqueos individuales destechados · DISPONIBLE
+- **T3-2D**: RD$5,850,000 · 2 parqueos individuales destechados · DISPONIBLE
+
+### Etapa 2 (2 unidades disponibles)
+- **T5-1C**: RD$5,650,000 · 2 parqueos individuales destechados · DISPONIBLE
+- **T5-1D**: RD$5,700,000 · 2 parqueos lineales destechados · DISPONIBLE
+
+### Inventario total listos Crux
+- 4 unidades disponibles para entrega inmediata
+- Rango de precios: RD$5,650,000 – RD$5,850,000
+- Precio promedio: ~RD$5,744,000
+
+### Ventajas comerciales de unidades listas
+- Entrega inmediata (sin esperar construcción)
+- Pago en DOP (sin riesgo cambiario para cliente local)
+- Inventario limitado (4 unidades) — genera urgencia real
+- Ideal para clientes que necesitan mudarse YA
+- Diferenciador vs Torre 6: listos vs entrega julio 2027
+
+### Comparación listos vs Torre 6 en construcción
+- Listos: RD$5.65M – RD$5.85M (DOP, entrega inmediata)
+- Torre 6: desde US$99K (USD, entrega julio 2027)
+- Recomendar listos a clientes con urgencia de mudanza y pago en DOP
+- Recomendar Torre 6 a clientes que quieren mejor plan de pagos extendido y no tienen urgencia
+
+### Nota sobre otros proyectos
+Solo Crux del Prado tiene unidades listas para entrega inmediata. PR3, PR4 y Prado Suites Puerto Plata (E3 y E4) están todos en construcción/pre-venta con las siguientes entregas:
+- Prado Residences III: agosto 2026
+- Prado Residences IV: agosto 2027
+- Prado Suites Puerto Plata E3: marzo 2029
+- Prado Suites Puerto Plata E4: septiembre 2027
+
+Si el cliente pregunta por unidades listas en otros proyectos, responde honestamente: "Actualmente solo tenemos unidades listas en Crux del Prado. Los otros proyectos están en construcción con entregas futuras. ¿Te interesa Crux o prefieres explorar las opciones de pre-venta con plan de pagos extendido?"
+
+---
+
 ## CRUX DEL PRADO — Torre 6
 
 Entrega: Julio 2027
