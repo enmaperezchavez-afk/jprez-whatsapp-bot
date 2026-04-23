@@ -369,6 +369,12 @@ async function sendProjectImages(phone, project) {
 // ============================================
 
 async function processMessage(body) {
+  // senderPhone declarado fuera del try para que el catch top-level (safety net
+  // hotfix-2) tenga acceso a el y pueda enviar el mensaje de fallback al
+  // cliente correcto cuando algo falla aguas abajo (ej: Claude API tira,
+  // sendWhatsAppMessage tira, exception inesperada en el pipeline).
+  let senderPhone = null;
+
   try {
     const entry = body?.entry?.[0];
     const changes = entry?.changes?.[0];
@@ -381,7 +387,7 @@ async function processMessage(body) {
     }
 
     const message = messages[0];
-    const senderPhone = message.from;
+    senderPhone = message.from;
     const messageType = message.type;
     const senderName = value?.contacts?.[0]?.profile?.name || "Desconocido";
 
@@ -517,11 +523,17 @@ async function processMessage(body) {
     // puede contener JSON con mentions de proyectos/tags que confundirian a
     // detectLeadSignals (que opera por regex sobre el texto). Strip primero,
     // despues corremos el resto sobre texto limpio.
+    //
+    // CRITICO (hotfix-2): si Mateo emite SOLO el bloque sin texto al cliente,
+    // cleanedText queda vacio. NO caemos a rawReply en ese caso porque
+    // contiene el bloque crudo y se filtraria al cliente. Dejamos
+    // textWithoutProfile vacio y el empty-reply guard mas abajo lo cubre con
+    // un fallback amable.
     let profileDeltas = null;
     let textWithoutProfile = rawReply;
     if (!isStaff && !isSupervisor) {
       const { json, cleanedText } = extractProfileUpdate(rawReply);
-      textWithoutProfile = cleanedText || rawReply;
+      textWithoutProfile = cleanedText;
       if (json && validateProfileUpdate(json)) {
         profileDeltas = json;
       } else if (json) {
@@ -531,7 +543,23 @@ async function processMessage(body) {
 
     // Detectar senales de lead caliente, escalamiento y agendamiento
     const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(textWithoutProfile);
-    const botReply = cleanReply;
+    let botReply = cleanReply;
+
+    // Empty-reply guard (hotfix-2 Día 3): si despues del strip de bloque
+    // perfil_update + tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...] el texto
+    // quedo vacio o solo whitespace, Mateo emitio solo metadata sin contenido
+    // visible. Reemplazamos por fallback amable en lugar de mandar vacio que
+    // WhatsApp rechazaria con error 4xx (que ademas seria atrapado por el
+    // catch top-level y dejaria al cliente en visto). Regla universal de
+    // Enmanuel: Mateo SIEMPRE responde.
+    if (!botReply || botReply.trim().length === 0) {
+      botLog("warn", "Reply vacio post-strip", {
+        phone: senderPhone,
+        rawReplyLength: rawReply.length,
+        rawReplyPreview: rawReply.slice(0, 200),
+      });
+      botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
+    }
 
     await addMessage(senderPhone, "assistant", botReply);
     await sendWhatsAppMessage(senderPhone, botReply);
@@ -730,7 +758,30 @@ async function processMessage(body) {
       }
     }
   } catch (error) {
-    botLog("error", "Error procesando mensaje", { error: error.message, stack: error.stack });
+    botLog("error", "Error procesando mensaje", {
+      phone: senderPhone,
+      error: error.message,
+      stack: error.stack,
+    });
+    // Safety net universal (hotfix-2 Día 3): regla comercial de Enmanuel:
+    // Mateo SIEMPRE responde, nunca deja al cliente en visto. Si el flujo
+    // tiro excepcion antes de mandar respuesta (Claude API down, send
+    // fallido, etc), intentamos best-effort enviar fallback minimo. Si el
+    // safety net tambien falla, no hay mas que loguear — al menos quedo
+    // registro estructurado del fallo doble.
+    if (senderPhone) {
+      try {
+        await sendWhatsAppMessage(
+          senderPhone,
+          "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?"
+        );
+      } catch (e2) {
+        botLog("error", "Safety net tambien fallo", {
+          phone: senderPhone,
+          error: e2.message,
+        });
+      }
+    }
   }
 }
 
