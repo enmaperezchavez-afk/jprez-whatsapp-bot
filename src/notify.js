@@ -113,8 +113,10 @@ function detectDiscountOffer(botReply) {
   if (typeof botReply !== "string" || botReply.length === 0) return null;
   const text = botReply.toLowerCase();
 
-  // Patrones numéricos: $500, $1,000, $2000, US$1500
-  const numericMatch = text.match(/(?:us\$|u\$|\$)\s*([0-9]{1,3}(?:[,.]?[0-9]{3})*)/);
+  // Patrones numéricos: $500, $1,000, $2000, US$1500.
+  // [0-9][0-9,.]{0,9} matches secuencias como "500", "2000", "1,000", "156,000";
+  // el filtro numérico de rango (500–5000) descarta precios de unidades.
+  const numericMatch = text.match(/(?:us\$|u\$|\$)\s*([0-9][0-9,.]{0,9})/);
   if (numericMatch) {
     const raw = numericMatch[1].replace(/[,.]/g, "");
     const monto = parseInt(raw, 10);
