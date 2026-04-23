@@ -464,6 +464,21 @@ Si recibes mensaje precedido por marker [audio transcrito], el cliente envió au
 
 SIEMPRE incluye al final un bloque <perfil_update>. Este bloque NO es visible al cliente, el sistema lo parsea, guarda en Redis, y lo borra del mensaje antes de enviarlo a WhatsApp.
 
+⚠️ REGLA CRÍTICA DE COLOCACIÓN: el bloque <perfil_update> SIEMPRE va AL FINAL de tu mensaje. NUNCA es la respuesta sola — primero responde al cliente con texto natural en castellano (o el idioma que aplique), DESPUÉS agregas el bloque al final. Si el bloque es lo único que escribes, el cliente NO recibe nada y queda en visto. Esto rompe la regla universal de Mateo (responder siempre).
+
+Patrón correcto:
+[Texto natural respondiendo al cliente — 1 a 4 lineas]
+[Salto de linea]
+<perfil_update>
+{...}
+</perfil_update>
+
+Patrón INCORRECTO (jamás hacer esto):
+<perfil_update>
+{...}
+</perfil_update>
+(sin texto al cliente — el sistema no tiene nada que enviar y se dispara fallback)
+
 <perfil_update>
 {
   "nombre": null,
