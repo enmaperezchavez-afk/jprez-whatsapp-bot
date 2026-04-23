@@ -123,19 +123,38 @@ const PAYMENT_PLANS = {
   puertoPlata: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
 };
 
-// Fechas aproximadas de entrega para calcular meses de cuota
+// Fechas aproximadas de entrega para calcular meses de cuota.
+// Puerto Plata tiene DOS etapas con fechas distintas — el lookup de
+// puertoPlata pasa por la rama especial en calcularPlanPago para pickear
+// la fecha correcta segun `etapa`. Sin etapa explicita la llamada retorna
+// error (obliga al modelo a desambiguar antes de calcular).
 const DELIVERY_DATES = {
   crux: "2027-07-01",
   pr3: "2026-08-01",
-  pr4: "2027-09-01",
-  puertoPlata: "2027-12-01",
+  pr4: "2027-08-01",
 };
 
-function calcularPlanPago(proyecto, precioUsd) {
+const PUERTO_PLATA_DELIVERY = {
+  E3: "2029-03-01",
+  E4: "2027-09-01",
+};
+
+function calcularPlanPago(proyecto, precioUsd, etapa) {
   const plan = PAYMENT_PLANS[proyecto];
-  const delivery = DELIVERY_DATES[proyecto];
-  if (!plan || !delivery) {
+  if (!plan) {
     return { error: "Proyecto no reconocido: " + proyecto };
+  }
+  let delivery;
+  if (proyecto === "puertoPlata") {
+    if (!etapa || !PUERTO_PLATA_DELIVERY[etapa]) {
+      return { error: "Para Puerto Plata debes especificar la etapa: 'E3' o 'E4'. Cada etapa tiene fecha de entrega distinta." };
+    }
+    delivery = PUERTO_PLATA_DELIVERY[etapa];
+  } else {
+    delivery = DELIVERY_DATES[proyecto];
+    if (!delivery) {
+      return { error: "Proyecto sin fecha de entrega configurada: " + proyecto };
+    }
   }
   const now = new Date();
   const deliveryDate = new Date(delivery);
@@ -144,8 +163,12 @@ function calcularPlanPago(proyecto, precioUsd) {
   const completivoTotal = Math.round(precioUsd * plan.completivo);
   const contraEntrega = Math.round(precioUsd * plan.entrega);
   const cuotaMensual = Math.round(completivoTotal / monthsRemaining);
+  const proyectoLabel = proyecto === "puertoPlata"
+    ? (PROJECT_NAMES[proyecto] || proyecto) + " Etapa " + etapa
+    : (PROJECT_NAMES[proyecto] || proyecto);
   return {
-    proyecto: PROJECT_NAMES[proyecto] || proyecto,
+    proyecto: proyectoLabel,
+    etapa: proyecto === "puertoPlata" ? etapa : null,
     precio_total_usd: precioUsd,
     separacion_usd: separacion,
     separacion_pct: Math.round(plan.separacion * 100),
@@ -155,6 +178,7 @@ function calcularPlanPago(proyecto, precioUsd) {
     cuota_mensual_usd: cuotaMensual,
     contra_entrega_usd: contraEntrega,
     contra_entrega_pct: Math.round(plan.entrega * 100),
+    entrega_fecha: delivery,
     nota: "Cuota mensual = completivo total / meses hasta entrega. Contra entrega se cubre con banco o pago directo.",
   };
 }
@@ -177,6 +201,11 @@ const TOOLS = [
         precio_usd: {
           type: "number",
           description: "Precio total de la unidad en USD. Usa el precio base del proyecto si no sabes uno especifico.",
+        },
+        etapa: {
+          type: "string",
+          enum: ["E3", "E4"],
+          description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. OBLIGATORIO cuando proyecto = 'puertoPlata'. Ignorado en otros proyectos.",
         },
       },
       required: ["proyecto", "precio_usd"],
@@ -370,7 +399,7 @@ async function processMessage(body) {
       tools: TOOLS,
       phone: senderPhone,
       toolHandlers: {
-        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd),
+        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd, input.etapa),
       },
     });
 
