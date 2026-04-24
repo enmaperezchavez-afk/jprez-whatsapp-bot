@@ -49,6 +49,7 @@ const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
+const adminTesting = require("../admin-testing-mode");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -398,8 +399,22 @@ async function processMessage(body) {
     const messageType = message.type;
     const senderName = value?.contacts?.[0]?.profile?.name || "Desconocido";
 
+    // Admin testing mode (hotfix-6): el admin puede activar /test-on para que
+    // su phone se "swappee" a testing:<phone> en todos los stores, haciendo
+    // que el pipeline lo trate como cliente nuevo. senderPhone SIGUE siendo
+    // el real (para I/O con Meta WhatsApp); storageKey es el efectivo para
+    // Redis (chat/meta/profile/lookup de STAFF_PHONES).
+    const inTesting = await adminTesting.isActive(senderPhone);
+    const storageKey = adminTesting.getStorageKey(senderPhone, inTesting);
+    if (inTesting) {
+      botLog("info", "admin_testing_active", {
+        admin: senderPhone,
+        storageKey,
+      });
+    }
+
     // Guardar nombre del cliente en metadata
-    await saveClientMeta(senderPhone, { name: senderName });
+    await saveClientMeta(storageKey, { name: senderName });
 
     // Soporte de audio (notas de voz) via Whisper.
     //
@@ -447,8 +462,12 @@ async function processMessage(body) {
     // ============================================
     // DETECTAR SI ES PERSONAL INTERNO (por numero)
     // ============================================
-    const isStaff = STAFF_PHONES[senderPhone];
-    botLog("info", "Mensaje recibido", { phone: senderPhone, name: senderName, message: userMessage, isStaff: !!isStaff });
+    // storageKey viene del phone-swap B3: si admin está en testing, vale
+    // "testing:<phone>" (no aparece en STAFF_PHONES → isStaff falsy →
+    // pipeline lo trata como cliente). Si no está en testing, vale
+    // igual a senderPhone y el comportamiento es idéntico al pre-hotfix-6.
+    const isStaff = STAFF_PHONES[storageKey];
+    botLog("info", "Mensaje recibido", { phone: senderPhone, name: senderName, message: userMessage, isStaff: !!isStaff, testing: inTesting });
     const isSupervisor = isStaff?.supervisor === true;
     const activePrompt = isSupervisor ? SUPERVISOR_PROMPT : buildSystemPrompt();
 
@@ -457,12 +476,12 @@ async function processMessage(body) {
     }
 
     // Cargar metadata del cliente (para contexto dinamico + gestion de escalamiento)
-    const clientMeta = !isStaff ? await getClientMeta(senderPhone) : null;
+    const clientMeta = !isStaff ? await getClientMeta(storageKey) : null;
 
     // Cargar perfil Mateo (profile:<phone>, Día 3). Namespace separado de
     // meta:<phone> para no interferir con followups/escalation. Solo para
     // flujo cliente (staff y Enmanuel/supervisor no tienen perfil).
-    const customerProfile = (!isStaff && !isSupervisor) ? await getCustomerProfile(senderPhone) : null;
+    const customerProfile = (!isStaff && !isSupervisor) ? await getCustomerProfile(storageKey) : null;
 
     // Si hay un escalamiento activo (< 4h), Mateo NO se silencia — genera
     // holding messages para mantener al cliente calido mientras Enmanuel
@@ -488,18 +507,18 @@ async function processMessage(body) {
             ENMANUEL_PHONE,
             "Recordatorio: " + clientLabel + " (" + senderPhone + ") sigue escribiendo. Caso escalado; Mateo lo mantiene en holding."
           );
-          await saveClientMeta(senderPhone, { lastReminderAt: new Date().toISOString() });
+          await saveClientMeta(storageKey, { lastReminderAt: new Date().toISOString() });
         } catch (e) {
           console.log("Error recordando a Enmanuel:", e.message);
         }
       }
     } else if (!isStaff && clientMeta?.escalated === true && !isEscalationActive(clientMeta)) {
       // Escalamiento expirado (> 4h). Limpiar flag y seguir flujo normal.
-      await saveClientMeta(senderPhone, { escalated: false });
+      await saveClientMeta(storageKey, { escalated: false });
     }
 
-    await addMessage(senderPhone, "user", userMessage);
-    const messageHistory = await getHistory(senderPhone);
+    await addMessage(storageKey, "user", userMessage);
+    const messageHistory = await getHistory(storageKey);
 
     // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente).
     // clientContext viene de meta:<phone> (historico), profileContext viene de
@@ -568,7 +587,7 @@ async function processMessage(body) {
       botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
     }
 
-    await addMessage(senderPhone, "assistant", botReply);
+    await addMessage(storageKey, "assistant", botReply);
     await sendWhatsAppMessage(senderPhone, botReply);
     botLog("info", "Respuesta enviada", { phone: senderPhone, responseLength: botReply.length });
 
@@ -576,20 +595,37 @@ async function processMessage(body) {
     // En holding mode skipeamos las notificaciones hot/escalation: el caso YA
     // esta escalado a Enmanuel, el recordatorio throttleado se maneja arriba
     // y no queremos duplicar avisos cada vez que el cliente escribe.
+    //
+    // Durante admin testing (hotfix-6): isStaff es falsy (el admin entra como
+    // cliente), pero las notificaciones a ENMANUEL_PHONE harian que el admin
+    // se notifique a si mismo → spam. Filtramos con `!inTesting` y logueamos
+    // "notify_suppressed_testing" a Axiom para visibilidad sin WhatsApp.
     if (!isStaff) {
       if (isHotLead && !inHoldingMode) {
-        await notifyWithMeta(senderPhone, userMessage, botReply, "hot");
-        await saveClientMeta(senderPhone, { temperature: "hot", hotDetectedAt: new Date().toISOString() });
+        if (!inTesting) {
+          await notifyWithMeta(senderPhone, userMessage, botReply, "hot");
+        } else {
+          botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "hot" });
+        }
+        await saveClientMeta(storageKey, { temperature: "hot", hotDetectedAt: new Date().toISOString() });
       }
       if (needsEscalation && !inHoldingMode) {
-        await notifyWithMeta(senderPhone, userMessage, botReply, "escalation");
-        await saveClientMeta(senderPhone, { escalated: true, escalatedAt: new Date().toISOString() });
+        if (!inTesting) {
+          await notifyWithMeta(senderPhone, userMessage, botReply, "escalation");
+        } else {
+          botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "escalation" });
+        }
+        await saveClientMeta(storageKey, { escalated: true, escalatedAt: new Date().toISOString() });
       }
 
       // Agendamiento de visita: guardar + notificar con tarjeta estructurada
       if (booking) {
-        await notifyBookingWithMeta(senderPhone, booking);
-        await saveClientMeta(senderPhone, {
+        if (!inTesting) {
+          await notifyBookingWithMeta(senderPhone, booking);
+        } else {
+          botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "booking" });
+        }
+        await saveClientMeta(storageKey, {
           scheduledVisit: booking,
           temperature: "hot", // quien agenda visita es lead caliente por definicion
         });
@@ -601,7 +637,7 @@ async function processMessage(body) {
       // El calendario del cron se dispara a partir de lastContact + dias segun
       // temperatura, asi que no hace falta programar un timestamp especifico.
       if (!needsEscalation) {
-        await saveClientMeta(senderPhone, {
+        await saveClientMeta(storageKey, {
           followUpCount: 0,
           followUpStage: 0,
         });
@@ -618,7 +654,7 @@ async function processMessage(body) {
         // 1. Persistir deltas si el bloque vino valido.
         if (profileDeltas) {
           try {
-            await updateCustomerProfile(senderPhone, profileDeltas);
+            await updateCustomerProfile(storageKey, profileDeltas);
           } catch (e) {
             botLog("error", "Error actualizando perfil", { phone: senderPhone, error: e.message });
           }
@@ -630,7 +666,11 @@ async function processMessage(body) {
         try {
           const discount = detectDiscountOffer(botReply);
           if (discount) {
-            await notifyDescuentoOfrecido(senderPhone, discount.monto, discount.contexto, clientMeta);
+            if (!inTesting) {
+              await notifyDescuentoOfrecido(senderPhone, discount.monto, discount.contexto, clientMeta);
+            } else {
+              botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "descuento", monto: discount.monto });
+            }
             botLog("info", "Descuento detectado y notificado", {
               phone: senderPhone,
               monto: discount.monto,
@@ -645,7 +685,11 @@ async function processMessage(body) {
         if (profileDeltas?.siguiente_accion_sugerida === "recomendar_competencia") {
           try {
             const motivo = userMessage.slice(0, 300);
-            await notifyRecomendacionCompetencia(senderPhone, motivo, clientMeta);
+            if (!inTesting) {
+              await notifyRecomendacionCompetencia(senderPhone, motivo, clientMeta);
+            } else {
+              botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "recomendar_competencia" });
+            }
             botLog("info", "Recomendacion de competencia detectada", {
               phone: senderPhone,
               tags: profileDeltas.tags_nuevos || [],
@@ -689,7 +733,7 @@ async function processMessage(body) {
             const allProxyUrl = toProxyUrl(projDocs.brochure);
             await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
             allSentCount++;
-            await markDocSent(senderPhone, projKey + ".brochure");
+            await markDocSent(storageKey, projKey + ".brochure");
             console.log("PDF enviado (todos): brochure de " + projKey + " a " + senderPhone);
           }
         }
@@ -731,7 +775,7 @@ async function processMessage(body) {
             const proxyUrl = toProxyUrl(docUrl);
             await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
             sentCount++;
-            await markDocSent(senderPhone, project + "." + docType);
+            await markDocSent(storageKey, project + "." + docType);
             console.log("PDF enviado: " + docType + " de " + project + " a " + senderPhone);
           }
         }
@@ -745,7 +789,7 @@ async function processMessage(body) {
           const e4ProxyUrl = toProxyUrl(docs.preciosE4);
           await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
           sentCount++;
-          await markDocSent(senderPhone, project + ".preciosE4");
+          await markDocSent(storageKey, project + ".preciosE4");
           console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
         }
 
@@ -758,7 +802,7 @@ async function processMessage(body) {
         const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
         await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
         sentCount++;
-        await markDocSent(senderPhone, project + ".brochureE4");
+        await markDocSent(storageKey, project + ".brochureE4");
         console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
       }
 
