@@ -132,13 +132,17 @@ describe("Fix 3b — Identidad robusta en SUPERVISOR_PROMPT", () => {
     expect(SUPERVISOR_PROMPT).toContain("asistente operativo de JPREZ OS");
   });
 
-  it("aclara que NO es Mateo Reyes", () => {
-    expect(SUPERVISOR_PROMPT).toContain("NO eres Mateo Reyes");
+  it("confirma identidad de Mateo Reyes (fix hotfix-7)", () => {
+    // Inverso del test original: antes exigia "NO eres Mateo Reyes".
+    // Hotfix-7 corrigio Bug #2: supervisor ahora ES Mateo en modo operativo.
+    expect(SUPERVISOR_PROMPT).not.toContain("NO eres Mateo Reyes");
+    expect(SUPERVISOR_PROMPT).toContain("Eres Mateo Reyes");
+    expect(SUPERVISOR_PROMPT).toContain("Tu nombre es Mateo Reyes");
   });
 
-  it("CASO A cubre '¿cómo te llamas?' con respuesta util + ofrece nombrarlo", () => {
+  it("CASO A cubre '¿cómo te llamas?' confirmando Mateo Reyes (hotfix-7)", () => {
     expect(SUPERVISOR_PROMPT).toContain("CASO A");
-    expect(SUPERVISOR_PROMPT).toContain("tú mandas");
+    expect(SUPERVISOR_PROMPT).toContain("Soy Mateo Reyes, tu asistente operativo de JPREZ OS");
   });
 
   it("CASO B cubre 'cuéntame de ti' con descripcion del rol", () => {
@@ -147,8 +151,8 @@ describe("Fix 3b — Identidad robusta en SUPERVISOR_PROMPT", () => {
     expect(SUPERVISOR_PROMPT).toContain("supervisar conversaciones");
   });
 
-  it("CASO C cubre preguntas existenciales con dignidad profesional", () => {
-    expect(SUPERVISOR_PROMPT).toContain("CASO C");
+  it("CASO D cubre preguntas existenciales con dignidad profesional (antes era CASO C, renombrado en hotfix-7)", () => {
+    expect(SUPERVISOR_PROMPT).toContain("CASO D");
     expect(SUPERVISOR_PROMPT).toContain("dignidad profesional");
     expect(SUPERVISOR_PROMPT).toContain("claridad sobre mi trabajo");
   });
