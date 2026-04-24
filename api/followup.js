@@ -17,15 +17,11 @@
 // ============================================
 
 const Anthropic = require("@anthropic-ai/sdk");
+const { STAFF_PHONES } = require("../src/staff");
 
 // ============================================
 // CONSTANTES
 // ============================================
-
-const ENMANUEL_PHONE = "18299943102";
-const STAFF_PHONES = {
-  [ENMANUEL_PHONE]: { name: "Enmanuel Perez Chavez", role: "director", supervisor: true },
-};
 
 const ESCALATION_SILENCE_HOURS = 4;
 const MAX_MESSAGES = 20;

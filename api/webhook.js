@@ -15,6 +15,7 @@ const { readRawBody, verifyWebhookSignature } = require("../src/security/hmac");
 const { enforceRateLimit } = require("../src/security/ratelimit");
 const { checkIdempotency } = require("../src/security/idempotency");
 const { processMessage } = require("../src/handlers/message");
+const adminTesting = require("../src/admin-testing-mode");
 
 // ============================================
 // HANDLER PRINCIPAL (Vercel serverless)
@@ -90,20 +91,39 @@ async function handler(req, res) {
       // fresh | bypassed → continuar
     }
 
-    // 5. Rate limiting por telefono (staff bypass — ver src/security/ratelimit.js).
+    // 5. Comandos de admin testing mode (/test-on, /test-off, /test-status).
+    //    Se interceptan ANTES del rate limit y del processMessage. Solo tienen
+    //    efecto si el phone está en STAFF_PHONES — si un cliente normal manda
+    //    "/test-on", se ignora y el mensaje cae al pipeline regular (no se
+    //    dan pistas del sistema).
     const inboundPhone = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
-    if (inboundPhone && !STAFF_PHONES[inboundPhone]) {
-      const rl = await enforceRateLimit(inboundPhone);
-      if (rl.status === "exceeded") {
-        try {
-          await sendWhatsAppMessage(
-            inboundPhone,
-            "¡Gracias por tu interés en Constructora JPREZ! 🙌 Estoy procesando tus mensajes con calma para darte la mejor atención. En unos segundos te respondo todo con detalle."
-          );
-        } catch (sendErr) {
-          console.log("[ratelimit] Error enviando mensaje amable:", sendErr.message);
+    const inboundText = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body;
+    const testingCommand = parseTestingCommand(inboundText);
+    if (testingCommand && inboundPhone && STAFF_PHONES[inboundPhone]) {
+      await handleTestingCommand(testingCommand, inboundPhone);
+      return res.status(200).send("EVENT_RECEIVED");
+    }
+
+    // 6. Rate limiting por telefono (staff bypass — ver src/security/ratelimit.js).
+    //    Si el admin esta en modo testing, NO bypasseamos: queremos fidelidad
+    //    con la experiencia cliente real (rate limit aplica a todos).
+    if (inboundPhone) {
+      const isStaff = !!STAFF_PHONES[inboundPhone];
+      const inTesting = isStaff ? await adminTesting.isActive(inboundPhone) : false;
+      const bypass = isStaff && !inTesting;
+      if (!bypass) {
+        const rl = await enforceRateLimit(inboundPhone);
+        if (rl.status === "exceeded") {
+          try {
+            await sendWhatsAppMessage(
+              inboundPhone,
+              "¡Gracias por tu interés en Constructora JPREZ! 🙌 Estoy procesando tus mensajes con calma para darte la mejor atención. En unos segundos te respondo todo con detalle."
+            );
+          } catch (sendErr) {
+            console.log("[ratelimit] Error enviando mensaje amable:", sendErr.message);
+          }
+          return res.status(200).send("EVENT_RECEIVED");
         }
-        return res.status(200).send("EVENT_RECEIVED");
       }
     }
 
@@ -112,6 +132,76 @@ async function handler(req, res) {
   }
 
   return res.status(405).send("Method Not Allowed");
+}
+
+// parseTestingCommand: retorna "on" | "off" | "status" | null. Trim + lowercase
+// para tolerar /Test-On, " /test-on ", etc. Solo reconoce comando exacto;
+// "/test-on please" no matchea (se considera texto regular de cliente).
+function parseTestingCommand(text) {
+  if (typeof text !== "string") return null;
+  const t = text.trim().toLowerCase();
+  if (t === "/test-on") return "on";
+  if (t === "/test-off") return "off";
+  if (t === "/test-status") return "status";
+  return null;
+}
+
+// handleTestingCommand: ejecuta el comando + responde al admin. El caller
+// ya validó que phone está en STAFF_PHONES. Todos los errores se capturan
+// acá para que el webhook siempre termine con 200 (requisito Meta).
+async function handleTestingCommand(command, adminPhone) {
+  try {
+    if (command === "on") {
+      const result = await adminTesting.activate(adminPhone);
+      let reply;
+      if (result.ok) {
+        const mins = Math.round(result.ttlSec / 60);
+        reply =
+          "✅ Modo testing activado por " + mins + " min. Te trataré como " +
+          "cliente nuevo sin historial. Manda /test-off para salir.";
+      } else if (result.reason === "rate_limit") {
+        reply =
+          "⚠️ Llegaste al límite de " + result.max + " activaciones por hora. " +
+          "Esperá un rato antes de volver a activar /test-on.";
+      } else {
+        reply =
+          "⚠️ No pude activar el modo testing ahora (" + result.reason + "). " +
+          "Intentá de nuevo en un momento.";
+      }
+      await sendWhatsAppMessage(adminPhone, reply);
+      return;
+    }
+    if (command === "off") {
+      const result = await adminTesting.deactivate(adminPhone);
+      const reply = result.ok
+        ? "✅ Modo testing desactivado. Bienvenido de vuelta. Tu historial admin sigue intacto."
+        : "⚠️ No pude desactivar el modo testing ahora (" + result.reason + ").";
+      await sendWhatsAppMessage(adminPhone, reply);
+      return;
+    }
+    if (command === "status") {
+      const status = await adminTesting.getStatus(adminPhone);
+      const reply = status.active
+        ? "🟢 Modo testing ACTIVO. Quedan " + status.minutesRemaining + " minutos."
+        : "⚪ Modo testing INACTIVO. Manda /test-on para activar.";
+      await sendWhatsAppMessage(adminPhone, reply);
+      return;
+    }
+  } catch (e) {
+    botLog("error", "admin_testing_command_error", {
+      admin: adminPhone,
+      command,
+      error: e.message,
+    });
+    try {
+      await sendWhatsAppMessage(
+        adminPhone,
+        "⚠️ Error interno procesando el comando. Revisa logs."
+      );
+    } catch (_) {
+      // swallow — webhook debe seguir respondiendo 200.
+    }
+  }
 }
 
 // Desactiva el bodyParser de Vercel para que podamos leer el stream crudo y
@@ -123,4 +213,7 @@ handler.config = {
 };
 
 module.exports = handler;
+// Exports auxiliares para tests (no se consumen en runtime por nadie más).
+module.exports.parseTestingCommand = parseTestingCommand;
+module.exports.handleTestingCommand = handleTestingCommand;
 
