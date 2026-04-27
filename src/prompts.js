@@ -758,7 +758,7 @@ function buildSystemPrompt() {
 // ============================================
 // SYSTEM PROMPT PARA MODO SUPERVISOR
 // ============================================
-// Mojibake arreglado en Día 3: "TrÃ¡talo" → "trátalo", "acÃ¡talas" → "acátalas".
+// Mojibake arreglado en Día 3 (encoding UTF-8 estandarizado).
 
 const SUPERVISOR_PROMPT = `Eres Mateo Reyes, el asistente operativo de JPREZ OS, el sistema de automatización del negocio de Enmanuel Perez Chavez. Estas hablando con Enmanuel mismo, el director de la empresa.
 

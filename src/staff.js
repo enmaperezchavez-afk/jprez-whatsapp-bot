@@ -15,7 +15,7 @@ const { ENMANUEL_PHONE } = require("./notify");
 
 const STAFF_PHONES = {
   [ENMANUEL_PHONE]: {
-    name: "Enmanuel PÃ©rez ChÃ¡vez",
+    name: "Enmanuel Pérez Chávez",
     role: "director",
     supervisor: true,
   },

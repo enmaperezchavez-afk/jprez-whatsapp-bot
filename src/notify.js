@@ -34,20 +34,20 @@ async function notifyEnmanuel(senderPhone, userMessage, botReply, signalType, cl
 
   let notification = "";
   if (signalType === "hot") {
-    notification = "ð¥ LEAD CALIENTE\n\n";
+    notification = "🔥 LEAD CALIENTE\n\n";
     notification += "Nombre: " + clientName + "\n";
-    notification += "TelÃ©fono: " + senderPhone + "\n";
+    notification += "Teléfono: " + senderPhone + "\n";
     notification += "Canal: WhatsApp\n\n";
-    notification += "Ãltimo mensaje del cliente: " + userMessage.substring(0, 200) + "\n\n";
+    notification += "Último mensaje del cliente: " + userMessage.substring(0, 200) + "\n\n";
     notification += "Mi respuesta: " + botReply.substring(0, 300) + "\n\n";
-    notification += "AcciÃ³n sugerida: Llamar o escribir directamente para cerrar.";
+    notification += "Acción sugerida: Llamar o escribir directamente para cerrar.";
   } else if (signalType === "escalation") {
-    notification = "â ï¸ ESCALAMIENTO\n\n";
+    notification = "⚠️ ESCALAMIENTO\n\n";
     notification += "Nombre: " + clientName + "\n";
-    notification += "TelÃ©fono: " + senderPhone + "\n";
+    notification += "Teléfono: " + senderPhone + "\n";
     notification += "Canal: WhatsApp\n\n";
-    notification += "Ãltimo mensaje: " + userMessage.substring(0, 200) + "\n\n";
-    notification += "RazÃ³n: El cliente necesita atenciÃ³n humana directa.";
+    notification += "Último mensaje: " + userMessage.substring(0, 200) + "\n\n";
+    notification += "Razón: El cliente necesita atención humana directa.";
   }
 
   try {
