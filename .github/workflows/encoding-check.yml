@@ -1,0 +1,20 @@
+name: Encoding Integrity Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-encoding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Detect mojibake (UTF-8 → Latin-1 corruption)
+        run: node scripts/check-encoding.mjs --all

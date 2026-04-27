@@ -6,3 +6,7 @@ for file in $(git diff --cached --name-only --diff-filter=ACM | grep '^api/.*\.j
     exit 1
   }
 done
+
+# Hotfix-9: detectar mojibake (UTF-8 → Latin-1 corruption) en archivos staged.
+# Implementado en Node.js (no bash) para portabilidad cross-platform.
+node scripts/check-encoding.mjs || exit 1
