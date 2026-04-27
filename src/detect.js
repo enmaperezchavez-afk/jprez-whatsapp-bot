@@ -11,10 +11,6 @@
 //
 // MÓDULO HOJA (LEAF): no importa otros módulos del proyecto. Cero ciclos
 // posibles. Refactorizable en isolación. Testeable sin mocks.
-//
-// DEUDA TECNICA CONOCIDA: mojibake (informaciÃ³n, catÃ¡logo, paraÃ­so, etc.)
-// preservado byte-exact desde webhook — arreglar en commit separado de
-// normalizacion de encoding (NO parte del refactor estructural).
 
 // ============================================
 // DETECCION INTELIGENTE DE DOCUMENTOS
@@ -41,10 +37,10 @@ function detectDocumentRequest(botReply, userMessage) {
 
   const clientRequestWords = [
     "pdf", "brochure", "plano", "planos", "precio", "precios",
-    "listado", "documento", "informacion", "informaciÃ³n", "info",
-    "ficha", "catalogo", "catÃ¡logo", "enviame", "envÃ­ame",
-    "mandame", "mÃ¡ndame", "pasame", "pÃ¡same", "quiero ver",
-    "me puedes enviar", "me puedes mandar", "tienes material", "presentacion", "presentaciÃ³n", "presentaciones",
+    "listado", "documento", "informacion", "info",
+    "ficha", "catalogo", "enviame",
+    "mandame", "pasame", "quiero ver",
+    "me puedes enviar", "me puedes mandar", "tienes material", "presentacion", "presentaciones",
   ];
 
   const botConfirmsSend = botSendPhrases.some((p) => botText.includes(p));
@@ -54,7 +50,7 @@ function detectDocumentRequest(botReply, userMessage) {
 
   const projectKeywords = {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
-    pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "paraÃ­so", "ensanche paraiso"],
+    pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "ensanche paraiso"],
     pr4: ["pr4", "prado 4", "prado residences 4", "prado residences iv", "prado iv", "evaristo", "evaristo morales"],
     puertoPlata: ["puerto plata", "playa dorada", "prado suites", "prado suites puerto plata", "etapa 3", "etapa 4", "etapa 3 y 4"],
   };
@@ -73,13 +69,13 @@ function detectDocumentType(botReply, userMessage) {
   const combined = stripAccents((botReply + " " + userMessage).toLowerCase());
   const types = [];
 
-  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("catÃ¡logo") || combined.includes("ficha") || combined.includes("presentacion") || combined.includes("presentaciones")) {
+  if (combined.includes("brochure") || combined.includes("catalogo") || combined.includes("ficha") || combined.includes("presentacion") || combined.includes("presentaciones")) {
     types.push("brochure");
   }
-  if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto") || combined.includes("cuÃ¡nto")) {
+  if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto")) {
     types.push("precios");
   }
-  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("distribuciÃ³n") || combined.includes("layout")) {
+  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("layout")) {
     types.push("planos");
   }
 
