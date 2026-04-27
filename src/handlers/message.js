@@ -467,8 +467,8 @@ async function processMessage(body) {
     // pipeline lo trata como cliente). Si no está en testing, vale
     // igual a senderPhone y el comportamiento es idéntico al pre-hotfix-6.
     const isStaff = STAFF_PHONES[storageKey];
-    botLog("info", "Mensaje recibido", { phone: senderPhone, name: senderName, message: userMessage, isStaff: !!isStaff, testing: inTesting });
     const isSupervisor = isStaff?.supervisor === true;
+    botLog("info", "Mensaje recibido", { phone: senderPhone, name: senderName, message: userMessage, isStaff: !!isStaff, isSupervisor, storageKey, activePrompt: isSupervisor ? "SUPERVISOR_PROMPT" : "CLIENT_PROMPT", testing: inTesting });
     const activePrompt = isSupervisor ? SUPERVISOR_PROMPT : buildSystemPrompt();
 
     if (isStaff) {
@@ -589,7 +589,7 @@ async function processMessage(body) {
 
     await addMessage(storageKey, "assistant", botReply);
     await sendWhatsAppMessage(senderPhone, botReply);
-    botLog("info", "Respuesta enviada", { phone: senderPhone, responseLength: botReply.length });
+    botLog("info", "Respuesta enviada", { phone: senderPhone, responseLength: botReply.length, isSupervisor, activePrompt: isSupervisor ? "SUPERVISOR_PROMPT" : "CLIENT_PROMPT" });
 
     // Notificar a Enmanuel si hay señales (solo para clientes, no para staff).
     // En holding mode skipeamos las notificaciones hot/escalation: el caso YA
