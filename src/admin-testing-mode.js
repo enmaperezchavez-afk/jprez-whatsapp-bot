@@ -42,9 +42,9 @@
 //     testing (ver src/notify.js) para evitar loop (admin se notifica
 //     a sí mismo como cliente hot).
 //
-// MÓDULO NO-LEAF: depende de @upstash/redis y de ./staff, ./log.
+// MÓDULO NO-LEAF: depende de ./store/redis (getRedis compartido) y de ./staff, ./log.
 
-const { Redis } = require("@upstash/redis");
+const { getRedis } = require("./store/redis");
 const {
   ADMIN_TESTING_MODE_PREFIX,
   ADMIN_TESTING_ACTIVATIONS_PREFIX,
@@ -59,28 +59,13 @@ const {
 const { STAFF_PHONES } = require("./staff");
 const { botLog } = require("./log");
 
-let redisClient = null;
-function getRedis() {
-  if (redisClient) return redisClient;
-  try {
-    redisClient = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    });
-  } catch (e) {
-    console.error("[admin-testing] Redis init error:", e.message);
-    return null;
-  }
-  return redisClient;
-}
-
 function isAdmin(phone) {
   return !!(phone && STAFF_PHONES[phone]);
 }
 
 async function isActive(phone) {
   if (!phone) return false;
-  const r = getRedis();
+  const r = await getRedis();
   if (!r) return false;
   try {
     const v = await r.get(ADMIN_TESTING_MODE_PREFIX + phone);
@@ -93,7 +78,7 @@ async function isActive(phone) {
 
 async function activate(phone) {
   if (!isAdmin(phone)) return { ok: false, reason: "not_admin" };
-  const r = getRedis();
+  const r = await getRedis();
   if (!r) return { ok: false, reason: "redis_unavailable" };
 
   // Rate limit: max N activaciones por admin por hora.
@@ -141,7 +126,7 @@ async function activate(phone) {
 
 async function deactivate(phone) {
   if (!isAdmin(phone)) return { ok: false, reason: "not_admin" };
-  const r = getRedis();
+  const r = await getRedis();
   if (!r) return { ok: false, reason: "redis_unavailable" };
 
   try {
@@ -167,7 +152,7 @@ async function deactivate(phone) {
 
 async function getStatus(phone) {
   if (!isAdmin(phone)) return { active: false, admin: false };
-  const r = getRedis();
+  const r = await getRedis();
   if (!r) return { active: false, admin: true, error: "redis_unavailable" };
 
   try {
