@@ -50,6 +50,7 @@ const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
 const adminTesting = require("../admin-testing-mode");
+const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -517,7 +518,15 @@ async function processMessage(body) {
       await saveClientMeta(storageKey, { escalated: false });
     }
 
-    await addMessage(storageKey, "user", userMessage);
+    // Pendiente-4: detección de cambio de system prompt + auto-invalidación.
+    // Hash sobre activePrompt (NO finalPrompt — clientContext/profileContext
+    // son dinámicos por turno y no representan cambio de "versión" del prompt).
+    // Si el historial fue escrito bajo un hash distinto, hace backup (TTL 7d)
+    // y borra chat:<storageKey> antes de que addMessage(user) lo repueble.
+    const currentPromptHash = computePromptHash(activePrompt);
+    await checkAndInvalidate(storageKey, currentPromptHash);
+
+    await addMessage(storageKey, "user", userMessage, currentPromptHash);
     const messageHistory = await getHistory(storageKey);
 
     // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente).
@@ -587,7 +596,7 @@ async function processMessage(body) {
       botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
     }
 
-    await addMessage(storageKey, "assistant", botReply);
+    await addMessage(storageKey, "assistant", botReply, currentPromptHash);
     await sendWhatsAppMessage(senderPhone, botReply);
     botLog("info", "Respuesta enviada", { phone: senderPhone, responseLength: botReply.length, isSupervisor, activePrompt: isSupervisor ? "SUPERVISOR_PROMPT" : "CLIENT_PROMPT" });
 
