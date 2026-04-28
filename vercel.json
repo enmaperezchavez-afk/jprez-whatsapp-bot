@@ -19,6 +19,14 @@
     {
       "src": "api/followup.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/dashboard.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -37,6 +45,18 @@
     {
       "src": "/api/followup",
       "dest": "/api/followup.js"
+    },
+    {
+      "src": "/api/dashboard",
+      "dest": "/api/dashboard.js"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/public/dashboard.html"
+    },
+    {
+      "src": "/dashboard/(.*)",
+      "dest": "/public/$1"
     }
   ],
   "crons": [
