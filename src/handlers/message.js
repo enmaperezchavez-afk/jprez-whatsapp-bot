@@ -743,11 +743,11 @@ async function processMessage(body) {
             await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
             allSentCount++;
             await markDocSent(storageKey, projKey + ".brochure");
-            console.log("PDF enviado (todos): brochure de " + projKey + " a " + senderPhone);
+            botLog("info", "pdf_sent", { phone: senderPhone, project: projKey, docType: "brochure", scope: "todos" });
           }
         }
         if (allSentCount > 0) {
-          console.log("Total brochures enviados a " + senderPhone + ": " + allSentCount);
+          botLog("info", "pdf_batch_complete", { phone: senderPhone, totalSent: allSentCount, scope: "all_projects" });
         }
       } else if (project && PROJECT_DOCS[project]) {
         const docs = PROJECT_DOCS[project];
@@ -785,7 +785,7 @@ async function processMessage(body) {
             await sendWhatsAppDocument(senderPhone, proxyUrl, filename);
             sentCount++;
             await markDocSent(storageKey, project + "." + docType);
-            console.log("PDF enviado: " + docType + " de " + project + " a " + senderPhone);
+            botLog("info", "pdf_sent", { phone: senderPhone, project: project, docType: docType });
           }
         }
 
@@ -799,7 +799,7 @@ async function processMessage(body) {
           await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
           sentCount++;
           await markDocSent(storageKey, project + ".preciosE4");
-          console.log("PDF enviado: preciosE4 de puertoPlata a " + senderPhone);
+          botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "preciosE4" });
         }
 
       // Envio especial: Prado Suites Etapa 4 brochure
@@ -812,7 +812,7 @@ async function processMessage(body) {
         await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
         sentCount++;
         await markDocSent(storageKey, project + ".brochureE4");
-        console.log("PDF enviado: brochureE4 de puertoPlata a " + senderPhone);
+        botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "brochureE4" });
       }
 
         // Si el cliente pidio precios y el proyecto tiene imagenes Y no fueron
@@ -833,9 +833,9 @@ async function processMessage(body) {
         }
 
         if (sentCount === 0) {
-          console.log("AVISO: Solicitud de docs para " + project + " pero no hay URLs configuradas en las variables de entorno");
+          botLog("warn", "pdf_no_urls", { phone: senderPhone, project: project, requestedTypes: requestedTypes });
         } else {
-          console.log("Total PDFs enviados a " + senderPhone + ": " + sentCount);
+          botLog("info", "pdf_batch_complete", { phone: senderPhone, totalSent: sentCount, scope: "single_project" });
         }
       }
     }
