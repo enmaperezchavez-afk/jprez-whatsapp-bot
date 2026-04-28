@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>JPREZ Dashboard - Closer SD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+      background: radial-gradient(ellipse at top, #1e1b4b 0%, #020617 60%);
+      min-height: 100vh;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow-blue   { box-shadow: 0 0 40px rgba(59, 130, 246, 0.25); }
+    .glow-purple { box-shadow: 0 0 40px rgba(168, 85, 247, 0.25); }
+    .glow-green  { box-shadow: 0 0 40px rgba(16, 185, 129, 0.25); }
+    .num-mega { font-size: clamp(3rem, 8vw, 5.5rem); font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+    .num-big  { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+    .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 100%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); }
+    [data-loading="true"] .num { color: transparent; border-radius: 8px; }
+    [data-loading="true"] .num::before { content: " "; }
+  </style>
+</head>
+<body class="text-slate-100">
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- HEADER -->
+    <header class="mb-10 flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">
+          <span class="bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">JPREZ Dashboard</span>
+        </h1>
+        <p class="text-slate-400 mt-2 text-sm">Closer SD &middot; Reyes del Medio Loco</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs uppercase tracking-widest text-slate-500">Última actualización</p>
+        <p class="text-sm text-slate-300 mt-1" id="lastUpdated">cargando&hellip;</p>
+        <button id="errorsBadge" class="hidden mt-2 text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition" title="Ver detalle de queries fallidas">
+          <span id="errorsBadgeText">0 queries con error</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ERROR BANNER -->
+    <div id="errorBanner" class="hidden mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-red-200 text-sm">
+      <strong>No se pudo cargar el dashboard.</strong> Reintentando&hellip; <span id="errorDetail" class="text-red-300/80"></span>
+    </div>
+
+    <!-- NIVEL 1 — VOLUMEN -->
+    <section aria-label="Volumen" class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-10">
+      <div class="glass glow-blue rounded-2xl p-6 card-hover">
+        <p class="text-xs uppercase tracking-widest text-blue-300/80 mb-2">Conversaciones HOY</p>
+        <p class="num-mega text-blue-300 num" id="convToday">—</p>
+        <p class="text-xs text-slate-400 mt-2">clientes únicos</p>
+      </div>
+      <div class="glass glow-purple rounded-2xl p-6 card-hover">
+        <p class="text-xs uppercase tracking-widest text-purple-300/80 mb-2">Esta SEMANA</p>
+        <p class="num-mega text-purple-300 num" id="convWeek">—</p>
+        <p class="text-xs text-slate-400 mt-2">últimos 7 días</p>
+      </div>
+      <div class="glass glow-green rounded-2xl p-6 card-hover">
+        <p class="text-xs uppercase tracking-widest text-emerald-300/80 mb-2">Este MES</p>
+        <p class="num-mega text-emerald-300 num" id="convMonth">—</p>
+        <p class="text-xs text-slate-400 mt-2">desde día 1 del mes</p>
+      </div>
+    </section>
+
+    <!-- NIVEL 2 — ENGAGEMENT POR PROYECTO (Pipeline TOFU → BOFU) -->
+    <section aria-label="Engagement por proyecto" class="glass rounded-2xl p-6 mb-10">
+      <div class="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+        <h2 class="text-xl font-bold">Pipeline por proyecto</h2>
+        <p class="text-xs text-slate-400">📄 PDFs (info pedida) &middot; 🔥 Visitas (intent compra) &middot; mes corriente</p>
+      </div>
+      <div class="relative" style="height: 320px;">
+        <canvas id="projectsChart"></canvas>
+      </div>
+      <p id="projectsEmpty" class="hidden text-center text-slate-500 text-sm mt-8">Aún no hay actividad por proyecto este mes.</p>
+    </section>
+
+    <!-- NIVEL 3 — INTENT/CALIDAD -->
+    <section aria-label="Intent / calidad" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 mb-10">
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-2xl mb-1">📄</p>
+        <p class="num-big num" id="intentPdfs">—</p>
+        <p class="text-xs uppercase tracking-wider text-slate-400 mt-2">PDFs enviados</p>
+        <p class="text-[10px] text-slate-500 mt-1" id="intentPdfsHealth">&nbsp;</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-2xl mb-1">🔥</p>
+        <p class="num-big num" id="intentVisits">—</p>
+        <p class="text-xs uppercase tracking-wider text-slate-400 mt-2">Visitas agendadas</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-2xl mb-1">💰</p>
+        <p class="num-big num" id="intentDiscounts">—</p>
+        <p class="text-xs uppercase tracking-wider text-slate-400 mt-2">Descuentos solicitados</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-2xl mb-1">⚠️</p>
+        <p class="num-big num" id="intentObjections">—</p>
+        <p class="text-xs uppercase tracking-wider text-slate-400 mt-2">Objeciones nuevas</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-2xl mb-1">🎯</p>
+        <p class="num-big num" id="intentCompetitor">—</p>
+        <p class="text-xs uppercase tracking-wider text-slate-400 mt-2">Recom. competencia</p>
+      </div>
+    </section>
+
+    <!-- NIVEL 4 — PERFORMANCE -->
+    <section aria-label="Performance" class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-10">
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Tasa de escalación</p>
+        <p class="num-big num" id="perfEscalation">—</p>
+        <p class="text-xs text-slate-500 mt-2">clientes escalados / activos del mes</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover" title="Próxima iteración: requiere join entre Mensaje recibido y Respuesta enviada por phone">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Tiempo medio respuesta</p>
+        <p class="num-big text-slate-500" id="perfResponseTime">—</p>
+        <p class="text-xs text-slate-500 mt-2">próxima iteración</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Audios procesados</p>
+        <p class="num-big num" id="perfAudios">—</p>
+        <p class="text-xs text-slate-500 mt-2">transcritos con Whisper</p>
+      </div>
+    </section>
+
+    <!-- NIVEL 5 — OPERACIONAL -->
+    <footer class="glass rounded-2xl p-4 flex flex-wrap gap-x-8 gap-y-2 justify-center text-sm text-slate-300 mb-6">
+      <span>🔧 Calculadora: <strong class="num text-slate-100" id="opsCalc">—</strong></span>
+      <span class="text-slate-600">|</span>
+      <span>🚫 Duplicados ignorados: <strong class="num text-slate-100" id="opsDup">—</strong></span>
+      <span class="text-slate-600">|</span>
+      <span>⚡ Rate limits: <strong class="num text-slate-100" id="opsRate">—</strong></span>
+      <span class="text-slate-600">|</span>
+      <span>📨 Mensajes totales: <strong class="num text-slate-100" id="opsMessages">—</strong></span>
+    </footer>
+
+    <p class="text-center text-xs text-slate-600">Auto-refresh cada 60s. Cache edge 60s.</p>
+
+  </div>
+
+  <!-- MODAL DE ERRORES -->
+  <div id="errorsModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="glass rounded-2xl max-w-2xl w-full p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">Queries con error</h3>
+        <button id="errorsClose" class="text-slate-400 hover:text-slate-100 text-2xl leading-none">&times;</button>
+      </div>
+      <ul id="errorsList" class="space-y-2 text-sm font-mono text-amber-200/90 max-h-96 overflow-auto"></ul>
+      <p class="text-xs text-slate-500 mt-4">Las métricas que fallan se muestran como 0 — el resto del dashboard sigue funcional.</p>
+    </div>
+  </div>
+
+  <script>
+    let projectsChart = null;
+    let lastUpdatedISO = null;
+    let consecutiveErrors = 0;
+
+    const PROJECT_LABELS = {
+      pr4: "PR4",
+      puertoPlata: "Puerto Plata",
+      cruxPrado: "Crux Prado",
+      other: "Otros",
+    };
+    const PROJECT_COLORS = {
+      pr4: "#3b82f6",
+      puertoPlata: "#10b981",
+      cruxPrado: "#a855f7",
+      other: "#64748b",
+    };
+
+    function fmtNum(n) {
+      if (n === null || n === undefined) return "—";
+      if (typeof n !== "number" || !isFinite(n)) return "—";
+      return n.toLocaleString("es-DO");
+    }
+
+    function relativeTime(iso) {
+      if (!iso) return "—";
+      const then = new Date(iso).getTime();
+      if (isNaN(then)) return "—";
+      const diff = Math.max(0, Math.round((Date.now() - then) / 1000));
+      if (diff < 5) return "hace un instante";
+      if (diff < 60) return "hace " + diff + " segundos";
+      const min = Math.round(diff / 60);
+      if (min < 60) return "hace " + min + " min";
+      const hr = Math.round(min / 60);
+      return "hace " + hr + " h";
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function showErrorBanner(detail) {
+      const banner = document.getElementById("errorBanner");
+      banner.classList.remove("hidden");
+      document.getElementById("errorDetail").textContent = detail ? "(" + detail + ")" : "";
+    }
+
+    function hideErrorBanner() {
+      document.getElementById("errorBanner").classList.add("hidden");
+    }
+
+    function renderErrorsBadge(errors) {
+      const badge = document.getElementById("errorsBadge");
+      if (!errors || errors.length === 0) {
+        badge.classList.add("hidden");
+        return;
+      }
+      badge.classList.remove("hidden");
+      document.getElementById("errorsBadgeText").textContent =
+        errors.length + " " + (errors.length === 1 ? "query con error" : "queries con error");
+      const list = document.getElementById("errorsList");
+      list.innerHTML = "";
+      for (const e of errors) {
+        const li = document.createElement("li");
+        li.className = "border-l-2 border-amber-400/50 pl-3";
+        li.innerHTML = '<div class="text-amber-300 font-semibold">' + e.metric + '</div><div class="text-xs text-amber-200/70 break-all">' + e.error + '</div>';
+        list.appendChild(li);
+      }
+    }
+
+    function renderProjectsChart(visitsByProject, pdfsByProject) {
+      const ctx = document.getElementById("projectsChart").getContext("2d");
+      const keys = ["pr4", "puertoPlata", "cruxPrado", "other"];
+      const visits = keys.map((k) => (visitsByProject && visitsByProject[k]) || 0);
+      const pdfs = keys.map((k) => (pdfsByProject && pdfsByProject[k]) || 0);
+      const grandTotal = visits.reduce((s, v) => s + v, 0) + pdfs.reduce((s, v) => s + v, 0);
+
+      const empty = document.getElementById("projectsEmpty");
+      if (grandTotal === 0) {
+        empty.classList.remove("hidden");
+      } else {
+        empty.classList.add("hidden");
+      }
+
+      if (projectsChart) {
+        projectsChart.data.datasets[0].data = pdfs;
+        projectsChart.data.datasets[1].data = visits;
+        projectsChart.update();
+        return;
+      }
+
+      projectsChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: keys.map((k) => PROJECT_LABELS[k]),
+          datasets: [
+            {
+              label: "📄 PDFs enviados",
+              data: pdfs,
+              backgroundColor: "rgba(148, 163, 184, 0.55)",
+              borderRadius: 6,
+              borderSkipped: false,
+            },
+            {
+              label: "🔥 Visitas agendadas",
+              data: visits,
+              backgroundColor: keys.map((k) => PROJECT_COLORS[k]),
+              borderRadius: 6,
+              borderSkipped: false,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: "bottom",
+              labels: { color: "#cbd5e1", boxWidth: 12, padding: 12, font: { size: 11 } },
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const v = ctx.parsed.x;
+                  const dsLabel = ctx.dataset.label || "";
+                  return dsLabel + ": " + v;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { color: "#94a3b8", precision: 0 },
+              grid: { color: "rgba(148, 163, 184, 0.1)" },
+            },
+            y: {
+              ticks: { color: "#cbd5e1", font: { weight: 600 } },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderDashboard(data) {
+      hideErrorBanner();
+      consecutiveErrors = 0;
+
+      setText("convToday", fmtNum(data.conversations.today));
+      setText("convWeek", fmtNum(data.conversations.week));
+      setText("convMonth", fmtNum(data.conversations.month));
+
+      const pdfs = data.intent.pdfs || { total: 0, byProject: {}, noUrlsRate: 0 };
+      setText("intentPdfs", fmtNum(pdfs.total));
+      // Salud de configuracion: si > 5% de PDF requests fallan por URL ausente,
+      // hay env vars rotas. Mostrar discreto en gris/rojo segun severidad.
+      const healthEl = document.getElementById("intentPdfsHealth");
+      if (pdfs.noUrlsRate > 0) {
+        const danger = pdfs.noUrlsRate >= 5;
+        healthEl.textContent = "⚠️ " + pdfs.noUrlsRate + "% sin URL";
+        healthEl.className = "text-[10px] mt-1 " + (danger ? "text-red-400" : "text-amber-400/80");
+      } else {
+        healthEl.innerHTML = "&nbsp;";
+        healthEl.className = "text-[10px] text-slate-500 mt-1";
+      }
+      setText("intentVisits", fmtNum(data.intent.visits));
+      setText("intentDiscounts", fmtNum(data.intent.discounts));
+      setText("intentObjections", fmtNum(data.intent.newObjections));
+      setText("intentCompetitor", fmtNum(data.intent.competitorRecs));
+
+      setText("perfEscalation", (data.performance.escalationRate || 0) + "%");
+      setText("perfResponseTime", data.performance.avgResponseSeconds === null ? "—" : data.performance.avgResponseSeconds + " s");
+      setText("perfAudios", fmtNum(data.messages.audios));
+
+      setText("opsCalc", fmtNum(data.performance.calculatorUses));
+      setText("opsDup", fmtNum(data.ops.duplicates));
+      setText("opsRate", fmtNum(data.ops.rateLimits));
+      setText("opsMessages", fmtNum(data.messages.total));
+
+      renderProjectsChart(data.intent.visitsByProject, pdfs.byProject);
+      renderErrorsBadge(data.errors);
+
+      lastUpdatedISO = data.lastUpdated;
+      setText("lastUpdated", relativeTime(lastUpdatedISO));
+    }
+
+    async function loadMetrics() {
+      try {
+        const res = await fetch("/api/dashboard", { cache: "no-store" });
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error("HTTP " + res.status + " " + body.slice(0, 120));
+        }
+        const data = await res.json();
+        renderDashboard(data);
+      } catch (e) {
+        consecutiveErrors++;
+        showErrorBanner(e.message || String(e));
+        console.error("[dashboard] load failed:", e);
+      }
+    }
+
+    document.getElementById("errorsBadge").addEventListener("click", () => {
+      document.getElementById("errorsModal").classList.remove("hidden");
+    });
+    document.getElementById("errorsClose").addEventListener("click", () => {
+      document.getElementById("errorsModal").classList.add("hidden");
+    });
+    document.getElementById("errorsModal").addEventListener("click", (e) => {
+      if (e.target.id === "errorsModal") {
+        document.getElementById("errorsModal").classList.add("hidden");
+      }
+    });
+
+    setInterval(() => {
+      setText("lastUpdated", relativeTime(lastUpdatedISO));
+    }, 1000);
+
+    loadMetrics();
+    setInterval(loadMetrics, 60000);
+  </script>
+
+</body>
+</html>
