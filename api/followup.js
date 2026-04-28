@@ -18,6 +18,7 @@
 
 const Anthropic = require("@anthropic-ai/sdk");
 const { STAFF_PHONES } = require("../src/staff");
+const { getRedis } = require("../src/store/redis");
 
 // ============================================
 // CONSTANTES
@@ -47,19 +48,6 @@ const MIN_HOURS_BETWEEN_FOLLOWUPS = 18;
 // REDIS / METADATA / HISTORIAL
 // ============================================
 
-async function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
-  try {
-    const { Redis } = require("@upstash/redis");
-    return new Redis({ url, token });
-  } catch (e) {
-    console.log("Redis no disponible:", e.message);
-    return null;
-  }
-}
-
 async function getClientMeta(redis, phone) {
   const raw = await redis.get("meta:" + phone);
   if (!raw) return null;
@@ -79,7 +67,12 @@ async function saveClientMeta(redis, phone, patch) {
 async function getHistory(redis, phone) {
   const raw = await redis.get("chat:" + phone);
   if (!raw) return [];
-  return typeof raw === "string" ? JSON.parse(raw) : raw;
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  // Hotfix-14: soportar formato v2 {v, promptHash, messages}
+  if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.messages)) {
+    return parsed.messages;
+  }
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 async function appendAssistantMessage(redis, phone, content) {
