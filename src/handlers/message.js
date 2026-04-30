@@ -45,7 +45,7 @@ const {
   detectDiscountOffer,
 } = require("../notify");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../detect");
-const { buildSystemPrompt, SUPERVISOR_PROMPT } = require("../prompts");
+const { buildSystemPrompt, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
@@ -518,12 +518,18 @@ async function processMessage(body) {
       await saveClientMeta(storageKey, { escalated: false });
     }
 
-    // Pendiente-4: detección de cambio de system prompt + auto-invalidación.
-    // Hash sobre activePrompt (NO finalPrompt — clientContext/profileContext
-    // son dinámicos por turno y no representan cambio de "versión" del prompt).
-    // Si el historial fue escrito bajo un hash distinto, hace backup (TTL 7d)
-    // y borra chat:<storageKey> antes de que addMessage(user) lo repueble.
-    const currentPromptHash = computePromptHash(activePrompt);
+    // Pendiente-4 fix (Hotfix prompt-hash-static): el hash debe representar
+    // la "versión" del prompt, NO su contenido completo. activePrompt incluye
+    // fechaHeader (cambia cada minuto vía new Date()) + SKILL_CONTENT +
+    // INVENTORY_CONTENT — hashearlo todo invalida el historial en cada turno.
+    // Decisión: hashear solo la parte ESTÁTICA que define identidad/reglas
+    // del agente:
+    //   - cliente   → MATEO_PROMPT_V5_2 (constante en src/prompts.js)
+    //   - supervisor → SUPERVISOR_PROMPT (constante, ya estable)
+    // Cambios en SKILL/INVENTORY (precios, unidades) NO disparan invalidación
+    // — llegan a TODOS los clientes activos, que es lo correcto.
+    const promptForHash = isSupervisor ? SUPERVISOR_PROMPT : MATEO_PROMPT_V5_2;
+    const currentPromptHash = computePromptHash(promptForHash);
     await checkAndInvalidate(storageKey, currentPromptHash);
 
     await addMessage(storageKey, "user", userMessage, currentPromptHash);
