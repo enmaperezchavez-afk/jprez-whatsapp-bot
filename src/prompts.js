@@ -829,4 +829,4 @@ PROYECTOS ACTIVOS:
 
 REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
 
-module.exports = { buildSystemPrompt, SUPERVISOR_PROMPT };
+module.exports = { buildSystemPrompt, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 };
