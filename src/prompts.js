@@ -39,6 +39,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
 
 // ============================================
 // CARGA DEL SKILL (conocimiento de venta dinamico)
@@ -738,6 +739,9 @@ function buildSystemPrompt() {
   });
   const fechaHeader = "Hoy es: " + iso + " (" + legible + ")\nHora actual: " + hora + " (Santo Domingo)";
 
+  // Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
+  // No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
+  // lo que iterar sobre ellos NO invalida historiales de clientes activos.
   return [
     fechaHeader,
     "",
@@ -752,6 +756,7 @@ function buildSystemPrompt() {
     "---",
     "",
     MATEO_PROMPT_V5_2,
+    GLOSSARY_LAYER,
   ].join("\n");
 }
 

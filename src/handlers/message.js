@@ -44,7 +44,7 @@ const {
   notifyRecomendacionCompetencia,
   detectDiscountOffer,
 } = require("../notify");
-const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../detect");
+const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage } = require("../detect");
 const { buildSystemPrompt, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
@@ -760,6 +760,13 @@ async function processMessage(body) {
       } else if (project && PROJECT_DOCS[project]) {
         const docs = PROJECT_DOCS[project];
         const requestedTypes = detectDocumentType(botReply, userMessage);
+        // Hotfix-19 Bug #2: si project es puertoPlata, detectar si el cliente
+        // pidio etapa especifica. null = ambiguo → mandar ambas (E3 y E4)
+        // como antes. "E3"/"E4" = solo esa etapa. Se aplica a los bloques
+        // especiales E4 mas abajo y al filename de los bloques E3 estandar.
+        const ppStage = project === "puertoPlata"
+          ? detectPuertoPlataStage(botReply, userMessage)
+          : null;
 
         let sentCount = 0;
         // Track si las imagenes del proyecto ya fueron enviadas como teaser del
@@ -781,6 +788,14 @@ async function processMessage(body) {
         const missingDocTypes = [];
         for (const docType of requestedTypes) {
           const docUrl = docs[docType];
+          // Hotfix-19 Bug #2: si cliente pidio puertoPlata E4 explicito, saltarse
+          // el envio E3 estandar de este loop. El bloque especial E4 mas abajo
+          // se encarga del documento E4. Inverso: si pidio E3 explicito, dejar
+          // pasar este loop y mas abajo skipear los bloques E4.
+          if (project === "puertoPlata" && ppStage === "E4") {
+            // No envio del archivo E3 cuando cliente pidio E4 especifico.
+            continue;
+          }
           if (docUrl) {
             if (sentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -826,7 +841,8 @@ async function processMessage(body) {
         }
 
         // Envio especial: Prado Suites Etapa 4 precios
-        if (project === "puertoPlata" && requestedTypes.includes("precios") && docs.preciosE4) {
+        // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
+        if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("precios") && docs.preciosE4) {
           if (sentCount > 0) {
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
@@ -839,7 +855,8 @@ async function processMessage(body) {
         }
 
       // Envio especial: Prado Suites Etapa 4 brochure
-      if (project === "puertoPlata" && requestedTypes.includes("brochure") && docs.brochureE4) {
+      // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
+      if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("brochure") && docs.brochureE4) {
         if (sentCount > 0) {
           await new Promise((resolve) => setTimeout(resolve, 1500));
         }
