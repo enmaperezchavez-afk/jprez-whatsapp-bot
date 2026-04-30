@@ -40,6 +40,7 @@
 const fs = require("fs");
 const path = require("path");
 const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
+const { STYLE_LAYER } = require("./prompts/style-layer");
 
 // ============================================
 // CARGA DEL SKILL (conocimiento de venta dinamico)
@@ -757,6 +758,7 @@ function buildSystemPrompt() {
     "",
     MATEO_PROMPT_V5_2,
     GLOSSARY_LAYER,
+    STYLE_LAYER,
   ].join("\n");
 }
 
