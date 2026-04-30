@@ -827,10 +827,10 @@ Tienes acceso a toda la informacion de los proyectos de JPREZ:
 
 PROYECTOS ACTIVOS:
 1. CRUX DEL PRADO - SDN: Listos (RD$5.65M) + Torre 6 en construccion (desde US$99K, 42/50 disponibles, entrega julio 2027)
-2. PR3 - Churchill: Equipado, desde US$156K, 13/60 quedan, entrega agosto 2026
+2. PR3 - Churchill: Equipado, desde US$156K, 6/60 quedan, entrega agosto 2026
 3. PR4 - Evaristo Morales: Desde US$140K hasta US$310K, 13/72 quedan, entrega agosto 2027
-4. Puerto Plata E4: Desde US$163K, entrega septiembre 2027
-5. Puerto Plata E3: Desde US$73K, 63/126 quedan, entrega marzo 2029
+4. Puerto Plata E4: Desde US$163K, 19/80 quedan, entrega septiembre 2027
+5. Puerto Plata E3: Desde US$73K, 55/126 quedan, entrega marzo 2029
 
 REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
 

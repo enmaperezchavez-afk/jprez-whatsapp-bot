@@ -157,10 +157,30 @@ const PUERTO_PLATA_DELIVERY = {
   E4: "2027-09-01",
 };
 
-function calcularPlanPago(proyecto, precioUsd, etapa) {
-  const plan = PAYMENT_PLANS[proyecto];
-  if (!plan) {
+function calcularPlanPago(proyecto, precioUsd, etapa, customInicialPct, customCompletivoPct, customEntregaPct) {
+  const standardPlan = PAYMENT_PLANS[proyecto];
+  if (!standardPlan) {
     return { error: "Proyecto no reconocido: " + proyecto };
+  }
+  // Hotfix-19 Bug #6: si vienen los 3 porcentajes custom, usarlos. Si vienen
+  // parciales o ninguno, fallback al plan estandar del proyecto. Validacion:
+  // suma debe estar a 100 +/- 0.5 (tolerancia minima por redondeos del modelo).
+  let plan = standardPlan;
+  const allCustom = [customInicialPct, customCompletivoPct, customEntregaPct]
+    .every((v) => typeof v === "number" && isFinite(v));
+  if (allCustom) {
+    const sum = customInicialPct + customCompletivoPct + customEntregaPct;
+    if (Math.abs(sum - 100) > 0.5) {
+      return { error: "Los porcentajes custom deben sumar 100. Recibí inicial=" + customInicialPct + ", completivo=" + customCompletivoPct + ", entrega=" + customEntregaPct + " (suma=" + sum + ")." };
+    }
+    if (customInicialPct < 0 || customCompletivoPct < 0 || customEntregaPct < 0) {
+      return { error: "Los porcentajes custom no pueden ser negativos." };
+    }
+    plan = {
+      separacion: customInicialPct / 100,
+      completivo: customCompletivoPct / 100,
+      entrega: customEntregaPct / 100,
+    };
   }
   let delivery;
   if (proyecto === "puertoPlata") {
@@ -224,6 +244,18 @@ const TOOLS = [
           type: "string",
           enum: ["E3", "E4"],
           description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. OBLIGATORIO cuando proyecto = 'puertoPlata'. Ignorado en otros proyectos.",
+        },
+        inicial_pct: {
+          type: "number",
+          description: "OPCIONAL. Porcentaje inicial custom (0-100). Solo usar cuando el cliente pide explicitamente un esquema NO estandar (ej: 'quiero pagar 70% inicial', 'puedo dar 25% al firmar'). Si lo pasas, DEBES pasar tambien completivo_pct y entrega_pct sumando 100. Si no lo pasas, se usa el plan estandar del proyecto.",
+        },
+        completivo_pct: {
+          type: "number",
+          description: "OPCIONAL. Porcentaje completivo custom (cuotas mensuales hasta entrega). Solo si pasas inicial_pct y entrega_pct tambien.",
+        },
+        entrega_pct: {
+          type: "number",
+          description: "OPCIONAL. Porcentaje contra entrega custom (banco u otro). Solo si pasas inicial_pct y completivo_pct tambien. Los 3 deben sumar 100.",
         },
       },
       required: ["proyecto", "precio_usd"],
@@ -553,7 +585,14 @@ async function processMessage(body) {
       tools: TOOLS,
       phone: senderPhone,
       toolHandlers: {
-        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd, input.etapa),
+        calcular_plan_pago: (input) => calcularPlanPago(
+          input.proyecto,
+          input.precio_usd,
+          input.etapa,
+          input.inicial_pct,
+          input.completivo_pct,
+          input.entrega_pct
+        ),
       },
     });
 
@@ -920,4 +959,4 @@ async function processMessage(body) {
   }
 }
 
-module.exports = { processMessage, DOC_TYPE_NAMES };
+module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago };
