@@ -435,10 +435,10 @@ async function processMessage(body) {
       botLog("info", "Audio recibido, intentando transcribir", { phone: senderPhone, audioId });
       const transcribed = audioId ? await transcribeWhatsAppAudio(audioId) : null;
       const trimmed = (transcribed || "").trim();
-      // Fallback: si la transcripcion fallo (null) o devolvio algo inutil
-      // (string vacio o < 3 caracteres que suele ser ruido), pedimos repetir.
-      // No procesamos mensaje vacio para evitar que Claude responda a ruido.
-      if (!trimmed || trimmed.length < 3) {
+      // Hotfix-19 Bug #1: threshold relajado de 3 a 2 — palabras validas
+      // como "ok", "si", "no" tienen 2 chars y eran descartadas como ruido.
+      // El audio vacio/null sigue cayendo al fallback (no procesar ruido).
+      if (!trimmed || trimmed.length < 2) {
         await sendWhatsAppMessage(
           senderPhone,
           "Mira, no te capté bien el audio. ¿Me lo puedes repetir o escribir el mensaje?"
@@ -447,11 +447,13 @@ async function processMessage(body) {
           phone: senderPhone,
           audioId,
           transcribedLength: trimmed.length,
+          // null distingue "Whisper fallo" de "Whisper devolvio algo corto".
+          transcribeReturnedNull: transcribed === null,
         });
         return;
       }
       userMessage = "[audio transcrito] " + trimmed;
-      botLog("info", "Audio transcrito", { phone: senderPhone, length: trimmed.length });
+      botLog("info", "Audio transcrito", { phone: senderPhone, audioId, length: trimmed.length });
     } else {
       await sendWhatsAppMessage(
         senderPhone,
@@ -771,6 +773,12 @@ async function processMessage(body) {
           imagesSentAsTeaser = true;
         }
 
+        // Hotfix-19 Bug #3: tracker granular de docTypes faltantes.
+        // El bug original: bot promete "te mando brochure y planos" pero solo
+        // llega el brochure. Causa: docs.planos = null (env var ausente) y
+        // el loop saltaba silenciosamente. Ahora loguea pdf_doc_missing por
+        // cada docType sin URL y mas abajo notifica al cliente.
+        const missingDocTypes = [];
         for (const docType of requestedTypes) {
           const docUrl = docs[docType];
           if (docUrl) {
@@ -792,7 +800,29 @@ async function processMessage(body) {
             sentCount++;
             await markDocSent(storageKey, project + "." + docType);
             botLog("info", "pdf_sent", { phone: senderPhone, project: project, docType: docType });
+          } else {
+            missingDocTypes.push(docType);
+            botLog("warn", "pdf_doc_missing", {
+              phone: senderPhone, project: project, docType: docType,
+            });
           }
+        }
+
+        // Si Mateo prometio docs que no se pudieron mandar (env var sin URL),
+        // notificar al cliente — regla "Mateo nunca deja al cliente en visto":
+        // mejor ser honestos que prometer y no entregar. Solo cuando algo SI
+        // se mando (sentCount>0); si NO se mando nada, el bloque de abajo
+        // ya emite pdf_no_urls + el cliente no ve respuesta promisoria
+        // contradicha (probablemente Mateo respondio sin gatillo de envio).
+        if (missingDocTypes.length > 0 && sentCount > 0) {
+          const labels = missingDocTypes
+            .map((t) => DOC_TYPE_NAMES[t] || t)
+            .join(" y ");
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await sendWhatsAppMessage(
+            senderPhone,
+            "Te mando lo que tengo a mano. " + labels + " lo coordino con Enmanuel y te lo paso al toque."
+          );
         }
 
         // Envio especial: Prado Suites Etapa 4 precios
