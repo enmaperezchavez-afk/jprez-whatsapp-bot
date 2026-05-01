@@ -44,7 +44,7 @@ const {
   notifyRecomendacionCompetencia,
   detectDiscountOffer,
 } = require("../notify");
-const { detectDocumentRequest, detectDocumentType, detectLeadSignals } = require("../detect");
+const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage } = require("../detect");
 const { buildSystemPrompt, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
@@ -157,10 +157,30 @@ const PUERTO_PLATA_DELIVERY = {
   E4: "2027-09-01",
 };
 
-function calcularPlanPago(proyecto, precioUsd, etapa) {
-  const plan = PAYMENT_PLANS[proyecto];
-  if (!plan) {
+function calcularPlanPago(proyecto, precioUsd, etapa, customInicialPct, customCompletivoPct, customEntregaPct) {
+  const standardPlan = PAYMENT_PLANS[proyecto];
+  if (!standardPlan) {
     return { error: "Proyecto no reconocido: " + proyecto };
+  }
+  // Hotfix-19 Bug #6: si vienen los 3 porcentajes custom, usarlos. Si vienen
+  // parciales o ninguno, fallback al plan estandar del proyecto. Validacion:
+  // suma debe estar a 100 +/- 0.5 (tolerancia minima por redondeos del modelo).
+  let plan = standardPlan;
+  const allCustom = [customInicialPct, customCompletivoPct, customEntregaPct]
+    .every((v) => typeof v === "number" && isFinite(v));
+  if (allCustom) {
+    const sum = customInicialPct + customCompletivoPct + customEntregaPct;
+    if (Math.abs(sum - 100) > 0.5) {
+      return { error: "Los porcentajes custom deben sumar 100. Recibí inicial=" + customInicialPct + ", completivo=" + customCompletivoPct + ", entrega=" + customEntregaPct + " (suma=" + sum + ")." };
+    }
+    if (customInicialPct < 0 || customCompletivoPct < 0 || customEntregaPct < 0) {
+      return { error: "Los porcentajes custom no pueden ser negativos." };
+    }
+    plan = {
+      separacion: customInicialPct / 100,
+      completivo: customCompletivoPct / 100,
+      entrega: customEntregaPct / 100,
+    };
   }
   let delivery;
   if (proyecto === "puertoPlata") {
@@ -224,6 +244,18 @@ const TOOLS = [
           type: "string",
           enum: ["E3", "E4"],
           description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. OBLIGATORIO cuando proyecto = 'puertoPlata'. Ignorado en otros proyectos.",
+        },
+        inicial_pct: {
+          type: "number",
+          description: "OPCIONAL. Porcentaje inicial custom (0-100). Solo usar cuando el cliente pide explicitamente un esquema NO estandar (ej: 'quiero pagar 70% inicial', 'puedo dar 25% al firmar'). Si lo pasas, DEBES pasar tambien completivo_pct y entrega_pct sumando 100. Si no lo pasas, se usa el plan estandar del proyecto.",
+        },
+        completivo_pct: {
+          type: "number",
+          description: "OPCIONAL. Porcentaje completivo custom (cuotas mensuales hasta entrega). Solo si pasas inicial_pct y entrega_pct tambien.",
+        },
+        entrega_pct: {
+          type: "number",
+          description: "OPCIONAL. Porcentaje contra entrega custom (banco u otro). Solo si pasas inicial_pct y completivo_pct tambien. Los 3 deben sumar 100.",
         },
       },
       required: ["proyecto", "precio_usd"],
@@ -435,10 +467,10 @@ async function processMessage(body) {
       botLog("info", "Audio recibido, intentando transcribir", { phone: senderPhone, audioId });
       const transcribed = audioId ? await transcribeWhatsAppAudio(audioId) : null;
       const trimmed = (transcribed || "").trim();
-      // Fallback: si la transcripcion fallo (null) o devolvio algo inutil
-      // (string vacio o < 3 caracteres que suele ser ruido), pedimos repetir.
-      // No procesamos mensaje vacio para evitar que Claude responda a ruido.
-      if (!trimmed || trimmed.length < 3) {
+      // Hotfix-19 Bug #1: threshold relajado de 3 a 2 — palabras validas
+      // como "ok", "si", "no" tienen 2 chars y eran descartadas como ruido.
+      // El audio vacio/null sigue cayendo al fallback (no procesar ruido).
+      if (!trimmed || trimmed.length < 2) {
         await sendWhatsAppMessage(
           senderPhone,
           "Mira, no te capté bien el audio. ¿Me lo puedes repetir o escribir el mensaje?"
@@ -447,11 +479,13 @@ async function processMessage(body) {
           phone: senderPhone,
           audioId,
           transcribedLength: trimmed.length,
+          // null distingue "Whisper fallo" de "Whisper devolvio algo corto".
+          transcribeReturnedNull: transcribed === null,
         });
         return;
       }
       userMessage = "[audio transcrito] " + trimmed;
-      botLog("info", "Audio transcrito", { phone: senderPhone, length: trimmed.length });
+      botLog("info", "Audio transcrito", { phone: senderPhone, audioId, length: trimmed.length });
     } else {
       await sendWhatsAppMessage(
         senderPhone,
@@ -551,7 +585,14 @@ async function processMessage(body) {
       tools: TOOLS,
       phone: senderPhone,
       toolHandlers: {
-        calcular_plan_pago: (input) => calcularPlanPago(input.proyecto, input.precio_usd, input.etapa),
+        calcular_plan_pago: (input) => calcularPlanPago(
+          input.proyecto,
+          input.precio_usd,
+          input.etapa,
+          input.inicial_pct,
+          input.completivo_pct,
+          input.entrega_pct
+        ),
       },
     });
 
@@ -758,6 +799,13 @@ async function processMessage(body) {
       } else if (project && PROJECT_DOCS[project]) {
         const docs = PROJECT_DOCS[project];
         const requestedTypes = detectDocumentType(botReply, userMessage);
+        // Hotfix-19 Bug #2: si project es puertoPlata, detectar si el cliente
+        // pidio etapa especifica. null = ambiguo → mandar ambas (E3 y E4)
+        // como antes. "E3"/"E4" = solo esa etapa. Se aplica a los bloques
+        // especiales E4 mas abajo y al filename de los bloques E3 estandar.
+        const ppStage = project === "puertoPlata"
+          ? detectPuertoPlataStage(botReply, userMessage)
+          : null;
 
         let sentCount = 0;
         // Track si las imagenes del proyecto ya fueron enviadas como teaser del
@@ -771,8 +819,22 @@ async function processMessage(body) {
           imagesSentAsTeaser = true;
         }
 
+        // Hotfix-19 Bug #3: tracker granular de docTypes faltantes.
+        // El bug original: bot promete "te mando brochure y planos" pero solo
+        // llega el brochure. Causa: docs.planos = null (env var ausente) y
+        // el loop saltaba silenciosamente. Ahora loguea pdf_doc_missing por
+        // cada docType sin URL y mas abajo notifica al cliente.
+        const missingDocTypes = [];
         for (const docType of requestedTypes) {
           const docUrl = docs[docType];
+          // Hotfix-19 Bug #2: si cliente pidio puertoPlata E4 explicito, saltarse
+          // el envio E3 estandar de este loop. El bloque especial E4 mas abajo
+          // se encarga del documento E4. Inverso: si pidio E3 explicito, dejar
+          // pasar este loop y mas abajo skipear los bloques E4.
+          if (project === "puertoPlata" && ppStage === "E4") {
+            // No envio del archivo E3 cuando cliente pidio E4 especifico.
+            continue;
+          }
           if (docUrl) {
             if (sentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -792,11 +854,34 @@ async function processMessage(body) {
             sentCount++;
             await markDocSent(storageKey, project + "." + docType);
             botLog("info", "pdf_sent", { phone: senderPhone, project: project, docType: docType });
+          } else {
+            missingDocTypes.push(docType);
+            botLog("warn", "pdf_doc_missing", {
+              phone: senderPhone, project: project, docType: docType,
+            });
           }
         }
 
+        // Si Mateo prometio docs que no se pudieron mandar (env var sin URL),
+        // notificar al cliente — regla "Mateo nunca deja al cliente en visto":
+        // mejor ser honestos que prometer y no entregar. Solo cuando algo SI
+        // se mando (sentCount>0); si NO se mando nada, el bloque de abajo
+        // ya emite pdf_no_urls + el cliente no ve respuesta promisoria
+        // contradicha (probablemente Mateo respondio sin gatillo de envio).
+        if (missingDocTypes.length > 0 && sentCount > 0) {
+          const labels = missingDocTypes
+            .map((t) => DOC_TYPE_NAMES[t] || t)
+            .join(" y ");
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await sendWhatsAppMessage(
+            senderPhone,
+            "Te mando lo que tengo a mano. " + labels + " lo coordino con Enmanuel y te lo paso al toque."
+          );
+        }
+
         // Envio especial: Prado Suites Etapa 4 precios
-        if (project === "puertoPlata" && requestedTypes.includes("precios") && docs.preciosE4) {
+        // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
+        if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("precios") && docs.preciosE4) {
           if (sentCount > 0) {
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
@@ -809,7 +894,8 @@ async function processMessage(body) {
         }
 
       // Envio especial: Prado Suites Etapa 4 brochure
-      if (project === "puertoPlata" && requestedTypes.includes("brochure") && docs.brochureE4) {
+      // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
+      if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("brochure") && docs.brochureE4) {
         if (sentCount > 0) {
           await new Promise((resolve) => setTimeout(resolve, 1500));
         }
@@ -873,4 +959,4 @@ async function processMessage(body) {
   }
 }
 
-module.exports = { processMessage, DOC_TYPE_NAMES };
+module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago };

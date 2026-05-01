@@ -48,11 +48,19 @@ function detectDocumentRequest(botReply, userMessage) {
 
   if (!botConfirmsSend) return null;
 
+  // Hotfix-19 Bug #5: aliases brutales — PSE3/PSE4 son la abreviatura corta
+  // de Prado Suites Etapa 3/4 (Puerto Plata). El cliente las usa por escrito.
+  // Pre-fix caian a "all" porque ningun proyecto matcheaba → bot mandaba
+  // los 4 brochures cuando solo querian Puerto Plata.
+  // ORDEN IMPORTA: aliases mas especificos (PSE3 antes que "etapa 3") evitan
+  // colisiones — "pse3" matchea solo Puerto Plata, "etapa 3" sin contexto
+  // tambien va a Puerto Plata (E3 es de PP). Iteracion por keys preserva
+  // orden de declaracion en JS modernos.
   const projectKeywords = {
     crux: ["crux", "crux del prado", "torre 6", "santo domingo norte", "colinas"],
     pr3: ["pr3", "prado 3", "prado residences 3", "prado residences iii", "prado iii", "churchill", "paraiso", "ensanche paraiso"],
     pr4: ["pr4", "prado 4", "prado residences 4", "prado residences iv", "prado iv", "evaristo", "evaristo morales"],
-    puertoPlata: ["puerto plata", "playa dorada", "prado suites", "prado suites puerto plata", "etapa 3", "etapa 4", "etapa 3 y 4"],
+    puertoPlata: ["pse3", "pse4", "puerto plata", "playa dorada", "prado suites", "prado suites puerto plata", "etapa 3", "etapa 4", "etapa 3 y 4"],
   };
 
   for (const [project, words] of Object.entries(projectKeywords)) {
@@ -63,6 +71,22 @@ function detectDocumentRequest(botReply, userMessage) {
 
   // No project matched but docs requested - send all
   return "all";
+}
+
+// Hotfix-19 Bug #2: detecta si el cliente pidio una etapa especifica de
+// Puerto Plata. Retorna "E3", "E4" o null (ambiguo, mandar ambas como antes).
+// Solo aplica cuando project === "puertoPlata"; el caller debe verificar.
+function detectPuertoPlataStage(botReply, userMessage) {
+  const combined = stripAccents((botReply + " " + userMessage).toLowerCase());
+  // E3 keywords explicitos. "pse3" desambigua frente a "etapa 3" si ambos
+  // aparecen — preferimos sefial mas precisa.
+  const e3Markers = ["pse3", "etapa 3", "e3"];
+  const e4Markers = ["pse4", "etapa 4", "e4"];
+  const hasE3 = e3Markers.some((w) => combined.includes(w));
+  const hasE4 = e4Markers.some((w) => combined.includes(w));
+  if (hasE3 && !hasE4) return "E3";
+  if (hasE4 && !hasE3) return "E4";
+  return null; // ambos o ninguno → mandar las dos (comportamiento previo)
 }
 
 function detectDocumentType(botReply, userMessage) {
@@ -122,4 +146,4 @@ function detectLeadSignals(botReply) {
   return { isHotLead, needsEscalation, booking, cleanReply };
 }
 
-module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals };
+module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage };
