@@ -807,6 +807,22 @@ async function processMessage(body) {
           ? detectPuertoPlataStage(botReply, userMessage)
           : null;
 
+        // Hotfix-19B Bug #2 followup: JUICIO COMERCIAL. Si Mateo prometio
+        // "te mando Puerto Plata" sin que ni el cliente ni Mateo especificaran
+        // etapa (ppStage === null), NO bombardeamos con E3+E4. La regla
+        // JUICIO COMERCIAL del glossary-layer ensena al prompt a preguntar
+        // "¿E3 o E4?" antes de prometer envio. Si llegamos aqui con ambiguedad,
+        // preferimos dejar que la siguiente vuelta del prompt aclare en lugar
+        // de mandar 2-4 PDFs sin contexto. return; sale de processMessage —
+        // el bloque PDF es lo ultimo del flujo, no se omite logica posterior.
+        if (project === "puertoPlata" && ppStage === null) {
+          botLog("info", "pdf_skip_ambiguous_pp_stage", {
+            phone: senderPhone,
+            requestedTypes,
+          });
+          return;
+        }
+
         let sentCount = 0;
         // Track si las imagenes del proyecto ya fueron enviadas como teaser del
         // brochure, para evitar duplicar envio despues del PDF de precios cuando

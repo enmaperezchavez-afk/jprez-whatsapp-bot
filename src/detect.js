@@ -164,4 +164,34 @@ function detectLeadSignals(botReply) {
   return { isHotLead, needsEscalation, booking, cleanReply };
 }
 
-module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage };
+// Hotfix-19B Bug #2 followup: helper para detectar si el cliente pidio
+// algo de Puerto Plata SIN especificar etapa. Mira solo userMessage (no
+// el botReply) — el caller usa esto como senial pura de la intencion del
+// cliente, distinta de detectPuertoPlataStage que mira combined.
+//
+// Use case: instrumentacion / tests / futuro gating del lado del prompt.
+// El handler actual gatea via ppStage === null (combined detection), que
+// es semantica diferente: si Mateo desambiguo en su reply, ppStage retorna
+// la etapa y el envio procede; isAmbiguousPuertoPlataRequest seguiria
+// retornando true en ese caso. Las dos perspectivas son utiles separadas.
+function isAmbiguousPuertoPlataRequest(userMessage) {
+  const text = stripAccents((userMessage || "").toLowerCase());
+
+  const mentionsPP =
+    text.includes("puerto plata") ||
+    text.includes("playa dorada") ||
+    text.includes("prado suites") ||
+    /\bpp\b/.test(text);
+
+  const mentionsStage =
+    text.includes("etapa 3") ||
+    text.includes("etapa 4") ||
+    /\be3\b/.test(text) ||
+    /\be4\b/.test(text) ||
+    text.includes("pse3") ||
+    text.includes("pse4");
+
+  return mentionsPP && !mentionsStage;
+}
+
+module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, isAmbiguousPuertoPlataRequest };
