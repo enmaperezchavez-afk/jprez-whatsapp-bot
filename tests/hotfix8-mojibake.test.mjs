@@ -65,7 +65,9 @@ describe("Hotfix-8 — Encoding integrity (UTF-8 → Latin-1 cleanup)", () => {
     // vacío (fallback "brochure"). Estos asserts demuestran el contrato.
     expect(detectDocumentType("", "dame el catálogo")).toContain("brochure");
     expect(detectDocumentType("", "cuánto cuesta?")).toContain("precios");
-    expect(detectDocumentType("", "necesito la distribución")).toContain("planos");
+    // Hotfix-19B: "distribución" → brochure (insight comercial: brochure ya
+    // trae plantas tipo). Pre-Hotfix-19B mapeaba a "planos".
+    expect(detectDocumentType("", "necesito la distribución")).toContain("brochure");
     // Mayúsculas + tildes (toLowerCase + stripAccents combinados).
     expect(detectDocumentType("", "CUÁNTO CUESTA")).toContain("precios");
   });

@@ -99,15 +99,33 @@ function detectDocumentType(botReply, userMessage) {
   if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto")) {
     types.push("precios");
   }
-  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("layout")) {
-    types.push("planos");
+  // Hotfix-19B Bug #3 followup: "planos"/"distribucion"/"plantas tipo" mapean
+  // a "brochure" porque el brochure CONTIENE las plantas tipo internamente.
+  // Antes mapeaban a "planos" → env var PDF_*_PLANOS faltante → promesa rota.
+  // Insight comercial del Director: vendedor humano no manda "PDF de planos
+  // separado", manda el brochure y dice "ahi van las plantas".
+  if (
+    combined.includes("plano") ||
+    combined.includes("distribucion") ||
+    combined.includes("distribución") ||
+    combined.includes("layout") ||
+    combined.includes("planta") ||
+    combined.includes("plantas") ||
+    combined.includes("diseño apartamento") ||
+    combined.includes("como es por dentro") ||
+    combined.includes("como es el apartamento")
+  ) {
+    types.push("brochure");
   }
 
   if (types.length === 0) {
     return ["brochure"];
   }
 
-  return types;
+  // Dedupe: "brochure" puede venir empujado dos veces (de la rama brochure
+  // y de la rama planos→brochure) cuando cliente pide "brochure y planos".
+  // Sin dedupe el handler mandaria el mismo PDF dos veces con 1.5s de delay.
+  return [...new Set(types)];
 }
 
 // ============================================

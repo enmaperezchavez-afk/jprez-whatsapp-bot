@@ -864,11 +864,12 @@ async function processMessage(body) {
 
         // Si Mateo prometio docs que no se pudieron mandar (env var sin URL),
         // notificar al cliente — regla "Mateo nunca deja al cliente en visto":
-        // mejor ser honestos que prometer y no entregar. Solo cuando algo SI
-        // se mando (sentCount>0); si NO se mando nada, el bloque de abajo
-        // ya emite pdf_no_urls + el cliente no ve respuesta promisoria
-        // contradicha (probablemente Mateo respondio sin gatillo de envio).
-        if (missingDocTypes.length > 0 && sentCount > 0) {
+        // mejor ser honestos que prometer y no entregar.
+        // Hotfix-19B Bug #3 followup: pre-fix exigia sentCount>0; cuando
+        // cliente pedia "solo planos" y planos no existia, sentCount=0 y el
+        // fallback no disparaba — bot prometia y cliente quedaba en visto.
+        // Ahora el fallback dispara siempre que haya algo prometido y faltante.
+        if (missingDocTypes.length > 0) {
           const labels = missingDocTypes
             .map((t) => DOC_TYPE_NAMES[t] || t)
             .join(" y ");
