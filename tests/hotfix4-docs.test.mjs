@@ -243,7 +243,7 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
     claudeMockResponse = null;
   });
 
-  it("cliente pide planos de Crux -> NO envia archivo (slot retirado)", async () => {
+  it("cliente pide planos de Crux -> recibe brochure (Hotfix-19B mapping)", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -256,10 +256,14 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
 
     const docs = documentsSentTo(PHONE);
 
-    // Ningun PDF enviado: docs.planos es undefined en Crux post-FIX 3a
-    // (aunque Mateo prometio "te mando los planos", no hay slot que atender).
-    // Comportamiento esperado: el mensaje de texto llega, pero no llega PDF.
-    expect(docs.length).toBe(0);
+    // Hotfix-19B: detectDocumentType mapea "planos" → ["brochure"] porque el
+    // brochure ya contiene plantas tipo internamente. Pre-Hotfix-19B este test
+    // afirmaba 0 docs (slot planos retirado en hotfix-4); ahora cliente recibe
+    // brochure de Crux. Caso ideal: cliente queria ver el apartamento por
+    // dentro y el brochure es la respuesta correcta.
+    expect(docs.length).toBe(1);
+    expect(docs[0].document.filename).toContain("Brochure");
+    expect(docs[0].document.filename).toContain("Crux");
   }, 20000);
 
   it("cliente pide brochure de Crux -> sigue funcionando", async () => {
@@ -294,7 +298,7 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
     expect(docs[0].document.filename).toContain("Precios y Disponibilidad");
   }, 20000);
 
-  it("cliente pide planos de PR3 -> sigue funcionando (PDF_PR3_PLANOS existe)", async () => {
+  it("cliente pide planos de PR3 -> recibe brochure (Hotfix-19B mapping)", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -306,7 +310,11 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
     await processMessage(buildBody(PHONE, "planos pr3"));
 
     const docs = documentsSentTo(PHONE);
+    // Hotfix-19B: "planos" → brochure. PDF_PR3_PLANOS quedo huerfano en env
+    // (env var existe pero codigo ya no la consume). El cliente recibe el
+    // brochure de PR3 que internamente trae las plantas tipo de cada apto.
     expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Planos Arquitectónicos");
+    expect(docs[0].document.filename).toContain("Brochure");
+    expect(docs[0].document.filename).toContain("Prado Residences III");
   }, 20000);
 });

@@ -99,15 +99,33 @@ function detectDocumentType(botReply, userMessage) {
   if (combined.includes("precio") || combined.includes("listado") || combined.includes("costo") || combined.includes("cuanto")) {
     types.push("precios");
   }
-  if (combined.includes("plano") || combined.includes("distribucion") || combined.includes("layout")) {
-    types.push("planos");
+  // Hotfix-19B Bug #3 followup: "planos"/"distribucion"/"plantas tipo" mapean
+  // a "brochure" porque el brochure CONTIENE las plantas tipo internamente.
+  // Antes mapeaban a "planos" → env var PDF_*_PLANOS faltante → promesa rota.
+  // Insight comercial del Director: vendedor humano no manda "PDF de planos
+  // separado", manda el brochure y dice "ahi van las plantas".
+  if (
+    combined.includes("plano") ||
+    combined.includes("distribucion") ||
+    combined.includes("distribución") ||
+    combined.includes("layout") ||
+    combined.includes("planta") ||
+    combined.includes("plantas") ||
+    combined.includes("diseño apartamento") ||
+    combined.includes("como es por dentro") ||
+    combined.includes("como es el apartamento")
+  ) {
+    types.push("brochure");
   }
 
   if (types.length === 0) {
     return ["brochure"];
   }
 
-  return types;
+  // Dedupe: "brochure" puede venir empujado dos veces (de la rama brochure
+  // y de la rama planos→brochure) cuando cliente pide "brochure y planos".
+  // Sin dedupe el handler mandaria el mismo PDF dos veces con 1.5s de delay.
+  return [...new Set(types)];
 }
 
 // ============================================
@@ -146,4 +164,34 @@ function detectLeadSignals(botReply) {
   return { isHotLead, needsEscalation, booking, cleanReply };
 }
 
-module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage };
+// Hotfix-19B Bug #2 followup: helper para detectar si el cliente pidio
+// algo de Puerto Plata SIN especificar etapa. Mira solo userMessage (no
+// el botReply) — el caller usa esto como senial pura de la intencion del
+// cliente, distinta de detectPuertoPlataStage que mira combined.
+//
+// Use case: instrumentacion / tests / futuro gating del lado del prompt.
+// El handler actual gatea via ppStage === null (combined detection), que
+// es semantica diferente: si Mateo desambiguo en su reply, ppStage retorna
+// la etapa y el envio procede; isAmbiguousPuertoPlataRequest seguiria
+// retornando true en ese caso. Las dos perspectivas son utiles separadas.
+function isAmbiguousPuertoPlataRequest(userMessage) {
+  const text = stripAccents((userMessage || "").toLowerCase());
+
+  const mentionsPP =
+    text.includes("puerto plata") ||
+    text.includes("playa dorada") ||
+    text.includes("prado suites") ||
+    /\bpp\b/.test(text);
+
+  const mentionsStage =
+    text.includes("etapa 3") ||
+    text.includes("etapa 4") ||
+    /\be3\b/.test(text) ||
+    /\be4\b/.test(text) ||
+    text.includes("pse3") ||
+    text.includes("pse4");
+
+  return mentionsPP && !mentionsStage;
+}
+
+module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, isAmbiguousPuertoPlataRequest };

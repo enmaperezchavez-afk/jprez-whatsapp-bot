@@ -56,10 +56,16 @@ async function findStagedFiles() {
   const out = execSync("git diff --cached --name-only --diff-filter=ACM", {
     encoding: "utf-8",
   });
+  // Hotfix-19B unblock: respetar SOURCE_DIRS igual que findAllFiles. Antes
+  // solo filtraba por extension, lo que escaneaba tests/ — donde los
+  // regression guards (hotfix8-mojibake, etc) usan mojibake como needles
+  // legitimos en .not.toContain(...). El comentario de scope al inicio del
+  // archivo ya documentaba "NO tests/", solo faltaba honrarlo en --staged.
   return out
     .split("\n")
     .filter(Boolean)
-    .filter((f) => EXTENSIONS.some((e) => f.endsWith(e)));
+    .filter((f) => EXTENSIONS.some((e) => f.endsWith(e)))
+    .filter((f) => SOURCE_DIRS.some((d) => f.startsWith(d + "/")));
 }
 
 async function findAllFiles(roots) {
