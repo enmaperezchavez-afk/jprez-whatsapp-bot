@@ -103,6 +103,65 @@ async function sendWhatsAppImage(to, imageUrl, caption) {
 // Hotfix-19 Bug #1: try/catch wrapper + logs estructurados a Axiom para
 // diagnostico de loops "no te capte audio". Cada fallo emite evento
 // `audio_transcribe_*` con detalle. NUNCA propaga excepcion al handler.
+//
+// Hotfix-20 c3: para diagnostico de audios cortos que devuelven "no te
+// capte" persistente:
+//   - log audio_transcribe_raw_result (200 chars) PRE-threshold del handler.
+//     Permite ver en Axiom si Whisper devuelve "" vs hallucination
+//     ("Subtítulos por Amara.org") vs texto valido corto.
+//   - retry 1 vez si primer intento devuelve null o "". Caso comun: Whisper
+//     glitch transitorio recupera al segundo intento.
+//   - timeout 30s por intento via AbortController. Evita que fetch cuelgue
+//     indefinidamente y agote los 20s de timeout de Meta.
+//   - prompt: "audio en español" hint a Whisper. En audios cortos a veces
+//     el modelo no esta seguro del idioma y desambigua mal.
+
+const WHISPER_TIMEOUT_MS = 30000;
+
+async function whisperTranscribeOnce(audioBuffer, mimeType, ext, openaiKey, audioId, attemptNum, botLog) {
+  const form = new FormData();
+  form.append("file", new Blob([audioBuffer], { type: mimeType }), "audio." + ext);
+  form.append("model", "whisper-1");
+  form.append("language", "es");
+  form.append("prompt", "audio en español");
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), WHISPER_TIMEOUT_MS);
+
+  try {
+    const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + openaiKey },
+      body: form,
+      signal: controller.signal,
+    });
+    if (!resp.ok) {
+      const body = await resp.text();
+      botLog("warn", "audio_transcribe_whisper_failed", {
+        audioId, attemptNum, status: resp.status, body: body.slice(0, 200),
+        audioBytes: audioBuffer.byteLength, mimeType,
+      });
+      return null;
+    }
+    const data = await resp.json();
+    const text = (data.text || "").trim();
+    botLog("info", "audio_transcribe_raw_result", {
+      audioId, attemptNum, rawText: text.slice(0, 200), rawLength: text.length,
+    });
+    return text;
+  } catch (e) {
+    if (e.name === "AbortError") {
+      botLog("warn", "audio_transcribe_whisper_timeout", {
+        audioId, attemptNum, timeoutMs: WHISPER_TIMEOUT_MS,
+      });
+      return null;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function transcribeWhatsAppAudio(audioId) {
   // Lazy require para evitar ciclos en imports tempranos del cold start.
   const { botLog } = require("./log");
@@ -142,28 +201,16 @@ async function transcribeWhatsAppAudio(audioId) {
     }
     const audioBuffer = await audioResp.arrayBuffer();
 
-    // 3. Enviar a Whisper
-    const form = new FormData();
+    // 3. Enviar a Whisper (con retry 1 vez si null/empty)
     const ext = mimeType.includes("mpeg") ? "mp3" : mimeType.includes("mp4") ? "mp4" : "ogg";
-    form.append("file", new Blob([audioBuffer], { type: mimeType }), "audio." + ext);
-    form.append("model", "whisper-1");
-    form.append("language", "es");
-
-    const whisperResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + openaiKey },
-      body: form,
-    });
-    if (!whisperResp.ok) {
-      const body = await whisperResp.text();
-      botLog("warn", "audio_transcribe_whisper_failed", {
-        audioId, status: whisperResp.status, body: body.slice(0, 200),
-        audioBytes: audioBuffer.byteLength, mimeType,
+    let result = await whisperTranscribeOnce(audioBuffer, mimeType, ext, openaiKey, audioId, 1, botLog);
+    if (result === null || result === "") {
+      botLog("info", "audio_transcribe_retry", {
+        audioId, firstResult: result === null ? "null" : "empty",
       });
-      return null;
+      result = await whisperTranscribeOnce(audioBuffer, mimeType, ext, openaiKey, audioId, 2, botLog);
     }
-    const whisperData = await whisperResp.json();
-    return (whisperData.text || "").trim();
+    return result;
   } catch (e) {
     botLog("error", "audio_transcribe_exception", {
       audioId, error: e.message, stack: (e.stack || "").slice(0, 500),
