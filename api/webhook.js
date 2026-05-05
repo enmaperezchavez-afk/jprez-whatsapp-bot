@@ -76,7 +76,18 @@ async function handler(req, res) {
 
     // 4. Idempotencia (ANTES del rate limit — ver src/security/idempotency.js §ORDEN)
     const messageId = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
+    // Hotfix-20 c2: log inbound antes del idempotency check para diagnostico
+    // del Bug #9 (3 respuestas en mismo timestamp). Combinado con
+    // idempotency_decision permite reconstruir si Meta envio duplicados,
+    // si Redis bypaseo, o si el cliente envio mensajes legitimos rapidos.
     if (messageId) {
+      const inboundPhone = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+      botLog("info", "inbound_message_received", {
+        event_type: "inbound_message_received",
+        messageId,
+        phone: inboundPhone || null,
+        timestamp: new Date().toISOString(),
+      });
       const idem = await checkIdempotency(messageId);
       if (idem.status === "duplicate") {
         const phone = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;

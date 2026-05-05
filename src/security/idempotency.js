@@ -34,9 +34,21 @@ const IDEMPOTENCY_TTL_SECONDS = 3600; // 1 hora
 async function checkIdempotency(messageId) {
   const redis = await getRedis();
   if (!redis) {
+    // Hotfix-20 c2: log legacy preservado (dashboard.js + idempotency.test.mjs
+    // dependen del nombre exacto). Log nuevo idempotency_decision agregado
+    // alongside para observabilidad granular del Bug #9 (3 respuestas en
+    // mismo timestamp). Decision final post-1-semana de datos reales.
     botLog("warn", "idempotency_bypassed_redis_unavailable", {
       event_type: "idempotency_bypassed_redis_unavailable",
       messageId,
+      timestamp: new Date().toISOString(),
+    });
+    botLog("warn", "idempotency_decision", {
+      event_type: "idempotency_decision",
+      messageId,
+      status: "bypassed",
+      reason: "redis_unavailable",
+      ttlSeconds: IDEMPOTENCY_TTL_SECONDS,
       timestamp: new Date().toISOString(),
     });
     return { status: "bypassed" };
@@ -48,8 +60,22 @@ async function checkIdempotency(messageId) {
     });
     if (result !== "OK") {
       // Key ya existia -> mensaje duplicado (retry de Meta o similar).
+      botLog("info", "idempotency_decision", {
+        event_type: "idempotency_decision",
+        messageId,
+        status: "duplicate",
+        ttlSeconds: IDEMPOTENCY_TTL_SECONDS,
+        timestamp: new Date().toISOString(),
+      });
       return { status: "duplicate" };
     }
+    botLog("info", "idempotency_decision", {
+      event_type: "idempotency_decision",
+      messageId,
+      status: "fresh",
+      ttlSeconds: IDEMPOTENCY_TTL_SECONDS,
+      timestamp: new Date().toISOString(),
+    });
     return { status: "fresh" };
   } catch (e) {
     // Error durante el SET (timeout, red, etc.). Fail-open.
@@ -57,6 +83,15 @@ async function checkIdempotency(messageId) {
       event_type: "idempotency_bypassed_redis_unavailable",
       messageId,
       error: e.message,
+      timestamp: new Date().toISOString(),
+    });
+    botLog("warn", "idempotency_decision", {
+      event_type: "idempotency_decision",
+      messageId,
+      status: "bypassed",
+      reason: "redis_error",
+      error: e.message,
+      ttlSeconds: IDEMPOTENCY_TTL_SECONDS,
       timestamp: new Date().toISOString(),
     });
     return { status: "bypassed" };
