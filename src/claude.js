@@ -2,9 +2,14 @@
 // CLIENTE ANTHROPIC (Claude API) + tool-use loop
 // ============================================
 // Extraido desde api/webhook.js en Dia 2 sin cambios de comportamiento
-// observable. Preserva los hardcodes actuales: modelo claude-sonnet-4-6,
-// max_tokens 500, MAX_TOOL_ITERATIONS 3. Cliente construido por request
-// (no memoizada, igual que hoy).
+// observable. Hardcodes actuales: modelo claude-sonnet-4-6,
+// max_tokens 2048 (Hotfix-20B Bug #14 — pre-fix era 500, insuficiente
+// para la iteracion final post-tool-use que debe emitir <perfil_update>
+// JSON + tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...] + reply al cliente
+// en una sola respuesta. Cap se agotaba mid-respuesta tipicamente justo
+// despues del bloque perfil_update → cleanedText vacio → empty-reply
+// guard "se me complico"), MAX_TOOL_ITERATIONS 3. Cliente construido
+// por request (no memoizada, igual que hoy).
 
 const Anthropic = require("@anthropic-ai/sdk");
 const { botLog } = require("./log");
@@ -33,10 +38,21 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
   while (iteration < MAX_TOOL_ITERATIONS) {
     response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 500,
+      max_tokens: 2048,
       system,
       tools,
       messages: workingMessages,
+    });
+    // Hotfix-20B Bug #14: log stop_reason + usage por iteracion para
+    // diagnostico futuro. Si "max_tokens" vuelve a aparecer como
+    // stop_reason, sabemos que el cap quedo corto para algun caso
+    // limite (perfil_update v2 mas grande, calculo mas verboso, etc).
+    botLog("info", "claude_response", {
+      phone,
+      iteration,
+      stop_reason: response.stop_reason,
+      input_tokens: response.usage?.input_tokens,
+      output_tokens: response.usage?.output_tokens,
     });
     if (response.stop_reason !== "tool_use") break;
 
