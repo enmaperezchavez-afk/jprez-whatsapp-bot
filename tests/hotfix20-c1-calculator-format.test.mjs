@@ -12,10 +12,19 @@ const require = createRequire(import.meta.url);
 const { STYLE_LAYER } = require("../src/prompts/style-layer");
 const { buildSystemPrompt } = require("../src/prompts");
 
-describe("Hotfix-20 c1 — STYLE_LAYER incluye FORMATO CALCULADORA", () => {
-  it("Test 1: STYLE_LAYER contiene seccion 'FORMATO CALCULADORA'", () => {
-    expect(STYLE_LAYER).toContain("FORMATO CALCULADORA");
-    expect(STYLE_LAYER).toContain("habla, no listes");
+// HOTFIX-22 c1 (6 mayo 2026): el bloque §4 fue renombrado de
+// "FORMATO CALCULADORA — habla, no listes" a "FORMATO NÚMEROS — siempre
+// exactos, prosa natural" como parte del cleanup de prosa + numeros exactos.
+// Ademas el scope se generalizo (universal vs solo tool calcular_plan_pago) y
+// los ejemplos BIEN se reescribieron con numeros exactos ($163,000) en lugar
+// de redondeados ($163K). Estos tests fueron actualizados para validar el
+// nuevo bloque preservando la intencion original (anti-pattern Excel + prosa
+// con numeros embebidos + flujo 2 escenarios).
+
+describe("Hotfix-20 c1 — STYLE_LAYER incluye FORMATO NÚMEROS (post-Hotfix-22)", () => {
+  it("Test 1: STYLE_LAYER contiene seccion 'FORMATO NÚMEROS'", () => {
+    expect(STYLE_LAYER).toContain("FORMATO NÚMEROS");
+    expect(STYLE_LAYER).toContain("siempre exactos");
   });
 
   it("Test 2: anti-pattern Excel/academico esta explicitamente prohibido", () => {
@@ -26,10 +35,10 @@ describe("Hotfix-20 c1 — STYLE_LAYER incluye FORMATO CALCULADORA", () => {
     expect(STYLE_LAYER).toMatch(/Excel|academico|reporte financiero/);
   });
 
-  it("Test 3: pro-pattern muestra prosa con numeros redondeados a K", () => {
-    // Ejemplo positivo en el layer debe usar la convencion "$XK" y verbos
-    // de accion ("bajas", "contra entrega").
-    expect(STYLE_LAYER).toMatch(/\$\d+K/);
+  it("Test 3: pro-pattern muestra prosa con numeros EXACTOS (post-Hotfix-22)", () => {
+    // Hotfix-22 invirtio la regla de redondeo. Ejemplos BIEN ahora usan
+    // numeros exactos ($163,000, $2,038, $114,100) y verbos de accion.
+    expect(STYLE_LAYER).toMatch(/\$\d{1,3}(?:,\d{3})+/);
     expect(STYLE_LAYER).toContain("bajas");
     expect(STYLE_LAYER).toContain("contra entrega");
   });
@@ -42,14 +51,14 @@ describe("Hotfix-20 c1 — STYLE_LAYER incluye FORMATO CALCULADORA", () => {
     expect(STYLE_LAYER).toMatch(/¿[Cc]ual te late|¿con cual quieres avanzar/);
   });
 
-  it("Test 5: buildSystemPrompt incluye FORMATO CALCULADORA al final (despues de Mateo + GLOSARIO + JUICIO)", () => {
+  it("Test 5: buildSystemPrompt incluye FORMATO NÚMEROS al final (despues de Mateo + GLOSARIO + JUICIO)", () => {
     const prompt = buildSystemPrompt();
-    expect(prompt).toContain("FORMATO CALCULADORA");
-    // Orden: Mateo → GLOSARIO → JUICIO COMERCIAL (ambos en glossary-layer) → STYLE → FORMATO CALCULADORA.
+    expect(prompt).toContain("FORMATO NÚMEROS");
+    // Orden: Mateo → GLOSARIO → JUICIO COMERCIAL (ambos en glossary-layer) → STYLE → FORMATO NÚMEROS.
     const idxMateo = prompt.indexOf("Eres Mateo Reyes");
     const idxGlossary = prompt.indexOf("GLOSARIO DE ABREVIATURAS");
     const idxJuicio = prompt.indexOf("JUICIO COMERCIAL");
-    const idxFormato = prompt.indexOf("FORMATO CALCULADORA");
+    const idxFormato = prompt.indexOf("FORMATO NÚMEROS");
     expect(idxMateo).toBeGreaterThan(-1);
     expect(idxGlossary).toBeGreaterThan(idxMateo);
     expect(idxJuicio).toBeGreaterThan(idxGlossary);

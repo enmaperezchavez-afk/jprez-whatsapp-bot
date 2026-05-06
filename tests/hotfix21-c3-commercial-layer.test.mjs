@@ -76,10 +76,11 @@ describe("Hotfix-21 c3 — COMMERCIAL_LAYER export + composition", () => {
     expect(COMMERCIAL_LAYER).toContain("para mudarme");
     expect(COMMERCIAL_LAYER).toContain("regalo");
     expect(COMMERCIAL_LAYER).toContain("inversion");
-    // Recurring: 3 buckets temporales
-    expect(COMMERCIAL_LAYER).toMatch(/<\s*24/);
+    // Recurring: 3 buckets temporales (post Hotfix-22 c1: ** bold removido,
+    // formato del bullet pasado a prosa "Menos de 24 horas" / "Mas de 7 dias").
+    expect(COMMERCIAL_LAYER).toMatch(/Menos de 24 horas|<\s*24/);
     expect(COMMERCIAL_LAYER).toMatch(/24\s*horas\s*-\s*7\s*dias/);
-    expect(COMMERCIAL_LAYER).toMatch(/>\s*7\s*dias/);
+    expect(COMMERCIAL_LAYER).toMatch(/Mas de 7 dias|>\s*7\s*dias/);
     // Avance comercial
     expect(COMMERCIAL_LAYER).toMatch(/AVANCE COMERCIAL/i);
     expect(COMMERCIAL_LAYER).toContain("Dato comercial nuevo");
