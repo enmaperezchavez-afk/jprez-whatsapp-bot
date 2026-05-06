@@ -89,6 +89,33 @@ function detectPuertoPlataStage(botReply, userMessage) {
   return null; // ambos o ninguno → mandar las dos (comportamiento previo)
 }
 
+// Hotfix-21 c3 (Bug #23): detecta si el cliente pidio Crux Listos vs Torre 6.
+// Patron espejo de detectPuertoPlataStage. Retorna "T6", "Listos" o null
+// (ambiguo, gating: el dispatcher saltea envio y el commercial-layer fuerza
+// al modelo a pedir clarificacion).
+//
+// Solo aplica cuando project === "crux"; el caller debe verificar.
+//
+// Markers T6 (construccion / preventa):
+//   "torre 6", "en planos", "construccion", "obra gris", "preventa", "futuro"
+// Markers Listos (terminado / mudanza inmediata):
+//   "listo", "listos", "para mudarme", "ya", "etapa 1", "etapa 2", "inmediato"
+//
+// Nota: "ya" como marker de Listos es ruidoso por si solo (puede ser
+// muletilla "ya tienes precios?"). Por eso requerimos co-ocurrencia con
+// crux para que el caller invoque esta funcion. La ambigueidad genuina
+// (ambos o ninguno) cae a null y el dispatcher pide clarificacion.
+function detectCruxStage(botReply, userMessage) {
+  const combined = stripAccents((botReply + " " + userMessage).toLowerCase());
+  const t6Markers = ["torre 6", "en planos", "construccion", "obra gris", "preventa", "futuro"];
+  const listosMarkers = ["listo", "listos", "para mudarme", "etapa 1", "etapa 2", "inmediato"];
+  const hasT6 = t6Markers.some((w) => combined.includes(w));
+  const hasListos = listosMarkers.some((w) => combined.includes(w));
+  if (hasT6 && !hasListos) return "T6";
+  if (hasListos && !hasT6) return "Listos";
+  return null; // ambos o ninguno → ambiguo, dispatcher pide clarificacion
+}
+
 function detectDocumentType(botReply, userMessage) {
   const combined = stripAccents((botReply + " " + userMessage).toLowerCase());
   const types = [];
@@ -194,4 +221,19 @@ function isAmbiguousPuertoPlataRequest(userMessage) {
   return mentionsPP && !mentionsStage;
 }
 
-module.exports = { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, isAmbiguousPuertoPlataRequest };
+// Hotfix-21 c3: re-export de detectIntentRetransmit desde document-policy.
+// Razon: el brief original ubicaba el detector en detect.js (consistencia con
+// el resto de detectores). La implementacion vive en document-policy.js
+// porque shouldSendDoc lo consume internamente. Re-exportar aqui evita
+// duplicar la logica + sirve a los callers que esperan encontrarlo en detect.
+const { detectIntentRetransmit } = require("./dispatch/document-policy");
+
+module.exports = {
+  detectDocumentRequest,
+  detectDocumentType,
+  detectLeadSignals,
+  detectPuertoPlataStage,
+  detectCruxStage,
+  isAmbiguousPuertoPlataRequest,
+  detectIntentRetransmit,
+};

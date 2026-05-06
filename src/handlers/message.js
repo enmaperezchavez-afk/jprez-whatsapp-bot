@@ -44,7 +44,7 @@ const {
   notifyRecomendacionCompetencia,
   detectDiscountOffer,
 } = require("../notify");
-const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage } = require("../detect");
+const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, detectCruxStage } = require("../detect");
 const { shouldSendDoc } = require("../dispatch/document-policy");
 const { buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
@@ -89,6 +89,12 @@ const PROJECT_DOCS = {
     // un archivo que contiene precios, no planos arquitectónicos. Se retira
     // hasta que Enmanuel provea el archivo real. La env var puede seguir
     // existiendo en Vercel sin efecto.
+    // Hotfix-21 c3: slot Torre 6 separado del brochure general. Cuando
+    // detectCruxStage retorna "T6" y cliente pide precios, el dispatcher
+    // manda preciosT6 en lugar de precios general. Si la env var no existe,
+    // el commercial-layer instruye al modelo a dar los datos en texto sin
+    // escalar.
+    preciosT6: process.env.PDF_CRUX_PRECIOS_T6 || null,
     images: parseImageUrls(process.env.IMG_CRUX),
   },
   pr3: {
@@ -875,6 +881,21 @@ async function processMessage(body) {
           return;
         }
 
+        // Hotfix-21 c3 (Bug #23): Crux tiene 2 sub-mundos (Listos vs Torre 6).
+        // Mismo patron que Puerto Plata. Si el cliente menciona "Crux" sin
+        // clarificar etapa, NO mandamos archivos — el commercial-layer fuerza
+        // al modelo a preguntar "¿Listos o Torre 6 en construccion?".
+        const cruxStage = project === "crux"
+          ? detectCruxStage(botReply, userMessage)
+          : null;
+        if (project === "crux" && cruxStage === null) {
+          botLog("info", "pdf_skip_ambiguous_crux_stage", {
+            phone: senderPhone,
+            requestedTypes,
+          });
+          return;
+        }
+
         let sentCount = 0;
         // Track si las imagenes del proyecto ya fueron enviadas como teaser del
         // brochure, para evitar duplicar envio despues del PDF de precios cuando
@@ -917,6 +938,13 @@ async function processMessage(body) {
           // pasar este loop y mas abajo skipear los bloques E4.
           if (project === "puertoPlata" && ppStage === "E4") {
             // No envio del archivo E3 cuando cliente pidio E4 especifico.
+            continue;
+          }
+          // Hotfix-21 c3: si cliente pidio Crux Torre 6 explicito y docType es
+          // "precios", saltarse el precios general — el bloque especial T6
+          // mas abajo manda preciosT6 (Drive ID propio). Si la env var T6 no
+          // existe, el commercial-layer da los datos en texto y NO escalamos.
+          if (project === "crux" && cruxStage === "T6" && docType === "precios") {
             continue;
           }
           if (docUrl) {
@@ -1042,6 +1070,40 @@ async function processMessage(body) {
           sentCount++;
           await markDocSent(storageKey, project + ".brochureE4");
           botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "brochureE4" });
+        }
+      }
+
+      // Envio especial: Crux Torre 6 precios.
+      // Hotfix-21 c3 (Bug #23): patron espejo de PP E4. Solo dispara si el
+      // cliente menciono Torre 6 / "en planos" / construccion (cruxStage)
+      // y pidio precios. Si docs.preciosT6 es null (env var ausente), el
+      // commercial-layer instruye al modelo a dar los datos en texto sin
+      // escalar a Enmanuel — la info esta en el layer.
+      if (project === "crux" && cruxStage === "T6" && requestedTypes.includes("precios") && docs.preciosT6) {
+        const decisionT6 = shouldSendDoc({
+          sentDocs: clientMeta?.sentDocs,
+          docKey: project + ".preciosT6",
+          userMessage,
+        });
+        if (!decisionT6.send) {
+          botLog("info", "pdf_skip_already_sent", {
+            phone: senderPhone, project: "crux", docType: "preciosT6", reason: decisionT6.reason,
+          });
+        } else {
+          if (decisionT6.reason === "explicit-retransmit") {
+            botLog("info", "pdf_send_explicit_retransmit", {
+              phone: senderPhone, project: "crux", docType: "preciosT6",
+            });
+          }
+          if (sentCount > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          const t6Filename = PROJECT_NAMES[project] + " - Precios Torre 6 (Entrega Jul 2027) - JPREZ.pdf";
+          const t6ProxyUrl = toProxyUrl(docs.preciosT6);
+          await sendWhatsAppDocument(senderPhone, t6ProxyUrl, t6Filename);
+          sentCount++;
+          await markDocSent(storageKey, project + ".preciosT6");
+          botLog("info", "pdf_sent", { phone: senderPhone, project: "crux", docType: "preciosT6" });
         }
       }
 
