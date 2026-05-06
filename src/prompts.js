@@ -65,6 +65,25 @@ try {
   INVENTORY_CONTENT = "";
 }
 
+// Hotfix-22a: skill secundario para calculo de plan de pago + ajuste
+// cashflow del cliente. Se carga independientemente del skill principal
+// (ambos tienen su propio fallback) para que un fallo en uno no tumbe el
+// otro. Inyectado al final del staticBlock como layer composable, igual
+// patron que GLOSSARY/COMMERCIAL/STYLE: NO va en el hash de MATEO_V5_2,
+// no invalida historiales de clientes activos.
+let CALCULATOR_SKILL_CONTENT = "";
+try {
+  const calculatorSkillPath = path.join(__dirname, "..", ".claude", "skills", "calculadora-plan-pago", "SKILL.md");
+  CALCULATOR_SKILL_CONTENT = fs.readFileSync(calculatorSkillPath, "utf8");
+  console.log("[prompt] calculator skill loaded: " + CALCULATOR_SKILL_CONTENT.length + " chars");
+} catch (e) {
+  console.error("[prompt] ERROR loading calculator skill:", e.message);
+  // Fallback degradado: skill ausente -> prompt sigue funcionando con el
+  // skill principal, solo pierde la capacidad de negociacion cashflow
+  // detallada. Mateo cae al plan estandar 10/30/60 sin ajustes finos.
+  CALCULATOR_SKILL_CONTENT = "";
+}
+
 // ============================================
 // PROMPT MATEO REYES v5.2 (operacional + tono + filosofía Trusted Advisor)
 // ============================================
@@ -775,6 +794,10 @@ function buildSystemPromptBlocks() {
     GLOSSARY_LAYER,
     COMMERCIAL_LAYER,
     STYLE_LAYER,
+    // Hotfix-22a: skill calculadora-plan-pago al final del staticBlock.
+    // Si el archivo no se cargo (env preview, error de bundle), el string
+    // queda vacio y el join produce un trailing newline inocuo.
+    CALCULATOR_SKILL_CONTENT,
   ].join("\n");
 
   // dynamicHeader trailing newline para que el handler pueda concatenar
