@@ -727,7 +727,23 @@ Array de strings cortos. Ejemplos: ["diaspora", "USA-NY", "primera-vivienda", "i
 // La fecha y hora se inyectan por invocacion (no al cold start) para que Mateo
 // salude correctamente segun franja del dia y calcule meses/feria con datos frescos.
 
-function buildSystemPrompt() {
+// FASE 1 (prompt caching): el system prompt se separa en dos bloques:
+//   - staticBlock: contenido que NO cambia entre invocaciones (SKILL,
+//     INVENTORY, MATEO_PROMPT_V5_2, GLOSSARY_LAYER, STYLE_LAYER). Se cachea
+//     server-side via cache_control en el caller (handler).
+//   - dynamicHeader: fecha + hora SD que cambian por minuto. NO va en el
+//     bloque cacheado — el contexto cliente/perfil/holding se concatena al
+//     dynamicHeader desde el handler.
+//
+// Por que `fechaHeader` se MOVIO del INICIO al bloque dinamico (que en el
+// prompt final queda DESPUES del estatico): el prefijo cacheable termina en
+// el cache breakpoint. Cualquier cosa que cambie en el prefijo invalida la
+// cache. Como fechaHeader cambia cada minuto, ponerlo antes del breakpoint
+// haria caches efimeras de minutos. Detras del breakpoint, en el bloque
+// dinamico, no afecta cache hit. Behavioral: para Mateo, recibir la fecha
+// despues del bloque estatico es equivalente — el modelo usa toda la
+// system prompt en conjunto, no orden-dependiente para fecha.
+function buildSystemPromptBlocks() {
   const now = new Date();
   const iso = now.toISOString().slice(0, 10);
   const legible = now.toLocaleDateString("es-DO", {
@@ -743,9 +759,7 @@ function buildSystemPrompt() {
   // Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
   // No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
   // lo que iterar sobre ellos NO invalida historiales de clientes activos.
-  return [
-    fechaHeader,
-    "",
+  const staticBlock = [
     SKILL_CONTENT,
     "",
     "---",
@@ -760,6 +774,26 @@ function buildSystemPrompt() {
     GLOSSARY_LAYER,
     STYLE_LAYER,
   ].join("\n");
+
+  // dynamicHeader trailing newline para que el handler pueda concatenar
+  // clientContext/profileContext/holdingContext sin preocuparse por
+  // separadores.
+  const dynamicHeader = fechaHeader + "\n";
+
+  return { staticBlock, dynamicHeader };
+}
+
+// buildSystemPrompt: backwards-compat wrapper. Algunos tests existentes
+// (hotfix-19 c2 glossary, etc.) dependen de la firma original que retorna
+// el prompt completo como string. El handler post-FASE 1 NO usa este
+// wrapper — usa buildSystemPromptBlocks directamente para construir el
+// array de bloques con cache_control. Aqui el orden coincide con el
+// original (fechaHeader primero) para que los tests existentes sigan
+// pasando.
+function buildSystemPrompt() {
+  const { staticBlock, dynamicHeader } = buildSystemPromptBlocks();
+  // Reproducir orden original: fechaHeader + "\n" + staticBlock.
+  return dynamicHeader + "\n" + staticBlock;
 }
 
 // ============================================
@@ -836,4 +870,4 @@ PROYECTOS ACTIVOS:
 
 REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
 
-module.exports = { buildSystemPrompt, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 };
+module.exports = { buildSystemPrompt, buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 };

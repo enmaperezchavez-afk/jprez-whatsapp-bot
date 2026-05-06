@@ -45,7 +45,7 @@ const {
   detectDiscountOffer,
 } = require("../notify");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage } = require("../detect");
-const { buildSystemPrompt, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
+const { buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
@@ -504,7 +504,6 @@ async function processMessage(body) {
     const isStaff = STAFF_PHONES[storageKey];
     const isSupervisor = isStaff?.supervisor === true;
     botLog("info", "Mensaje recibido", { phone: senderPhone, name: senderName, message: userMessage, isStaff: !!isStaff, isSupervisor, storageKey, activePrompt: isSupervisor ? "SUPERVISOR_PROMPT" : "CLIENT_PROMPT", testing: inTesting });
-    const activePrompt = isSupervisor ? SUPERVISOR_PROMPT : buildSystemPrompt();
 
     if (isStaff) {
       console.log("PERSONAL INTERNO detectado: " + isStaff.name + " (" + isStaff.role + ")");
@@ -577,10 +576,28 @@ async function processMessage(body) {
     const clientContext = !isSupervisor ? buildClientContext(clientMeta) : "";
     const profileContext = (!isStaff && !isSupervisor) ? buildProfileContext(customerProfile) : "";
     const holdingContext = inHoldingMode ? buildHoldingModeContext() : "";
-    const finalPrompt = activePrompt + clientContext + profileContext + holdingContext;
+
+    // FASE 1: system prompt como array de bloques con cache_control.
+    // - Supervisor: 1 bloque sin cache (volumen bajo, no justifica caching).
+    // - Cliente: 2 bloques. Bloque 1 = staticBlock (SKILL+INVENTORY+MATEO+
+    //   GLOSSARY+STYLE) con cache_control ephemeral → cache hit en turnos
+    //   subsecuentes ahorra ~70-90% input tokens en historiales largos.
+    //   Bloque 2 = dynamicHeader (fecha/hora) + contextos por-cliente
+    //   (clientContext/profileContext/holdingContext). Cualquier cambio aca
+    //   NO invalida la cache porque queda DESPUES del breakpoint.
+    let systemBlocks;
+    if (isSupervisor) {
+      systemBlocks = [{ type: "text", text: SUPERVISOR_PROMPT }];
+    } else {
+      const { staticBlock, dynamicHeader } = buildSystemPromptBlocks();
+      systemBlocks = [
+        { type: "text", text: staticBlock, cache_control: { type: "ephemeral" } },
+        { type: "text", text: dynamicHeader + clientContext + profileContext + holdingContext },
+      ];
+    }
 
     const response = await callClaudeWithTools({
-      system: finalPrompt,
+      system: systemBlocks,
       messages: messageHistory,
       tools: TOOLS,
       phone: senderPhone,
