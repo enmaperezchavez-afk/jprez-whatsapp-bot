@@ -128,6 +128,7 @@ const DOC_TYPE_NAMES = {
   brochure: "Brochure",
   precios: "Precios y Disponibilidad",
   planos: "Planos Arquitectónicos",
+  images: "Inventario JPG",
 };
 
 // ============================================
@@ -819,8 +820,23 @@ async function processMessage(body) {
             if (allSentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
             }
-            // Enviar imagenes teaser antes del brochure (si estan configuradas)
-            await sendProjectImages(senderPhone, projKey);
+            // Enviar imagenes teaser antes del brochure (si estan configuradas).
+            // Hotfix-21 c2: policy guard + tracking de imagenes. sentDocs[<proj>.images]
+            // se trata como cualquier otro doc — first-send | already-sent | explicit-retransmit.
+            const imgDecisionAll = shouldSendDoc({
+              sentDocs: clientMeta?.sentDocs,
+              docKey: projKey + ".images",
+              userMessage,
+            });
+            if (imgDecisionAll.send) {
+              if (imgDecisionAll.reason === "explicit-retransmit") {
+                botLog("info", "img_send_explicit_retransmit", { phone: senderPhone, project: projKey, scope: "todos" });
+              }
+              await sendProjectImages(senderPhone, projKey);
+              await markDocSent(storageKey, projKey + ".images");
+            } else {
+              botLog("info", "img_skip_already_sent", { phone: senderPhone, project: projKey, scope: "todos", reason: imgDecisionAll.reason });
+            }
             const allFilename = PROJECT_NAMES[projKey] + " - Brochure - JPREZ.pdf";
             const allProxyUrl = toProxyUrl(projDocs.brochure);
             await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
@@ -865,9 +881,25 @@ async function processMessage(body) {
         // el cliente pide brochure + precios juntos.
         let imagesSentAsTeaser = false;
 
-        // Si el primer doc que se va a mandar es el brochure, enviar imagenes teaser antes
+        // Si el primer doc que se va a mandar es el brochure, enviar imagenes teaser antes.
+        // Hotfix-21 c2: policy guard + tracking. Si las imagenes ya fueron enviadas
+        // y NO hay retransmit explicit, skip pero marcamos imagesSentAsTeaser=true
+        // para evitar reintento post-precios (semantica: "ya estan en el chat del cliente").
         if (requestedTypes[0] === "brochure" && docs.images && docs.images.length > 0) {
-          await sendProjectImages(senderPhone, project);
+          const imgDecisionTeaser = shouldSendDoc({
+            sentDocs: clientMeta?.sentDocs,
+            docKey: project + ".images",
+            userMessage,
+          });
+          if (imgDecisionTeaser.send) {
+            if (imgDecisionTeaser.reason === "explicit-retransmit") {
+              botLog("info", "img_send_explicit_retransmit", { phone: senderPhone, project });
+            }
+            await sendProjectImages(senderPhone, project);
+            await markDocSent(storageKey, project + ".images");
+          } else {
+            botLog("info", "img_skip_already_sent", { phone: senderPhone, project, reason: imgDecisionTeaser.reason });
+          }
           imagesSentAsTeaser = true;
         }
 
@@ -1018,16 +1050,30 @@ async function processMessage(body) {
         // precios. Caso de uso: Crux tiene IMG_CRUX con JPG de listos para
         // entrega inmediata que complementa el PDF "Precios y Disponibilidad"
         // (el PDF tiene todo el inventario, el JPG destaca listos ya).
+        // Hotfix-21 c2: policy guard + tracking.
         if (
           requestedTypes.includes("precios") &&
           docs.images &&
           docs.images.length > 0 &&
           !imagesSentAsTeaser
         ) {
-          if (sentCount > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+          const imgDecisionPost = shouldSendDoc({
+            sentDocs: clientMeta?.sentDocs,
+            docKey: project + ".images",
+            userMessage,
+          });
+          if (imgDecisionPost.send) {
+            if (imgDecisionPost.reason === "explicit-retransmit") {
+              botLog("info", "img_send_explicit_retransmit", { phone: senderPhone, project });
+            }
+            if (sentCount > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            await sendProjectImages(senderPhone, project);
+            await markDocSent(storageKey, project + ".images");
+          } else {
+            botLog("info", "img_skip_already_sent", { phone: senderPhone, project, reason: imgDecisionPost.reason });
           }
-          await sendProjectImages(senderPhone, project);
         }
 
         if (sentCount === 0) {
@@ -1065,4 +1111,4 @@ async function processMessage(body) {
   }
 }
 
-module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago };
+module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago, buildClientContext };
