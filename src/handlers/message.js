@@ -45,6 +45,7 @@ const {
   detectDiscountOffer,
 } = require("../notify");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage } = require("../detect");
+const { shouldSendDoc } = require("../dispatch/document-policy");
 const { buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
@@ -797,6 +798,24 @@ async function processMessage(body) {
         let allSentCount = 0;
         for (const [projKey, projDocs] of Object.entries(PROJECT_DOCS)) {
           if (projDocs.brochure) {
+            // Hotfix-21 c1: policy guard. Si el brochure ya fue enviado y el
+            // cliente no esta pidiendo retransmision explicita, skip.
+            const decision = shouldSendDoc({
+              sentDocs: clientMeta?.sentDocs,
+              docKey: projKey + ".brochure",
+              userMessage,
+            });
+            if (!decision.send) {
+              botLog("info", "pdf_skip_already_sent", {
+                phone: senderPhone, project: projKey, docType: "brochure", scope: "todos", reason: decision.reason,
+              });
+              continue;
+            }
+            if (decision.reason === "explicit-retransmit") {
+              botLog("info", "pdf_send_explicit_retransmit", {
+                phone: senderPhone, project: projKey, docType: "brochure", scope: "todos",
+              });
+            }
             if (allSentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
             }
@@ -869,6 +888,25 @@ async function processMessage(body) {
             continue;
           }
           if (docUrl) {
+            // Hotfix-21 c1: policy guard. Bloqueamos reenvio si docKey ya
+            // esta en sentDocs y el cliente NO esta pidiendo retransmision
+            // explicita ("manda otra vez", "no me llego", etc).
+            const decision = shouldSendDoc({
+              sentDocs: clientMeta?.sentDocs,
+              docKey: project + "." + docType,
+              userMessage,
+            });
+            if (!decision.send) {
+              botLog("info", "pdf_skip_already_sent", {
+                phone: senderPhone, project: project, docType: docType, reason: decision.reason,
+              });
+              continue;
+            }
+            if (decision.reason === "explicit-retransmit") {
+              botLog("info", "pdf_send_explicit_retransmit", {
+                phone: senderPhone, project: project, docType: docType,
+              });
+            }
             if (sentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
             }
@@ -916,29 +954,63 @@ async function processMessage(body) {
         // Envio especial: Prado Suites Etapa 4 precios
         // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
         if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("precios") && docs.preciosE4) {
-          if (sentCount > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+          // Hotfix-21 c1: policy guard.
+          const decisionE4P = shouldSendDoc({
+            sentDocs: clientMeta?.sentDocs,
+            docKey: project + ".preciosE4",
+            userMessage,
+          });
+          if (!decisionE4P.send) {
+            botLog("info", "pdf_skip_already_sent", {
+              phone: senderPhone, project: "puertoPlata", docType: "preciosE4", reason: decisionE4P.reason,
+            });
+          } else {
+            if (decisionE4P.reason === "explicit-retransmit") {
+              botLog("info", "pdf_send_explicit_retransmit", {
+                phone: senderPhone, project: "puertoPlata", docType: "preciosE4",
+              });
+            }
+            if (sentCount > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+            const e4ProxyUrl = toProxyUrl(docs.preciosE4);
+            await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
+            sentCount++;
+            await markDocSent(storageKey, project + ".preciosE4");
+            botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "preciosE4" });
           }
-          const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
-          const e4ProxyUrl = toProxyUrl(docs.preciosE4);
-          await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
-          sentCount++;
-          await markDocSent(storageKey, project + ".preciosE4");
-          botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "preciosE4" });
         }
 
       // Envio especial: Prado Suites Etapa 4 brochure
       // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
       if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("brochure") && docs.brochureE4) {
-        if (sentCount > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+        // Hotfix-21 c1: policy guard.
+        const decisionE4B = shouldSendDoc({
+          sentDocs: clientMeta?.sentDocs,
+          docKey: project + ".brochureE4",
+          userMessage,
+        });
+        if (!decisionE4B.send) {
+          botLog("info", "pdf_skip_already_sent", {
+            phone: senderPhone, project: "puertoPlata", docType: "brochureE4", reason: decisionE4B.reason,
+          });
+        } else {
+          if (decisionE4B.reason === "explicit-retransmit") {
+            botLog("info", "pdf_send_explicit_retransmit", {
+              phone: senderPhone, project: "puertoPlata", docType: "brochureE4",
+            });
+          }
+          if (sentCount > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+          const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
+          await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
+          sentCount++;
+          await markDocSent(storageKey, project + ".brochureE4");
+          botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "brochureE4" });
         }
-        const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
-        const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
-        await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
-        sentCount++;
-        await markDocSent(storageKey, project + ".brochureE4");
-        botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "brochureE4" });
       }
 
         // Si el cliente pidio precios y el proyecto tiene imagenes Y no fueron
