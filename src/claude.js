@@ -47,12 +47,22 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
     // diagnostico futuro. Si "max_tokens" vuelve a aparecer como
     // stop_reason, sabemos que el cap quedo corto para algun caso
     // limite (perfil_update v2 mas grande, calculo mas verboso, etc).
+    //
+    // FASE 1 (prompt caching): cache_creation_input_tokens y
+    // cache_read_input_tokens vienen del usage de la API cuando hay
+    // cache_control en algun bloque de system. cache_read_input_tokens > 0
+    // confirma cache HIT (~10% del costo de un input_token normal).
+    // cache_creation_input_tokens > 0 indica cache MISS / primer escritura.
+    // Ambos null/undefined → llamada sin caching activo (supervisor o
+    // staticBlock < 1024 tokens). Quedan en el log para Axiom dashboard.
     botLog("info", "claude_response", {
       phone,
       iteration,
       stop_reason: response.stop_reason,
       input_tokens: response.usage?.input_tokens,
       output_tokens: response.usage?.output_tokens,
+      cache_creation_input_tokens: response.usage?.cache_creation_input_tokens,
+      cache_read_input_tokens: response.usage?.cache_read_input_tokens,
     });
     if (response.stop_reason !== "tool_use") break;
 
