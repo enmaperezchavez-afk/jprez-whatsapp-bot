@@ -44,7 +44,8 @@ const {
   notifyRecomendacionCompetencia,
   detectDiscountOffer,
 } = require("../notify");
-const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage } = require("../detect");
+const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, detectCruxStage } = require("../detect");
+const { shouldSendDoc } = require("../dispatch/document-policy");
 const { buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
@@ -88,6 +89,12 @@ const PROJECT_DOCS = {
     // un archivo que contiene precios, no planos arquitectónicos. Se retira
     // hasta que Enmanuel provea el archivo real. La env var puede seguir
     // existiendo en Vercel sin efecto.
+    // Hotfix-21 c3: slot Torre 6 separado del brochure general. Cuando
+    // detectCruxStage retorna "T6" y cliente pide precios, el dispatcher
+    // manda preciosT6 en lugar de precios general. Si la env var no existe,
+    // el commercial-layer instruye al modelo a dar los datos en texto sin
+    // escalar.
+    preciosT6: process.env.PDF_CRUX_PRECIOS_T6 || null,
     images: parseImageUrls(process.env.IMG_CRUX),
   },
   pr3: {
@@ -127,6 +134,7 @@ const DOC_TYPE_NAMES = {
   brochure: "Brochure",
   precios: "Precios y Disponibilidad",
   planos: "Planos Arquitectónicos",
+  images: "Inventario JPG",
 };
 
 // ============================================
@@ -797,11 +805,44 @@ async function processMessage(body) {
         let allSentCount = 0;
         for (const [projKey, projDocs] of Object.entries(PROJECT_DOCS)) {
           if (projDocs.brochure) {
+            // Hotfix-21 c1: policy guard. Si el brochure ya fue enviado y el
+            // cliente no esta pidiendo retransmision explicita, skip.
+            const decision = shouldSendDoc({
+              sentDocs: clientMeta?.sentDocs,
+              docKey: projKey + ".brochure",
+              userMessage,
+            });
+            if (!decision.send) {
+              botLog("info", "pdf_skip_already_sent", {
+                phone: senderPhone, project: projKey, docType: "brochure", scope: "todos", reason: decision.reason,
+              });
+              continue;
+            }
+            if (decision.reason === "explicit-retransmit") {
+              botLog("info", "pdf_send_explicit_retransmit", {
+                phone: senderPhone, project: projKey, docType: "brochure", scope: "todos",
+              });
+            }
             if (allSentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
             }
-            // Enviar imagenes teaser antes del brochure (si estan configuradas)
-            await sendProjectImages(senderPhone, projKey);
+            // Enviar imagenes teaser antes del brochure (si estan configuradas).
+            // Hotfix-21 c2: policy guard + tracking de imagenes. sentDocs[<proj>.images]
+            // se trata como cualquier otro doc — first-send | already-sent | explicit-retransmit.
+            const imgDecisionAll = shouldSendDoc({
+              sentDocs: clientMeta?.sentDocs,
+              docKey: projKey + ".images",
+              userMessage,
+            });
+            if (imgDecisionAll.send) {
+              if (imgDecisionAll.reason === "explicit-retransmit") {
+                botLog("info", "img_send_explicit_retransmit", { phone: senderPhone, project: projKey, scope: "todos" });
+              }
+              await sendProjectImages(senderPhone, projKey);
+              await markDocSent(storageKey, projKey + ".images");
+            } else {
+              botLog("info", "img_skip_already_sent", { phone: senderPhone, project: projKey, scope: "todos", reason: imgDecisionAll.reason });
+            }
             const allFilename = PROJECT_NAMES[projKey] + " - Brochure - JPREZ.pdf";
             const allProxyUrl = toProxyUrl(projDocs.brochure);
             await sendWhatsAppDocument(senderPhone, allProxyUrl, allFilename);
@@ -840,15 +881,46 @@ async function processMessage(body) {
           return;
         }
 
+        // Hotfix-21 c3 (Bug #23): Crux tiene 2 sub-mundos (Listos vs Torre 6).
+        // Mismo patron que Puerto Plata. Si el cliente menciona "Crux" sin
+        // clarificar etapa, NO mandamos archivos — el commercial-layer fuerza
+        // al modelo a preguntar "¿Listos o Torre 6 en construccion?".
+        const cruxStage = project === "crux"
+          ? detectCruxStage(botReply, userMessage)
+          : null;
+        if (project === "crux" && cruxStage === null) {
+          botLog("info", "pdf_skip_ambiguous_crux_stage", {
+            phone: senderPhone,
+            requestedTypes,
+          });
+          return;
+        }
+
         let sentCount = 0;
         // Track si las imagenes del proyecto ya fueron enviadas como teaser del
         // brochure, para evitar duplicar envio despues del PDF de precios cuando
         // el cliente pide brochure + precios juntos.
         let imagesSentAsTeaser = false;
 
-        // Si el primer doc que se va a mandar es el brochure, enviar imagenes teaser antes
+        // Si el primer doc que se va a mandar es el brochure, enviar imagenes teaser antes.
+        // Hotfix-21 c2: policy guard + tracking. Si las imagenes ya fueron enviadas
+        // y NO hay retransmit explicit, skip pero marcamos imagesSentAsTeaser=true
+        // para evitar reintento post-precios (semantica: "ya estan en el chat del cliente").
         if (requestedTypes[0] === "brochure" && docs.images && docs.images.length > 0) {
-          await sendProjectImages(senderPhone, project);
+          const imgDecisionTeaser = shouldSendDoc({
+            sentDocs: clientMeta?.sentDocs,
+            docKey: project + ".images",
+            userMessage,
+          });
+          if (imgDecisionTeaser.send) {
+            if (imgDecisionTeaser.reason === "explicit-retransmit") {
+              botLog("info", "img_send_explicit_retransmit", { phone: senderPhone, project });
+            }
+            await sendProjectImages(senderPhone, project);
+            await markDocSent(storageKey, project + ".images");
+          } else {
+            botLog("info", "img_skip_already_sent", { phone: senderPhone, project, reason: imgDecisionTeaser.reason });
+          }
           imagesSentAsTeaser = true;
         }
 
@@ -868,7 +940,33 @@ async function processMessage(body) {
             // No envio del archivo E3 cuando cliente pidio E4 especifico.
             continue;
           }
+          // Hotfix-21 c3: si cliente pidio Crux Torre 6 explicito y docType es
+          // "precios", saltarse el precios general — el bloque especial T6
+          // mas abajo manda preciosT6 (Drive ID propio). Si la env var T6 no
+          // existe, el commercial-layer da los datos en texto y NO escalamos.
+          if (project === "crux" && cruxStage === "T6" && docType === "precios") {
+            continue;
+          }
           if (docUrl) {
+            // Hotfix-21 c1: policy guard. Bloqueamos reenvio si docKey ya
+            // esta en sentDocs y el cliente NO esta pidiendo retransmision
+            // explicita ("manda otra vez", "no me llego", etc).
+            const decision = shouldSendDoc({
+              sentDocs: clientMeta?.sentDocs,
+              docKey: project + "." + docType,
+              userMessage,
+            });
+            if (!decision.send) {
+              botLog("info", "pdf_skip_already_sent", {
+                phone: senderPhone, project: project, docType: docType, reason: decision.reason,
+              });
+              continue;
+            }
+            if (decision.reason === "explicit-retransmit") {
+              botLog("info", "pdf_send_explicit_retransmit", {
+                phone: senderPhone, project: project, docType: docType,
+              });
+            }
             if (sentCount > 0) {
               await new Promise((resolve) => setTimeout(resolve, 1500));
             }
@@ -916,29 +1014,97 @@ async function processMessage(body) {
         // Envio especial: Prado Suites Etapa 4 precios
         // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
         if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("precios") && docs.preciosE4) {
-          if (sentCount > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+          // Hotfix-21 c1: policy guard.
+          const decisionE4P = shouldSendDoc({
+            sentDocs: clientMeta?.sentDocs,
+            docKey: project + ".preciosE4",
+            userMessage,
+          });
+          if (!decisionE4P.send) {
+            botLog("info", "pdf_skip_already_sent", {
+              phone: senderPhone, project: "puertoPlata", docType: "preciosE4", reason: decisionE4P.reason,
+            });
+          } else {
+            if (decisionE4P.reason === "explicit-retransmit") {
+              botLog("info", "pdf_send_explicit_retransmit", {
+                phone: senderPhone, project: "puertoPlata", docType: "preciosE4",
+              });
+            }
+            if (sentCount > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+            const e4ProxyUrl = toProxyUrl(docs.preciosE4);
+            await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
+            sentCount++;
+            await markDocSent(storageKey, project + ".preciosE4");
+            botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "preciosE4" });
           }
-          const e4Filename = PROJECT_NAMES[project] + " - Precios Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
-          const e4ProxyUrl = toProxyUrl(docs.preciosE4);
-          await sendWhatsAppDocument(senderPhone, e4ProxyUrl, e4Filename);
-          sentCount++;
-          await markDocSent(storageKey, project + ".preciosE4");
-          botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "preciosE4" });
         }
 
       // Envio especial: Prado Suites Etapa 4 brochure
       // Hotfix-19 Bug #2: si cliente pidio E3 explicito, no mandar E4.
       if (project === "puertoPlata" && ppStage !== "E3" && requestedTypes.includes("brochure") && docs.brochureE4) {
-        if (sentCount > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+        // Hotfix-21 c1: policy guard.
+        const decisionE4B = shouldSendDoc({
+          sentDocs: clientMeta?.sentDocs,
+          docKey: project + ".brochureE4",
+          userMessage,
+        });
+        if (!decisionE4B.send) {
+          botLog("info", "pdf_skip_already_sent", {
+            phone: senderPhone, project: "puertoPlata", docType: "brochureE4", reason: decisionE4B.reason,
+          });
+        } else {
+          if (decisionE4B.reason === "explicit-retransmit") {
+            botLog("info", "pdf_send_explicit_retransmit", {
+              phone: senderPhone, project: "puertoPlata", docType: "brochureE4",
+            });
+          }
+          if (sentCount > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
+          const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
+          await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
+          sentCount++;
+          await markDocSent(storageKey, project + ".brochureE4");
+          botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "brochureE4" });
         }
-        const e4BrochureFilename = PROJECT_NAMES[project] + " - Brochure Etapa 4 (Entrega Dic. 2027) - JPREZ.pdf";
-        const e4BrochureProxyUrl = toProxyUrl(docs.brochureE4);
-        await sendWhatsAppDocument(senderPhone, e4BrochureProxyUrl, e4BrochureFilename);
-        sentCount++;
-        await markDocSent(storageKey, project + ".brochureE4");
-        botLog("info", "pdf_sent", { phone: senderPhone, project: "puertoPlata", docType: "brochureE4" });
+      }
+
+      // Envio especial: Crux Torre 6 precios.
+      // Hotfix-21 c3 (Bug #23): patron espejo de PP E4. Solo dispara si el
+      // cliente menciono Torre 6 / "en planos" / construccion (cruxStage)
+      // y pidio precios. Si docs.preciosT6 es null (env var ausente), el
+      // commercial-layer instruye al modelo a dar los datos en texto sin
+      // escalar a Enmanuel — la info esta en el layer.
+      if (project === "crux" && cruxStage === "T6" && requestedTypes.includes("precios") && docs.preciosT6) {
+        const decisionT6 = shouldSendDoc({
+          sentDocs: clientMeta?.sentDocs,
+          docKey: project + ".preciosT6",
+          userMessage,
+        });
+        if (!decisionT6.send) {
+          botLog("info", "pdf_skip_already_sent", {
+            phone: senderPhone, project: "crux", docType: "preciosT6", reason: decisionT6.reason,
+          });
+        } else {
+          if (decisionT6.reason === "explicit-retransmit") {
+            botLog("info", "pdf_send_explicit_retransmit", {
+              phone: senderPhone, project: "crux", docType: "preciosT6",
+            });
+          }
+          if (sentCount > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          const t6Filename = PROJECT_NAMES[project] + " - Precios Torre 6 (Entrega Jul 2027) - JPREZ.pdf";
+          const t6ProxyUrl = toProxyUrl(docs.preciosT6);
+          await sendWhatsAppDocument(senderPhone, t6ProxyUrl, t6Filename);
+          sentCount++;
+          await markDocSent(storageKey, project + ".preciosT6");
+          botLog("info", "pdf_sent", { phone: senderPhone, project: "crux", docType: "preciosT6" });
+        }
       }
 
         // Si el cliente pidio precios y el proyecto tiene imagenes Y no fueron
@@ -946,16 +1112,30 @@ async function processMessage(body) {
         // precios. Caso de uso: Crux tiene IMG_CRUX con JPG de listos para
         // entrega inmediata que complementa el PDF "Precios y Disponibilidad"
         // (el PDF tiene todo el inventario, el JPG destaca listos ya).
+        // Hotfix-21 c2: policy guard + tracking.
         if (
           requestedTypes.includes("precios") &&
           docs.images &&
           docs.images.length > 0 &&
           !imagesSentAsTeaser
         ) {
-          if (sentCount > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+          const imgDecisionPost = shouldSendDoc({
+            sentDocs: clientMeta?.sentDocs,
+            docKey: project + ".images",
+            userMessage,
+          });
+          if (imgDecisionPost.send) {
+            if (imgDecisionPost.reason === "explicit-retransmit") {
+              botLog("info", "img_send_explicit_retransmit", { phone: senderPhone, project });
+            }
+            if (sentCount > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            await sendProjectImages(senderPhone, project);
+            await markDocSent(storageKey, project + ".images");
+          } else {
+            botLog("info", "img_skip_already_sent", { phone: senderPhone, project, reason: imgDecisionPost.reason });
           }
-          await sendProjectImages(senderPhone, project);
         }
 
         if (sentCount === 0) {
@@ -993,4 +1173,4 @@ async function processMessage(body) {
   }
 }
 
-module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago };
+module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago, buildClientContext };

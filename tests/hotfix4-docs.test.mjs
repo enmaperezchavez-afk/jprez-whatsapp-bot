@@ -9,6 +9,12 @@
 // @anthropic-ai/sdk + fetchMock global. Permite ejecutar processMessage end-to-end
 // y capturar las llamadas a Graph API (Document e Image endpoints) para validar
 // que el pipeline envia los archivos correctos en el orden correcto.
+//
+// HOTFIX-21 C3 NOTA: los mensajes Crux incluyen el marker "listos" para
+// que detectCruxStage retorne "Listos" y el dispatcher mande precios
+// general / brochure como antes. Pre-Hotfix-21 cualquier mencion de Crux
+// pasaba; ahora la regla de ambiguedad (analoga a Puerto Plata E3/E4)
+// requiere un marker de etapa o el dispatcher pide clarificacion.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createRequire } from "module";
@@ -184,7 +190,7 @@ describe("FIX 1 (hotfix-4) — JPG de Crux despues del PDF de precios", () => {
       stop_reason: "end_turn",
     };
     const PHONE = "18091111001";
-    await processMessage(buildBody(PHONE, "quiero precios de crux"));
+    await processMessage(buildBody(PHONE, "quiero precios de crux listos"));
 
     const docs = documentsSentTo(PHONE);
     const imgs = imagesSentTo(PHONE);
@@ -205,7 +211,7 @@ describe("FIX 1 (hotfix-4) — JPG de Crux despues del PDF de precios", () => {
       stop_reason: "end_turn",
     };
     const PHONE = "18091111002";
-    await processMessage(buildBody(PHONE, "mandame info de crux"));
+    await processMessage(buildBody(PHONE, "mandame info de crux listos"));
 
     const docs = documentsSentTo(PHONE);
     const imgs = imagesSentTo(PHONE);
@@ -252,7 +258,7 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
       stop_reason: "end_turn",
     };
     const PHONE = "18091111004";
-    await processMessage(buildBody(PHONE, "planos de crux"));
+    await processMessage(buildBody(PHONE, "planos de crux listos"));
 
     const docs = documentsSentTo(PHONE);
 
@@ -275,7 +281,7 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
       stop_reason: "end_turn",
     };
     const PHONE = "18091111005";
-    await processMessage(buildBody(PHONE, "brochure crux"));
+    await processMessage(buildBody(PHONE, "brochure crux listos"));
 
     const docs = documentsSentTo(PHONE);
     expect(docs.length).toBe(1);
@@ -291,7 +297,7 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
       stop_reason: "end_turn",
     };
     const PHONE = "18091111006";
-    await processMessage(buildBody(PHONE, "precios crux"));
+    await processMessage(buildBody(PHONE, "precios crux listos"));
 
     const docs = documentsSentTo(PHONE);
     expect(docs.length).toBe(1);
