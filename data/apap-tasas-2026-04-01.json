@@ -1,0 +1,77 @@
+{
+  "banco": "APAP",
+  "banco_nombre_completo": "Asociación Popular de Ahorros y Préstamos",
+  "fuente": "pdf-oficial",
+  "fuente_pdf_url": "https://apap.com.do/wp-content/uploads/2021/09/Tarifario-Escala-de-Tasas-Activas-y-Pasivas-vigente-01-de-abril-2026-2-13-04.pdf",
+  "fuente_pdf_local": "data/raw/apap-tarifario-2026-04-01.pdf",
+  "vigencia_desde": "2026-04-01",
+  "ultima_extraccion": "2026-05-06T15:52:04.906210-04:00",
+  "metodologia": "PDF oficial APAP 'Escala de Tasas Activas y Pasivas - Banca Persona' extraído con pdfplumber 0.11.9. Datos consolidados de página 7 (overview) y página 15 (anexo escenarios concretos). Strings normalizados a UTF-8.",
+  "paginas_totales_pdf": 27,
+  "paginas_scopeadas": [
+    7,
+    15
+  ],
+  "productos": [
+    {
+      "producto_id": "CH-01",
+      "nombre": "Hipotecario — Compra Vivienda",
+      "categoria": "hipotecario_residencial",
+      "tasa_nominal": 12.5,
+      "tae": 13.32,
+      "plazo_meses": 240,
+      "plazo_anos": 20,
+      "monto_max_rd": 4000000,
+      "moneda": "DOP",
+      "gastos_cierre_rd": 195404.17,
+      "aplicable_para_jprez": true,
+      "comentario": "Producto principal para clientes JPREZ que terminan el plan de pago y requieren financiamiento bancario para el 70% contra entrega. Tasa fija desde 12.50% (TAE 13.32% incluye gastos cierre).",
+      "fuente_pagina": 15
+    },
+    {
+      "producto_id": "CH-02",
+      "nombre": "Hipotecario — Remodelación y Construcción de Vivienda",
+      "categoria": "hipotecario_construccion",
+      "tasa_nominal": 12.5,
+      "tae": 12.97,
+      "plazo_meses": 240,
+      "plazo_anos": 20,
+      "monto_max_rd": 4000000,
+      "moneda": "DOP",
+      "gastos_cierre_rd": 115413.17,
+      "aplicable_para_jprez": false,
+      "comentario": "Para clientes que ya tienen vivienda y construyen/remodelan. NO aplica a clientes JPREZ comprando unidad nueva. Mantener como info de mercado.",
+      "fuente_pagina": 15
+    },
+    {
+      "producto_id": "CP-01",
+      "nombre": "Préstamo con garantía hipotecaria — Compra Solar",
+      "categoria": "prestamo_garantia_hipotecaria",
+      "tasa_nominal": 17.1,
+      "tae": 18.18,
+      "plazo_meses": 180,
+      "plazo_anos": 15,
+      "monto_max_rd": 4000000,
+      "moneda": "DOP",
+      "gastos_cierre_rd": 192161.0,
+      "aplicable_para_jprez": false,
+      "comentario": "Para compra de terreno, NO de unidad construida. No aplica a JPREZ directo. Info de mercado (referencia comparativa).",
+      "fuente_pagina": 15
+    },
+    {
+      "producto_id": "CP-02",
+      "nombre": "Préstamo con garantía hipotecaria — Uso Personal / Consolidación",
+      "categoria": "prestamo_garantia_hipotecaria",
+      "tasa_nominal": 17.1,
+      "tae": 17.74,
+      "plazo_meses": 180,
+      "plazo_anos": 15,
+      "monto_max_rd": 4000000,
+      "moneda": "DOP",
+      "gastos_cierre_rd": 115413.17,
+      "aplicable_para_jprez": false,
+      "comentario": "Cliente usa su vivienda existente como garantía para uso personal o consolidar deudas. NO es para comprar vivienda. Info de mercado.",
+      "fuente_pagina": 15
+    }
+  ]
+}
