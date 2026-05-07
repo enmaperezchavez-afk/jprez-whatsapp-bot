@@ -797,6 +797,14 @@ function buildSystemPromptBlocks() {
   // Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
   // No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
   // lo que iterar sobre ellos NO invalida historiales de clientes activos.
+  //
+  // Hotfix-22 V2 a3: STYLE_LAYER movido al FINAL del staticBlock (despues
+  // de los skills). El LLM aprende del material mas reciente (last-seen-wins):
+  // si STYLE_LAYER va antes de los skills, el modelo ve "no markdown
+  // bullets/bold" y luego ve code blocks + pseudocodigo + ejemplos en los
+  // skills, e interpreta esos formatos como permitidos. Con STYLE_LAYER al
+  // final, la regla de prosa con numeros exactos es la ultima palabra que
+  // procesa antes de generar la respuesta. Bug #2 post-PR #30.
   const staticBlock = [
     SKILL_CONTENT,
     "",
@@ -811,14 +819,17 @@ function buildSystemPromptBlocks() {
     MATEO_PROMPT_V5_2,
     GLOSSARY_LAYER,
     COMMERCIAL_LAYER,
-    STYLE_LAYER,
-    // Hotfix-22a: skill calculadora-plan-pago al final del staticBlock.
-    // Si el archivo no se cargo (env preview, error de bundle), el string
-    // queda vacio y el join produce un trailing newline inocuo.
+    // Hotfix-22a: skill calculadora-plan-pago. Carga independiente; si el
+    // archivo no esta bundleado en Vercel, queda string vacio y el join
+    // produce un trailing newline inocuo.
     CALCULATOR_SKILL_CONTENT,
     // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
     // Mismo contrato: fallback string vacio + trailing newline inocuo.
     MARKET_RD_SKILL_CONTENT,
+    // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
+    // Refuerza prosa + numeros exactos + sin markdown bullets/bold como
+    // ultima instruccion que el LLM procesa antes de generar.
+    STYLE_LAYER,
   ].join("\n");
 
   // dynamicHeader trailing newline para que el handler pueda concatenar
