@@ -37,20 +37,22 @@ describe("Hotfix-22a — skill calculadora-plan-pago (smoke)", () => {
   });
 
   it("Test 2: frontmatter YAML valido (delimitadores + name + description)", () => {
+    // Hotfix-22 c1: cross-platform fix. git autocrlf en Windows convierte LF
+    // a CRLF al checkout. La asercion original "startsWith('---\\n')" fallaba
+    // local pese a pasar en CI Linux. Ahora regex agnostica a line endings.
     const content = readFileSync(SKILL_PATH, "utf-8");
-    // Frontmatter debe abrir con --- en linea 1 y cerrar con --- antes del cuerpo.
-    expect(content.startsWith("---\n")).toBe(true);
-    const closeIdx = content.indexOf("\n---\n", 4);
-    expect(closeIdx).toBeGreaterThan(-1);
-    const frontmatter = content.slice(4, closeIdx);
+    expect(content).toMatch(/^---\r?\n/);
+    const closeMatch = content.match(/\r?\n---\r?\n/);
+    expect(closeMatch).not.toBeNull();
+    const frontmatter = content.slice(content.indexOf("\n") + 1, closeMatch.index);
     expect(frontmatter).toMatch(/^name:\s*calculadora-plan-pago\s*$/m);
     expect(frontmatter).toMatch(/^description:\s*.+$/m);
   });
 
   it("Test 3: description menciona triggers clave para activacion automatica", () => {
     const content = readFileSync(SKILL_PATH, "utf-8");
-    const closeIdx = content.indexOf("\n---\n", 4);
-    const frontmatter = content.slice(4, closeIdx);
+    const closeMatch = content.match(/\r?\n---\r?\n/);
+    const frontmatter = content.slice(content.indexOf("\n") + 1, closeMatch.index);
     // Frases gatillo del cliente que activan el skill (el LLM las usa para
     // decidir cuando consultar este skill).
     expect(frontmatter).toContain("no me alcanza");
