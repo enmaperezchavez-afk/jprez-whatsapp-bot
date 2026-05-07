@@ -39,6 +39,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { botLog } = require("./log");
 const { validateStaticBlockOrder } = require("./validators/static-block-order");
 const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
 const { COMMERCIAL_LAYER } = require("./prompts/commercial-layer");
@@ -58,9 +59,12 @@ try {
   const inventoryPath = path.join(__dirname, "..", ".claude", "skills", "vendedor-whatsapp-jprez", "references", "inventario-precios.md");
   SKILL_CONTENT = fs.readFileSync(skillPath, "utf8");
   INVENTORY_CONTENT = fs.readFileSync(inventoryPath, "utf8");
-  console.log("[prompt] skill loaded: " + SKILL_CONTENT.length + " chars, inventory: " + INVENTORY_CONTENT.length + " chars");
+  botLog("info", "prompt_skill_loaded", {
+    skillChars: SKILL_CONTENT.length,
+    inventoryChars: INVENTORY_CONTENT.length,
+  });
 } catch (e) {
-  console.error("[prompt] ERROR loading skill files:", e.message);
+  botLog("error", "prompt_skill_load_failed", { error: e.message });
   // Fallback degradado: prompt minimo con instruccion de escalar todo.
   SKILL_CONTENT = "ERROR: skill no cargo. Se breve, no inventes, y escala todo a Enmanuel al 8299943102.";
   INVENTORY_CONTENT = "";
@@ -76,9 +80,11 @@ let CALCULATOR_SKILL_CONTENT = "";
 try {
   const calculatorSkillPath = path.join(__dirname, "..", ".claude", "skills", "calculadora-plan-pago", "SKILL.md");
   CALCULATOR_SKILL_CONTENT = fs.readFileSync(calculatorSkillPath, "utf8");
-  console.log("[prompt] calculator skill loaded: " + CALCULATOR_SKILL_CONTENT.length + " chars");
+  botLog("info", "prompt_calculator_skill_loaded", {
+    chars: CALCULATOR_SKILL_CONTENT.length,
+  });
 } catch (e) {
-  console.error("[prompt] ERROR loading calculator skill:", e.message);
+  botLog("error", "prompt_calculator_skill_load_failed", { error: e.message });
   // Fallback degradado: skill ausente -> prompt sigue funcionando con el
   // skill principal, solo pierde la capacidad de negociacion cashflow
   // detallada. Mateo cae al plan estandar 10/30/60 sin ajustes finos.
@@ -97,9 +103,11 @@ let MARKET_RD_SKILL_CONTENT = "";
 try {
   const marketRdSkillPath = path.join(__dirname, "..", ".claude", "skills", "mercado-inmobiliario-rd", "SKILL.md");
   MARKET_RD_SKILL_CONTENT = fs.readFileSync(marketRdSkillPath, "utf8");
-  console.log("[prompt] market-rd skill loaded: " + MARKET_RD_SKILL_CONTENT.length + " chars");
+  botLog("info", "prompt_market_rd_skill_loaded", {
+    chars: MARKET_RD_SKILL_CONTENT.length,
+  });
 } catch (e) {
-  console.error("[prompt] ERROR loading market-rd skill:", e.message);
+  botLog("error", "prompt_market_rd_skill_load_failed", { error: e.message });
   MARKET_RD_SKILL_CONTENT = "";
 }
 
@@ -820,15 +828,23 @@ const STATIC_BLOCK = [
   STYLE_LAYER,
 ].join("\n");
 
-// Hotfix-22 V2 b4 + c1: validacion de orden ejecutada al cold start, no
-// por request. Si un refactor futuro reordena los layers, el guard atrapa
-// la violacion al primer cold start en Vercel y loguea estructurado a
-// Axiom. NO crashea el modulo — el bot sigue respondiendo, pero el
-// Director ve la alarma loud.
+// Hotfix-22 V2 b4 + c1 + c2: validacion de orden ejecutada al cold start,
+// no por request. Si un refactor futuro reordena los layers, el guard
+// atrapa la violacion al primer cold start en Vercel y loguea via botLog
+// (Axiom dataset jprez-bot, mismo patron que el resto del proyecto). NO
+// crashea el modulo — el bot sigue respondiendo, pero el Director ve la
+// alarma loud en Axiom dashboard.
 {
   const orderCheck = validateStaticBlockOrder(STATIC_BLOCK);
   if (!orderCheck.ok) {
-    console.error("[prompt] static_block_order_violation:", JSON.stringify(orderCheck.violations));
+    botLog("error", "static_block_order_violation", {
+      violations: orderCheck.violations,
+      staticBlockChars: STATIC_BLOCK.length,
+    });
+  } else {
+    botLog("info", "static_block_order_ok", {
+      staticBlockChars: STATIC_BLOCK.length,
+    });
   }
 }
 
