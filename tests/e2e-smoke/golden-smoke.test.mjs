@@ -343,4 +343,16 @@ describe("Hotfix-22 V2 b2 — Smoke E2E golden (10 escenarios)", () => {
     expect(texts.length).toBeGreaterThan(0);
     assertGoldenReply(texts[0], scenario);
   }, 20000);
+
+  it("Test 11: extranjero post-calculo (smoke pipeline pivot — Hotfix-22 V3 r2)", async () => {
+    // Smoke pipeline: cliente acaba de hablar de PSE3, ahora pivota a
+    // extranjeros. Valida que el handler procesa el nuevo turno sin
+    // crash + sin asteriscos + con keywords del skill mercado-rd y la
+    // invitacion a retomar PSE3. NO testea pivoteo LLM real (mock
+    // devuelve respuesta pre-programada). Para validar regla ii real
+    // del OVERRIDES_LAYER, smoke MANUAL del Director post-merge.
+    const { texts, scenario } = await runScenario("scenario_extranjero_post_calculo");
+    expect(texts.length).toBeGreaterThan(0);
+    assertGoldenReply(texts[0], scenario);
+  }, 20000);
 });

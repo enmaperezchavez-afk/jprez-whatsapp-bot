@@ -26,10 +26,14 @@
 //   2. STYLE_LAYER ("RECORDATORIO FINAL DE TONO") aparece exactamente
 //      una vez y es el ULTIMO bloque del staticBlock.
 //   3. Skills (CALCULATOR_SKILL_CONTENT + MARKET_RD_SKILL_CONTENT) van
-//      ENTRE los layers internos y STYLE_LAYER (no antes de MATEO_V5_2,
-//      no despues de STYLE_LAYER).
+//      ENTRE los layers internos y OVERRIDES/STYLE_LAYER (no antes de
+//      MATEO_V5_2, no despues de STYLE_LAYER).
 //   4. Layers internos (GLOSSARY, COMMERCIAL) van entre MATEO_V5_2 y
 //      los skills.
+//   5. Hotfix-22 V3 r2: OVERRIDES_LAYER ("OVERRIDES CRÍTICOS") aparece
+//      exactamente una vez y va DESPUES de MARKET_RD_SKILL pero ANTES
+//      de STYLE_LAYER. Last-seen-wins: STYLE manda formato, OVERRIDES
+//      cubre semantica (skill activation, prioridad intencion, etc).
 //
 // MODULO LEAF: cero I/O. Solo busqueda de anchors en string.
 
@@ -39,6 +43,7 @@ const ANCHORS = {
   COMMERCIAL: "INTELIGENCIA COMERCIAL",
   CALCULATOR: "calculadora-plan-pago",
   MARKET_RD: "mercado-inmobiliario-rd",
+  OVERRIDES: "OVERRIDES CRÍTICOS",
   STYLE: "RECORDATORIO FINAL DE TONO",
 };
 
@@ -75,6 +80,7 @@ function validateStaticBlockOrder(staticBlock) {
   const commercial = findAnchor(staticBlock, ANCHORS.COMMERCIAL);
   const calc = findAnchor(staticBlock, ANCHORS.CALCULATOR);
   const market = findAnchor(staticBlock, ANCHORS.MARKET_RD);
+  const overrides = findAnchor(staticBlock, ANCHORS.OVERRIDES);
   const style = findAnchor(staticBlock, ANCHORS.STYLE);
 
   // Regla 1: MATEO_V5_2 presente exactamente una vez como identidad estructural.
@@ -99,6 +105,7 @@ function validateStaticBlockOrder(staticBlock) {
       { name: "COMMERCIAL_LAYER", idx: commercial.idx },
       { name: "CALCULATOR_SKILL", idx: calc.idx },
       { name: "MARKET_RD_SKILL", idx: market.idx },
+      { name: "OVERRIDES_LAYER", idx: overrides.idx },
     ];
     for (const a of earlierAnchors) {
       if (a.idx !== -1 && a.idx > style.idx) {
@@ -141,6 +148,26 @@ function validateStaticBlockOrder(staticBlock) {
       rule: "layers_after_mateo",
       message: "COMMERCIAL_LAYER appears BEFORE MATEO_V5_2",
     });
+  }
+
+  // Regla 5 (Hotfix-22 V3 r2): OVERRIDES_LAYER va DESPUES de MARKET_RD
+  // y ANTES de STYLE. Si esta presente, exigir orden correcto.
+  if (overrides.idx !== -1) {
+    if (market.idx !== -1 && overrides.idx < market.idx) {
+      violations.push({
+        rule: "overrides_after_market",
+        message: "OVERRIDES_LAYER appears BEFORE MARKET_RD_SKILL",
+        anchorPosition: overrides.idx,
+        marketPosition: market.idx,
+      });
+    }
+    if (overrides.count > 1) {
+      violations.push({
+        rule: "overrides_unique",
+        message: "OVERRIDES_LAYER anchor appears " + overrides.count + " times (must be exactly 1)",
+        count: overrides.count,
+      });
+    }
   }
 
   return { ok: violations.length === 0, violations };

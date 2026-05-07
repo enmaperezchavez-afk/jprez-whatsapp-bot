@@ -43,6 +43,7 @@ const { botLog } = require("./log");
 const { validateStaticBlockOrder } = require("./validators/static-block-order");
 const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
 const { COMMERCIAL_LAYER } = require("./prompts/commercial-layer");
+const { OVERRIDES_LAYER } = require("./prompts/overrides-layer");
 const { STYLE_LAYER } = require("./prompts/style-layer");
 
 // ============================================
@@ -824,6 +825,13 @@ const STATIC_BLOCK = [
   // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
   // Mismo contrato: fallback string vacio + trailing newline inocuo.
   MARKET_RD_SKILL_CONTENT,
+  // Hotfix-22 V3 r2: OVERRIDES_LAYER entre MARKET_RD y STYLE para
+  // resolver conflictos entre MATEO_V5_2 (stencils historicos) y los
+  // skills/layers actuales. Bug #30: stencil corto sobre extranjeros
+  // bypassea skill mercado-inmobiliario-rd; conflicto de formato
+  // (MATEO_V5_2 permite asteriscos, STYLE dice cero). NO entra en
+  // hash MATEO_V5_2 (verificado handlers/message.js:573).
+  OVERRIDES_LAYER,
   // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
   STYLE_LAYER,
 ].join("\n");
