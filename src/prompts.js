@@ -39,6 +39,8 @@
 
 const fs = require("fs");
 const path = require("path");
+const { botLog } = require("./log");
+const { validateStaticBlockOrder } = require("./validators/static-block-order");
 const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
 const { COMMERCIAL_LAYER } = require("./prompts/commercial-layer");
 const { STYLE_LAYER } = require("./prompts/style-layer");
@@ -57,9 +59,12 @@ try {
   const inventoryPath = path.join(__dirname, "..", ".claude", "skills", "vendedor-whatsapp-jprez", "references", "inventario-precios.md");
   SKILL_CONTENT = fs.readFileSync(skillPath, "utf8");
   INVENTORY_CONTENT = fs.readFileSync(inventoryPath, "utf8");
-  console.log("[prompt] skill loaded: " + SKILL_CONTENT.length + " chars, inventory: " + INVENTORY_CONTENT.length + " chars");
+  botLog("info", "prompt_skill_loaded", {
+    skillChars: SKILL_CONTENT.length,
+    inventoryChars: INVENTORY_CONTENT.length,
+  });
 } catch (e) {
-  console.error("[prompt] ERROR loading skill files:", e.message);
+  botLog("error", "prompt_skill_load_failed", { error: e.message });
   // Fallback degradado: prompt minimo con instruccion de escalar todo.
   SKILL_CONTENT = "ERROR: skill no cargo. Se breve, no inventes, y escala todo a Enmanuel al 8299943102.";
   INVENTORY_CONTENT = "";
@@ -75,9 +80,11 @@ let CALCULATOR_SKILL_CONTENT = "";
 try {
   const calculatorSkillPath = path.join(__dirname, "..", ".claude", "skills", "calculadora-plan-pago", "SKILL.md");
   CALCULATOR_SKILL_CONTENT = fs.readFileSync(calculatorSkillPath, "utf8");
-  console.log("[prompt] calculator skill loaded: " + CALCULATOR_SKILL_CONTENT.length + " chars");
+  botLog("info", "prompt_calculator_skill_loaded", {
+    chars: CALCULATOR_SKILL_CONTENT.length,
+  });
 } catch (e) {
-  console.error("[prompt] ERROR loading calculator skill:", e.message);
+  botLog("error", "prompt_calculator_skill_load_failed", { error: e.message });
   // Fallback degradado: skill ausente -> prompt sigue funcionando con el
   // skill principal, solo pierde la capacidad de negociacion cashflow
   // detallada. Mateo cae al plan estandar 10/30/60 sin ajustes finos.
@@ -96,9 +103,11 @@ let MARKET_RD_SKILL_CONTENT = "";
 try {
   const marketRdSkillPath = path.join(__dirname, "..", ".claude", "skills", "mercado-inmobiliario-rd", "SKILL.md");
   MARKET_RD_SKILL_CONTENT = fs.readFileSync(marketRdSkillPath, "utf8");
-  console.log("[prompt] market-rd skill loaded: " + MARKET_RD_SKILL_CONTENT.length + " chars");
+  botLog("info", "prompt_market_rd_skill_loaded", {
+    chars: MARKET_RD_SKILL_CONTENT.length,
+  });
 } catch (e) {
-  console.error("[prompt] ERROR loading market-rd skill:", e.message);
+  botLog("error", "prompt_market_rd_skill_load_failed", { error: e.message });
   MARKET_RD_SKILL_CONTENT = "";
 }
 
@@ -781,6 +790,64 @@ Array de strings cortos. Ejemplos: ["diaspora", "USA-NY", "primera-vivienda", "i
 // dinamico, no afecta cache hit. Behavioral: para Mateo, recibir la fecha
 // despues del bloque estatico es equivalente — el modelo usa toda la
 // system prompt en conjunto, no orden-dependiente para fecha.
+
+// Hotfix-22 V2 c1: STATIC_BLOCK construido UNA vez al cargar el modulo
+// (cold start). Componentes son constantes post-load. Antes se reconstruia
+// y revalidaba en cada llamada a buildSystemPromptBlocks() (~1ms x N
+// requests/dia desperdiciados). Order check tambien movido aqui.
+//
+// Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
+// No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
+// lo que iterar sobre ellos NO invalida historiales de clientes activos.
+//
+// Hotfix-22 V2 a3: STYLE_LAYER al FINAL (despues de los skills) como
+// autoridad de formato. last-seen-wins: la regla de prosa con numeros
+// exactos es la ultima palabra que el LLM procesa antes de generar.
+const STATIC_BLOCK = [
+  SKILL_CONTENT,
+  "",
+  "---",
+  "",
+  "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
+  "",
+  INVENTORY_CONTENT,
+  "",
+  "---",
+  "",
+  MATEO_PROMPT_V5_2,
+  GLOSSARY_LAYER,
+  COMMERCIAL_LAYER,
+  // Hotfix-22a: skill calculadora-plan-pago. Carga independiente; si el
+  // archivo no esta bundleado en Vercel, queda string vacio y el join
+  // produce un trailing newline inocuo.
+  CALCULATOR_SKILL_CONTENT,
+  // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
+  // Mismo contrato: fallback string vacio + trailing newline inocuo.
+  MARKET_RD_SKILL_CONTENT,
+  // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
+  STYLE_LAYER,
+].join("\n");
+
+// Hotfix-22 V2 b4 + c1 + c2: validacion de orden ejecutada al cold start,
+// no por request. Si un refactor futuro reordena los layers, el guard
+// atrapa la violacion al primer cold start en Vercel y loguea via botLog
+// (Axiom dataset jprez-bot, mismo patron que el resto del proyecto). NO
+// crashea el modulo — el bot sigue respondiendo, pero el Director ve la
+// alarma loud en Axiom dashboard.
+{
+  const orderCheck = validateStaticBlockOrder(STATIC_BLOCK);
+  if (!orderCheck.ok) {
+    botLog("error", "static_block_order_violation", {
+      violations: orderCheck.violations,
+      staticBlockChars: STATIC_BLOCK.length,
+    });
+  } else {
+    botLog("info", "static_block_order_ok", {
+      staticBlockChars: STATIC_BLOCK.length,
+    });
+  }
+}
+
 function buildSystemPromptBlocks() {
   const now = new Date();
   const iso = now.toISOString().slice(0, 10);
@@ -794,39 +861,15 @@ function buildSystemPromptBlocks() {
   });
   const fechaHeader = "Hoy es: " + iso + " (" + legible + ")\nHora actual: " + hora + " (Santo Domingo)";
 
-  // Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
-  // No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
-  // lo que iterar sobre ellos NO invalida historiales de clientes activos.
-  const staticBlock = [
-    SKILL_CONTENT,
-    "",
-    "---",
-    "",
-    "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
-    "",
-    INVENTORY_CONTENT,
-    "",
-    "---",
-    "",
-    MATEO_PROMPT_V5_2,
-    GLOSSARY_LAYER,
-    COMMERCIAL_LAYER,
-    STYLE_LAYER,
-    // Hotfix-22a: skill calculadora-plan-pago al final del staticBlock.
-    // Si el archivo no se cargo (env preview, error de bundle), el string
-    // queda vacio y el join produce un trailing newline inocuo.
-    CALCULATOR_SKILL_CONTENT,
-    // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
-    // Mismo contrato: fallback string vacio + trailing newline inocuo.
-    MARKET_RD_SKILL_CONTENT,
-  ].join("\n");
-
-  // dynamicHeader trailing newline para que el handler pueda concatenar
-  // clientContext/profileContext/holdingContext sin preocuparse por
-  // separadores.
+  // Hotfix-22 V2 c1: STATIC_BLOCK se construye y valida UNA sola vez al
+  // cargar el modulo (cold start). Es estable a traves de requests porque
+  // todos sus componentes (skills, layers, MATEO_V5_2) son constantes
+  // post-load. El dynamicHeader es lo unico que cambia por request (fecha
+  // + hora). Esto evita reconstruir + revalidar en cada mensaje (~1ms x N
+  // requests/dia desperdiciados antes).
   const dynamicHeader = fechaHeader + "\n";
 
-  return { staticBlock, dynamicHeader };
+  return { staticBlock: STATIC_BLOCK, dynamicHeader };
 }
 
 // buildSystemPrompt: backwards-compat wrapper. Algunos tests existentes

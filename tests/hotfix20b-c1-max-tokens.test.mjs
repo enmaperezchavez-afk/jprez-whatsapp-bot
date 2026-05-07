@@ -1,4 +1,4 @@
-// Hotfix-20B Commit 1 — Bug #14 max_tokens.
+// Hotfix-20B Commit 1 — Bug #14 max_tokens (actualizado por Hotfix-22 V2 c1).
 //
 // Smoke test revelo que max_tokens=500 era insuficiente cuando la iter
 // final post-tool-use debe emitir <perfil_update> + tags + reply en una
@@ -7,10 +7,18 @@
 // quedaba vacio, empty-reply guard disparaba "se me complico". Bug #14
 // del audit HIGH risk se manifesto en produccion.
 //
+// HOTFIX-22 V2 c1 (7 mayo 2026): Bug regreso post-PR #30 al sumar el
+// skill mercado-inmobiliario-rd 22.5KB. El prompt creció ~25-30%, los
+// outputs tendian a truncarse de nuevo. Cap subido de 2048 -> 4096 da
+// margen 2x. Estos tests fueron actualizados para reflejar el nuevo
+// valor preservando la intencion original (anti-pattern 500 + behavioral
+// SDK capture + stop_reason logging).
+//
 // Cobertura:
-//   1-3. Source-inspection (max_tokens 2048, regresion guard 500
-//        ausente, header comment con "Hotfix-20B" + "2048").
-//   4. Behavioral: max_tokens=2048 LLEGA al API en cada llamada (mock
+//   1-3. Source-inspection (max_tokens 4096, regresion guard 500/2048
+//        ausentes en codigo activo, header comment con "Hotfix-22 V2"
+//        + "4096" + "Bug #14").
+//   4. Behavioral: max_tokens=4096 LLEGA al API en cada llamada (mock
 //      @anthropic-ai/sdk capturando args).
 //   5. Behavioral: stop_reason loggeado por iteracion, incluso multi-tool.
 
@@ -69,38 +77,50 @@ const SRC = readFileSync("src/claude.js", "utf-8");
 
 // === Source-inspection tests ===
 
-describe("Hotfix-20B c1 — Source: max_tokens 2048", () => {
-  it("Test 1: max_tokens es exactamente 2048", () => {
-    expect(SRC).toContain("max_tokens: 2048");
+describe("Hotfix-22 V2 c1 + c3 — Source: max_tokens via env var with 4096 default", () => {
+  it("Test 1: API call usa la constante MAX_TOKENS (no literal hardcoded)", () => {
+    // Hotfix-22 V2 c3: el literal `max_tokens: 4096` se reemplazo por
+    // referencia a constante MAX_TOKENS que parsea CLAUDE_MAX_TOKENS env
+    // var con default 4096. Source-inspection adaptada: buscamos el
+    // patron del .create con la constante referenciada.
+    expect(SRC).toMatch(/max_tokens:\s*MAX_TOKENS/);
+    // El default sigue siendo 4096 (cero env var = mismo comportamiento).
+    expect(SRC).toMatch(/DEFAULT_MAX_TOKENS\s*=\s*4096/);
   });
 
-  it("Test 2: regresion guard — max_tokens: 500 ya no existe en codigo activo", () => {
-    // Permitimos mencion en comments historicos (ej. "pre-fix era 500"),
-    // pero NO en codigo. Buscamos la forma del literal en config de API.
+  it("Test 2: regresion guard — max_tokens 500 y 2048 ya no existen en codigo activo", () => {
+    // Permitimos mencion en comments historicos (ej. "pre-fix era 2048"),
+    // pero NO en codigo activo. Buscamos la forma del literal en config
+    // de API o en defaults.
     expect(SRC).not.toMatch(/^\s*max_tokens:\s*500\s*,/m);
+    expect(SRC).not.toMatch(/^\s*max_tokens:\s*2048\s*,/m);
+    expect(SRC).not.toMatch(/DEFAULT_MAX_TOKENS\s*=\s*500/);
+    expect(SRC).not.toMatch(/DEFAULT_MAX_TOKENS\s*=\s*2048/);
   });
 
-  it("Test 3: header comment refleja Hotfix-20B + nuevo valor 2048", () => {
+  it("Test 3: header comment refleja Hotfix-22 V2 + nuevo valor 4096 + env var + Bug #14 historia", () => {
     // Las primeras lineas (header) deben mencionar la causa raiz para
     // auditoria futura — alguien que llegue a este archivo entiende el
     // "por que" sin tener que ir al PR.
     const header = SRC.slice(0, SRC.indexOf("function getAnthropic"));
-    expect(header).toContain("2048");
-    expect(header).toContain("Hotfix-20B");
+    expect(header).toContain("4096");
+    expect(header).toContain("Hotfix-22 V2");
     expect(header).toContain("Bug #14");
+    // C3: env var CLAUDE_MAX_TOKENS documentada en header.
+    expect(header).toContain("CLAUDE_MAX_TOKENS");
   });
 });
 
 // === Behavioral tests con SDK mockeado ===
 
-describe("Hotfix-20B c1 — Behavioral: SDK capture args + log stop_reason", () => {
+describe("Hotfix-22 V2 c1 — Behavioral: SDK capture args + log stop_reason", () => {
   beforeEach(() => {
     createCalls.length = 0;
     nextResponses.length = 0;
     botLogCalls.length = 0;
   });
 
-  it("Test 4: max_tokens=2048 LLEGA al API en cada llamada (no solo en source)", async () => {
+  it("Test 4: max_tokens=4096 LLEGA al API en cada llamada (no solo en source)", async () => {
     nextResponses.push({
       stop_reason: "end_turn",
       content: [{ type: "text", text: "respuesta corta de prueba" }],
@@ -116,7 +136,7 @@ describe("Hotfix-20B c1 — Behavioral: SDK capture args + log stop_reason", () 
     });
 
     expect(createCalls).toHaveLength(1);
-    expect(createCalls[0].max_tokens).toBe(2048);
+    expect(createCalls[0].max_tokens).toBe(4096);
     // Sanity: otros params siguen llegando intactos.
     expect(createCalls[0].model).toBe("claude-sonnet-4-6");
     expect(createCalls[0].system).toBe("test prompt");
@@ -165,8 +185,8 @@ describe("Hotfix-20B c1 — Behavioral: SDK capture args + log stop_reason", () 
     expect(claudeLogs[1].data.input_tokens).toBe(200);
     expect(claudeLogs[1].data.output_tokens).toBe(30);
 
-    // Sanity: ambas llamadas usaron max_tokens=2048.
+    // Sanity: ambas llamadas usaron max_tokens=4096.
     expect(createCalls).toHaveLength(2);
-    expect(createCalls.every((c) => c.max_tokens === 2048)).toBe(true);
+    expect(createCalls.every((c) => c.max_tokens === 4096)).toBe(true);
   });
 });

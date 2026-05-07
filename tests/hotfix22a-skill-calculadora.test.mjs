@@ -2,7 +2,13 @@
 //
 // Version definitiva: archivo skill creado + integrado al loader de
 // src/prompts.js (CALCULATOR_SKILL_CONTENT cargado al cold start e
-// inyectado en staticBlock al final, despues de STYLE_LAYER).
+// inyectado en staticBlock).
+//
+// HOTFIX-22 V2 a3 (7 mayo 2026): el orden del staticBlock cambio. STYLE_LAYER
+// se movio AL FINAL como autoridad de formato (last-seen-wins). Eso
+// invierte el ordenamiento original: la calculadora ahora va ANTES de
+// STYLE_LAYER, no despues. Test 7 actualizado para reflejar el nuevo
+// invariante (calculadora < style).
 //
 // El skill contiene casos reales Gladys Mishell (16-403 tradicional,
 // 16-412 ajustado) + reglas duras/blandas del contrato JPREZ + script
@@ -17,7 +23,7 @@
 //     5. Cero mojibake (regression guard del export Drive original).
 //   Integration (skill como layer del prompt):
 //     6. CALCULATOR_SKILL_CONTENT inyectado en staticBlock.
-//     7. Posicion: despues de STYLE_LAYER (ultimo layer).
+//     7. Posicion: ANTES de STYLE_LAYER (post-Hotfix-22 V2 a3 reorder).
 //     8. Hash MATEO_V5_2 INTACTO (la constante NO se toco).
 
 import { describe, it, expect } from "vitest";
@@ -103,16 +109,18 @@ describe("Hotfix-22a — skill calculadora integrado al loader (integration)", (
     expect(staticBlock).toContain("70% CONTRA ENTREGA");       // regla dura
   });
 
-  it("Test 7: skill calculadora aparece DESPUES de STYLE_LAYER en staticBlock", () => {
+  it("Test 7: skill calculadora aparece ANTES de STYLE_LAYER en staticBlock (post-Hotfix-22 V2 a3)", () => {
     const { staticBlock } = buildSystemPromptBlocks();
-    // Anchor de STYLE_LAYER (ultimo layer pre-Hotfix-22a):
+    // Hotfix-22 V2 a3: STYLE_LAYER se movio al FINAL del staticBlock como
+    // autoridad de formato (last-seen-wins). Antes la calculadora iba
+    // DESPUES de STYLE; ahora va ANTES. Mismo invariante semantico:
+    // skill cargado e inyectado en el orden correcto del array.
     const idxStyle = staticBlock.indexOf("RECORDATORIO FINAL DE TONO");
-    // Anchor del skill calculadora:
     const idxCalc = staticBlock.indexOf("calculadora-plan-pago");
     expect(idxStyle).toBeGreaterThan(-1);
     expect(idxCalc).toBeGreaterThan(-1);
-    // Calculadora va al final del staticBlock, despues de STYLE.
-    expect(idxCalc).toBeGreaterThan(idxStyle);
+    // Calculadora va antes de STYLE_LAYER (que ahora cierra el staticBlock).
+    expect(idxCalc).toBeLessThan(idxStyle);
   });
 
   it("Test 8: hash MATEO_V5_2 INTACTO (constante no modificada)", () => {

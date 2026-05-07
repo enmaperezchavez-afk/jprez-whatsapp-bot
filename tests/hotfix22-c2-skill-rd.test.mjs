@@ -108,19 +108,22 @@ describe("Hotfix-22 c2 — skill mercado-inmobiliario-rd (smoke)", () => {
 });
 
 describe("Hotfix-22 c2 — skill RD integrado al loader (integration)", () => {
-  it("Test 7: MARKET_RD_SKILL_CONTENT inyectado DESPUES del calculador en staticBlock", () => {
+  it("Test 7: MARKET_RD_SKILL_CONTENT inyectado DESPUES del calculador y ANTES de STYLE_LAYER (post-Hotfix-22 V2 a3)", () => {
     const { staticBlock } = buildSystemPromptBlocks();
     // Anchors unicos del skill RD: si estan en el staticBlock, el loader
-    // cargo el archivo y lo concateno al final.
+    // cargo el archivo y lo concateno en su posicion correcta.
     expect(staticBlock).toContain("mercado-inmobiliario-rd");
     expect(staticBlock).toContain("Ley 189-11");
     expect(staticBlock).toContain("BONO PRIMERA VIVIENDA");
-    // Orden: calculadora va antes que market-rd (loader las carga en
-    // ese orden y staticBlock concatena).
+    // Orden post-Hotfix-22 V2 a3: ...COMMERCIAL -> CALCULATOR -> MARKET -> STYLE.
+    // Calculadora antes que market (carga secuencial). Market antes que
+    // STYLE_LAYER (autoridad final de formato).
     const idxCalc = staticBlock.indexOf("calculadora-plan-pago");
     const idxMarket = staticBlock.indexOf("mercado-inmobiliario-rd");
+    const idxStyle = staticBlock.indexOf("RECORDATORIO FINAL DE TONO");
     expect(idxCalc).toBeGreaterThan(-1);
     expect(idxMarket).toBeGreaterThan(idxCalc);
+    expect(idxStyle).toBeGreaterThan(idxMarket);
   });
 
   it("Test 8: hash MATEO_V5_2 INTACTO (constante no modificada por skill nuevo)", () => {

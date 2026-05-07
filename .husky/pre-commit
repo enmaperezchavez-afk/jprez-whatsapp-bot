@@ -10,3 +10,10 @@ done
 # Hotfix-9: detectar mojibake (UTF-8 → Latin-1 corruption) en archivos staged.
 # Implementado en Node.js (no bash) para portabilidad cross-platform.
 node scripts/check-encoding.mjs || exit 1
+
+# Hotfix-22 V2 b3: skill format linter en archivos staged. Bloquea commit
+# si un skill nuevo trae formato Excel (bullets/bold/tablas excesivos)
+# que el LLM imitaria al responder al cliente. Modo --staged solo evalua
+# .claude/skills/**/*.md cambiados en este commit. Modo no-strict: bloquea
+# solo en exit 2 (red), permite yellow.
+node scripts/skill-linter.mjs --staged || exit 1

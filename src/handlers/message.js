@@ -47,6 +47,7 @@ const {
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, detectCruxStage } = require("../detect");
 const { shouldSendDoc } = require("../dispatch/document-policy");
 const { buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
+const { validateSystemPromptSize } = require("../validators/token-budget");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
@@ -602,6 +603,35 @@ async function processMessage(body) {
         { type: "text", text: staticBlock, cache_control: { type: "ephemeral" } },
         { type: "text", text: dynamicHeader + clientContext + profileContext + holdingContext },
       ];
+    }
+
+    // Hotfix-22 V2 b1: pre-flight token budget check. Detecta prompts
+    // gigantes ANTES de llegar a Anthropic API. NO bloquea — solo loguea
+    // a Axiom estructurado para alarma temprana del Director si un skill
+    // nuevo crece el prompt mas alla del threshold de warning. Previene
+    // Bug #14/#26 (max_tokens regression) silencioso.
+    const sizeCheck = validateSystemPromptSize(systemBlocks);
+    if (sizeCheck.status === "red") {
+      botLog("error", "system_prompt_too_large", {
+        phone: senderPhone,
+        estimatedTokens: sizeCheck.estimatedTokens,
+        chars: sizeCheck.chars,
+        message: sizeCheck.message,
+      });
+    } else if (sizeCheck.status === "yellow") {
+      botLog("warn", "system_prompt_size_warning", {
+        phone: senderPhone,
+        estimatedTokens: sizeCheck.estimatedTokens,
+        chars: sizeCheck.chars,
+        message: sizeCheck.message,
+      });
+    } else {
+      botLog("info", "system_prompt_size", {
+        phone: senderPhone,
+        estimatedTokens: sizeCheck.estimatedTokens,
+        chars: sizeCheck.chars,
+        status: sizeCheck.status,
+      });
     }
 
     const response = await callClaudeWithTools({
