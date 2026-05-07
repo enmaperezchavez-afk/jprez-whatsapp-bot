@@ -1,0 +1,26 @@
+name: Skill Format Linter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".claude/skills/**/*.md"
+      - "scripts/skill-linter.mjs"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".claude/skills/**/*.md"
+      - "scripts/skill-linter.mjs"
+
+jobs:
+  skill-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run skill format linter (--strict)
+        run: node scripts/skill-linter.mjs --strict
