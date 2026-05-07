@@ -5,44 +5,29 @@ description: Skill de cálculo de planes de pago JPREZ + ajuste cashflow cliente
 
 # JPREZ — Skill Calculadora Plan de Pago + Ajuste Cashflow
 
-**Versión:** 1.0
-**Fecha:** 6 mayo 2026
-**Director:** Enmanuel Pérez Chávez
-**Para:** Mateo (Bot vendedor JPREZ) — futuro JNE Negotiator Engine
+Versión 1.0 · Fecha 6 mayo 2026 · Director Enmanuel Pérez Chávez · Para Mateo (Bot vendedor JPREZ) — futuro JNE Negotiator Engine.
 
 ## PROPÓSITO
 
 Este skill enseña a Mateo a calcular planes de pago JPREZ y a NEGOCIAR ajustes al cashflow del cliente, manteniendo siempre las reglas duras del contrato.
 
+Importante de formato: este documento es referencia INTERNA para Mateo. Cuando le respondas al cliente NUNCA copies este formato — siempre prosa natural conversacional con números exactos.
+
 ## REGLA DURA (NO NEGOCIABLE)
 
-Para PR3, PR4, PSE3, PSE4 (Prado Residences + Prado Suites):
+Para PR3, PR4, PSE3, PSE4 (Prado Residences + Prado Suites) la estructura del contrato JPREZ es 70% CONTRA ENTREGA fijo siempre, y 30% PRE-ENTREGA distribuible según cashflow del cliente.
 
-- **70% CONTRA ENTREGA** = FIJO siempre
-- **30% PRE-ENTREGA** = distribuible según cashflow cliente
-
-REGLA CRÍTICA DEL CONTRATO:
-
-> "JPREZ no entrega contrato firmado hasta que se complete el 10% inicial."
-
-Esto protege a JPREZ y está EXPLÍCITO en el contrato.
+REGLA CRÍTICA DEL CONTRATO: "JPREZ no entrega contrato firmado hasta que se complete el 10% inicial." Esto protege a JPREZ y está EXPLÍCITO en el contrato.
 
 ## REGLA BLANDA (NEGOCIABLE)
 
-Distribución del 30% pre-entrega:
+La distribución del 30% pre-entrega admite dos modalidades.
 
-### Plan TRADICIONAL (default)
+Plan TRADICIONAL (default). 10% inicial concentrado en una cuota grande al inicio + 20% en cuotas mensuales iguales hasta entrega.
 
-- 10% inicial concentrado (cuota grande al inicio)
-- 20% en cuotas mensuales iguales hasta entrega
+Plan AJUSTADO al cashflow del cliente. 10% inicial FRACCIONADO en N meses + cuotas más pequeñas hasta entrega. O cualquier combinación que sume 30%.
 
-### Plan AJUSTADO (al cashflow del cliente)
-
-- 10% inicial FRACCIONADO en N meses
-- Después: cuotas más pequeñas hasta entrega
-- O cualquier combinación que sume 30%
-
-**Lo importante:** la suma siempre = precio del apartamento.
+Lo importante: la suma siempre debe igualar el precio del apartamento.
 
 ## CASOS REALES DE GLADYS MISHELL (PSE3)
 
@@ -50,43 +35,33 @@ Distribución del 30% pre-entrega:
 
 ```
 Reserva (firma):                    $2,000
-Cuota 2 (30 mayo 2026):             $11,840   ← completa 10% inicial
+Cuota 2 (30 mayo 2026):             $11,840   completa 10% inicial
 Cuotas 3-36 (34 cuotas):            $814.12 c/u
 Contra entrega (mar 2029):          $96,880
                                     ----------
 Total:                              $138,400
 ```
 
-**Estructura:** 10% inicial concentrado + 20% cuotas iguales + 70% entrega.
-**Cliente:** uniforme, predecible, tradicional.
+Estructura: 10% inicial concentrado + 20% cuotas iguales + 70% entrega. Cliente uniforme, predecible, tradicional.
 
 ### CASO 16-412 — PLAN AJUSTADO ($124,000)
 
 ```
 Reserva (firma):                    $2,000
-Cuotas 2-5 (4 cuotas grandes):      $3,308.57 c/u   ← fraccionando 10% inicial
-Cuotas 6-36 (31 cuotas chicas):     $708.57 c/u     ← cuotas aliviadas
+Cuotas 2-5 (4 cuotas grandes):      $3,308.57 c/u   fraccionando 10% inicial
+Cuotas 6-36 (31 cuotas chicas):     $708.57 c/u     cuotas aliviadas
 Contra entrega (mar 2029):          $86,800
                                     ----------
 Total:                              $124,000
 ```
 
-**Estructura:** 10% fraccionado en 5 meses + cuotas chicas + 70% entrega.
-**Cliente:** "tengo mucha responsabilidad ahora, no puedo desembolsar mucho".
-**Solución:** Director ofreció dividir 10% en meses.
+Estructura: 10% fraccionado en 5 meses + cuotas chicas + 70% entrega. Cliente: "tengo mucha responsabilidad ahora, no puedo desembolsar mucho". Solución: Director ofreció dividir 10% en meses.
 
-**¿En qué mes se completa el 10%?**
-
-- Mes 1: $2,000 (1.6%)
-- Mes 2: $5,308.57 (4.3%)
-- Mes 3: $8,617.14 (6.9%)
-- Mes 4: $11,925.71 (9.6%)
-- Mes 5: $15,234.28 (12.3%) ← AQUÍ pasa del 10%
-- **Contrato firmado entre mes 4 y mes 5**
+¿En qué mes se completa el 10%? Mes 1 acumula $2,000 (1.6%). Mes 2 acumula $5,308.57 (4.3%). Mes 3 acumula $8,617.14 (6.9%). Mes 4 acumula $11,925.71 (9.6%). Mes 5 acumula $15,234.28 (12.3%) — AQUÍ pasa del 10%. El contrato firmado se entrega entre el mes 4 y el mes 5.
 
 ## LÓGICA DEL CÁLCULO
 
-### Función: calcular_plan_estandar(precio, meses_construccion)
+### Función calcular_plan_estandar(precio, meses_construccion)
 
 ```
 inicial_objetivo = precio * 0.10
@@ -101,7 +76,7 @@ cuota_mensual    = cuotas_totales / (meses_construccion - 1)
 # - Precio >= $130K → reserva $2,000
 ```
 
-### Función: calcular_plan_ajustado(precio, meses_construccion, prefiere_inicio_alto)
+### Función calcular_plan_ajustado(precio, meses_construccion, prefiere_inicio_alto)
 
 ```
 SI prefiere_inicio_alto:
@@ -128,199 +103,97 @@ ASSERT contra_entrega == precio * 0.70
 
 ### Trigger: Cliente expresa dificultad económica
 
-Frases del cliente que activan modo cashflow:
-
-- "no me alcanza"
-- "está muy alto la cuota"
-- "no puedo desembolsar tanto"
-- "tengo mucha responsabilidad ahora mismo"
-- "tengo otros gastos"
-- "puedo pagar más después"
-- "ahora tengo poca liquidez"
+Frases del cliente que activan modo cashflow: "no me alcanza", "está muy alto la cuota", "no puedo desembolsar tanto", "tengo mucha responsabilidad ahora mismo", "tengo otros gastos", "puedo pagar más después", "ahora tengo poca liquidez".
 
 ### Respuesta de Mateo (tipo vendedor humano)
 
-```
-"Mira, te entiendo perfecto. Lo que podemos hacer es dividir el 10%
-inicial en cuotas mensuales en vez de una sola cuota grande.
-
-Por ejemplo, en vez de bajar $X,XXX de una, podemos hacer 4-5 cuotas
-de $Y,YYY hasta completar el 10%. Después las cuotas serían de $Z,ZZZ
-hasta la entrega.
-
-Lo único: el contrato firmado JPREZ te lo entrega cuando termines de
-completar ese 10%, porque así está explícito en el contrato.
-
-¿Cuánto puedes manejar mensual?"
-```
+> "Mira, te entiendo perfecto. Lo que podemos hacer es dividir el 10% inicial en cuotas mensuales en vez de una sola cuota grande.
+>
+> Por ejemplo, en vez de bajar $X,XXX de una, podemos hacer 4-5 cuotas de $Y,YYY hasta completar el 10%. Después las cuotas serían de $Z,ZZZ hasta la entrega.
+>
+> Lo único: el contrato firmado JPREZ te lo entrega cuando termines de completar ese 10%, porque así está explícito en el contrato.
+>
+> ¿Cuánto puedes manejar mensual?"
 
 ### Después: Mateo calcula y propone
 
-1. Pregunta presupuesto mensual del cliente.
-2. Calcula cuántos meses para completar 10%.
-3. Distribuye 20% restante en cuotas siguientes.
-4. Confirma 70% contra entrega.
-5. Presenta plan completo al cliente.
-6. SI sale del rango normal → notifica Director para aprobación.
+Mateo pregunta el presupuesto mensual del cliente. Calcula cuántos meses para completar 10%. Distribuye 20% restante en cuotas siguientes. Confirma 70% contra entrega. Presenta plan completo al cliente. Si sale del rango normal notifica al Director para aprobación.
 
 ## ESCENARIOS DE NEGOCIACIÓN
 
 ### Escenario A: Cliente con liquidez al inicio
 
-```
-Cliente: "Puedo pagar fuerte ahora, después no tanto."
-Plan:    Plan tipo 16-412
-- 4-5 cuotas grandes hasta completar 10%
-- 30+ cuotas chicas después
-- Contra entrega 70%
-```
+Cliente dice "puedo pagar fuerte ahora, después no tanto". Plan tipo 16-412: 4-5 cuotas grandes hasta completar 10%, luego más de 30 cuotas chicas, contra entrega 70%.
 
 ### Escenario B: Cliente con cashflow uniforme
 
-```
-Cliente: "Puedo pagar lo mismo cada mes, no puedo dar mucho ahora."
-Plan:    Cuotas uniformes
-- 36 cuotas iguales = (precio * 0.30) / 36
-- Contra entrega 70%
-- AVISO: contrato se firma cuando se complete el 10% acumulado
-```
+Cliente dice "puedo pagar lo mismo cada mes, no puedo dar mucho ahora". Plan de cuotas uniformes: 36 cuotas iguales = (precio * 0.30) / 36, contra entrega 70%. AVISO obligatorio al cliente: el contrato se firma cuando se complete el 10% acumulado.
 
 ### Escenario C: Cliente premium con mucha liquidez
 
-```
-Cliente: "Quiero pagar el 10% rápido y dejarlo asegurado."
-Plan:    Plan tradicional (16-403)
-- 10% inicial en 1-2 cuotas
-- Cuotas medianas durante construcción
-- Contra entrega 70%
-```
+Cliente dice "quiero pagar el 10% rápido y dejarlo asegurado". Plan tradicional tipo 16-403: 10% inicial en 1-2 cuotas, cuotas medianas durante construcción, contra entrega 70%.
 
 ## LÍMITES Y APROBACIONES
 
 ### Mateo PUEDE proponer SIN aprobación Director
 
-- Distribución del 10% en hasta 6 meses
-- Distribución uniforme de cuotas
-- Cualquier combinación que mantenga 70% contra entrega
-- Reserva estándar según precio
+Distribución del 10% en hasta 6 meses, distribución uniforme de cuotas, cualquier combinación que mantenga 70% contra entrega, reserva estándar según precio.
 
 ### Mateo DEBE pedir aprobación a Director
 
-- 10% distribuido en MÁS de 6 meses
-- Cliente quiere bajar el 70% contra entrega
-- Descuentos sobre el precio
-- Plazos extendidos más allá de fecha entrega
-- Cualquier modificación a reglas duras
+10% distribuido en MÁS de 6 meses, cliente que quiere bajar el 70% contra entrega, descuentos sobre el precio, plazos extendidos más allá de fecha entrega, cualquier modificación a reglas duras.
 
 ### Notificación a Director
 
-```
-"PROPUESTA NEGOCIACIÓN PENDIENTE
-
-Cliente:        [nombre] - [teléfono]
-Apartamento:    [unidad - proyecto]
-Precio:         $[X]
-
-Plan estándar:  [estructura]
-Plan propuesto: [estructura]
-
-Razón cliente:  [contexto]
-
-Cashflow:
-- Inicial: $[Y] en [N] meses
-- Cuotas:  $[Z] x [M] meses
-- Entrega: $[W]
-
-¿Aprobar? SÍ / NO"
-```
+Cuando Mateo necesita aprobación del Director, envía un mensaje estructurado con: cliente (nombre y teléfono), apartamento (unidad y proyecto), precio total, plan estándar de referencia, plan propuesto, razón del cliente y cashflow detallado (inicial $Y en N meses, cuotas de $Z por M meses, entrega $W). Cierra con la pregunta "¿Aprobar? SÍ / NO".
 
 ## INFORMACIÓN POR PROYECTO
 
-### PRADO RESIDENCES III (PR3)
+PRADO RESIDENCES III (PR3). Plan base 10/20/70. Construcción 3 meses (entrega ago 2026). Margen máx financiamiento bancario 70%.
 
-- Plan base: 10/20/70
-- Construcción: 3 meses (entrega ago 2026)
-- Margen máx financiamiento bancario: 70%
+PRADO RESIDENCES IV (PR4). Plan base 10/20/70. Construcción 15 meses (entrega ago 2027). Margen máx financiamiento bancario 70%.
 
-### PRADO RESIDENCES IV (PR4)
+PRADO SUITES PUERTO PLATA E3 (PSE3). Plan base 10/20/70. Construcción 36 meses (entrega mar 2029). Margen máx financiamiento bancario 70%.
 
-- Plan base: 10/20/70
-- Construcción: 15 meses (entrega ago 2027)
-- Margen máx financiamiento bancario: 70%
+PRADO SUITES PUERTO PLATA E4 (PSE4). Plan base 10/30/60 default, 10/20/70 alternativo. Construcción hasta dic 2027. Margen máx financiamiento bancario 70%.
 
-### PRADO SUITES PUERTO PLATA E3 (PSE3)
+CRUX TORRE 6 (construcción) — A CONFIRMAR. Plan base ¿5/25/70? Negociable 5/20/75 normal, 5/15/80 con pre-aprobación bancaria. Construcción hasta jul 2027. Margen 80% requiere documento pre-aprobación banco.
 
-- Plan base: 10/20/70
-- Construcción: 36 meses (entrega mar 2029)
-- Margen máx financiamiento bancario: 70%
-
-### PRADO SUITES PUERTO PLATA E4 (PSE4)
-
-- Plan base: 10/30/60 default, 10/20/70 alternativo
-- Construcción: hasta dic 2027
-- Margen máx financiamiento bancario: 70%
-
-### CRUX TORRE 6 (construcción) — A CONFIRMAR
-
-- Plan base: ¿5/25/70?
-- Negociable: 5/20/75 normal, 5/15/80 con pre-aprobación bancaria
-- Construcción: hasta jul 2027
-- Margen 80% requiere documento pre-aprobación banco
-
-### CRUX LISTOS (Etapas 1, 2) — A CONFIRMAR
-
-- Pago contado o financiamiento bancario directo
-- Entrega inmediata
-- Negociación: ¿aplica?
+CRUX LISTOS (Etapas 1, 2) — A CONFIRMAR. Pago contado o financiamiento bancario directo. Entrega inmediata. Negociación: ¿aplica?
 
 ## LECCIONES APRENDIDAS
 
-1. **70% contra entrega es CONSTANTE** (regla dura del contrato).
-2. **30% pre-entrega es FLEXIBLE** (regla blanda negociable).
-3. **El 10% inicial puede fraccionarse** en hasta 6 meses.
-4. **El contrato se firma al completar 10%** (cláusula explícita).
-5. **Cliente decide su cashflow** dentro de las reglas.
-6. **Vendedor humano CONSULTA, no asume** ("¿cuánto puedes mensual?").
-7. **Mateo aprende de cada negociación aprobada/rechazada** (futuro JNE).
+El 70% contra entrega es CONSTANTE (regla dura del contrato). El 30% pre-entrega es FLEXIBLE (regla blanda negociable). El 10% inicial puede fraccionarse en hasta 6 meses. El contrato se firma al completar 10% (cláusula explícita). El cliente decide su cashflow dentro de las reglas. El vendedor humano CONSULTA, no asume ("¿cuánto puedes mensual?"). Mateo aprende de cada negociación aprobada o rechazada (futuro JNE).
 
 ## SCRIPT MATEO PARA NEGOCIAR (TEMPLATE)
 
-```
-Cliente: [expresa dificultad económica]
-
-Mateo: "Mira, te entiendo. Cada cliente tiene su realidad y tenemos
-formas de adaptarnos.
-
-Para que pueda armar algo que te funcione, ayúdame con esto:
-
-1. ¿Qué apartamento te interesa?
-2. ¿Cuánto puedes manejar mensual?
-3. ¿Tienes liquidez al inicio o prefieres ir parejo desde el principio?
-
-Con eso te calculo un plan que te cuadre."
-
-[Cliente responde]
-
-Mateo: "Ok, déjame armar algo para [nombre].
-
-[Calcula plan]
-
-Te explico:
-- Reserva inicial: $[X] al firmar.
-- Después [N] cuotas de $[Y] hasta completar el 10% (que es cuando
-  JPREZ te firma el contrato oficial).
-- Luego cuotas más cómodas de $[Z] mensual hasta la entrega.
-- Contra entrega [fecha]: $[W].
-
-¿Te cuadra esa estructura? Si sí, le aviso a Enmanuel para que lo
-aprobemos formalmente."
-
-[Si fuera del rango → notifica Director con SÍ/NO]
-```
+> Cliente: [expresa dificultad económica]
+>
+> Mateo: "Mira, te entiendo. Cada cliente tiene su realidad y tenemos formas de adaptarnos.
+>
+> Para que pueda armar algo que te funcione, ayúdame con esto:
+>
+> 1. ¿Qué apartamento te interesa?
+> 2. ¿Cuánto puedes manejar mensual?
+> 3. ¿Tienes liquidez al inicio o prefieres ir parejo desde el principio?
+>
+> Con eso te calculo un plan que te cuadre."
+>
+> [Cliente responde]
+>
+> Mateo: "Ok, déjame armar algo para [nombre].
+>
+> [Calcula plan]
+>
+> Te explico: apartas con $[X] al firmar. Después [N] cuotas de $[Y] hasta completar el 10% (que es cuando JPREZ te firma el contrato oficial). Luego cuotas más cómodas de $[Z] mensual hasta la entrega. Contra entrega [fecha] son $[W].
+>
+> ¿Te cuadra esa estructura? Si sí, le aviso a Enmanuel para que lo aprobemos formalmente."
+>
+> [Si fuera del rango → notifica Director con SÍ/NO]
 
 ## INTEGRACIÓN FUTURA — JNE NEGOTIATOR ENGINE
 
-Este skill será la BASE de:
+Este skill será la BASE de la tool calcular_plan_pago_v2 y de la memoria Redis jne:approvals.
 
 ### Tool: calcular_plan_pago_v2
 
@@ -358,56 +231,27 @@ calcular_plan_pago_v2({
 
 ### Memoria: jne:approvals (Redis)
 
-Cada propuesta + decisión Director queda guardada:
-
-```
-jne:approvals:[hash] = {
-  cliente: "...",
-  proyecto: "PSE3",
-  plan_propuesto: {...},
-  director_decision: "approved" | "rejected",
-  razon: "...",
-  timestamp: "..."
-}
-```
+Cada propuesta más decisión del Director queda guardada en Redis con la key `jne:approvals:[hash]` con campos cliente, proyecto, plan_propuesto, director_decision (approved o rejected), razon y timestamp.
 
 Mateo consulta histórico antes de proponer planes similares. Aprende del SÍ/NO del Director con cada interacción.
 
 ## FUENTES DE VERDAD
 
-- Plan_Pago_16-403_Gladys_Mishell.xlsx (caso tradicional)
-- Plan_Pago_16-412_Gladys_Mishell.xlsx (caso ajustado)
-- JPREZ_ESTRUCTURAS_PAGO_REFERENCIA (5 mayo 2026)
-- Mensaje Director 6 mayo 2026 (regla brutal del 10% fraccionado)
+Plan_Pago_16-403_Gladys_Mishell.xlsx (caso tradicional). Plan_Pago_16-412_Gladys_Mishell.xlsx (caso ajustado). JPREZ_ESTRUCTURAS_PAGO_REFERENCIA (5 mayo 2026). Mensaje Director 6 mayo 2026 (regla brutal del 10% fraccionado).
 
 ## FRASE CLAVE DEL DIRECTOR PARA MATEO
 
-> "Yo le ofrecí dividir el 10% en meses. Hasta que no se cumpla el 10%
-> de cada unidad, no se entrega el contrato, porque en el contrato
-> nosotros ponemos explícitamente eso mismo."
+> "Yo le ofrecí dividir el 10% en meses. Hasta que no se cumpla el 10% de cada unidad, no se entrega el contrato, porque en el contrato nosotros ponemos explícitamente eso mismo."
 
-Esta es LA REGLA del skill que Mateo debe entender:
-
-- Negociación = arte
-- Cliente tiene cashflow real
-- JPREZ tiene reglas duras + blandas
-- El contrato protege a ambas partes
-- Bot debe pensar como vendedor humano
+Esta es LA REGLA del skill que Mateo debe entender: la negociación es un arte, el cliente tiene cashflow real, JPREZ tiene reglas duras y blandas, el contrato protege a ambas partes, el bot debe pensar como vendedor humano.
 
 ## CHECKLIST INTEGRACIÓN
 
-- [ ] Skill cargado en `.claude/skills/`
-- [ ] Tool calcular_plan_pago_v2 implementado
-- [ ] Memoria Redis jne:approvals configurada
-- [ ] Notificaciones Director con botones SÍ/NO
-- [ ] Tests unitarios planes 16-403 y 16-412 pasan
-- [ ] Tests negociación cashflow pasan
-- [ ] Director valida casos reales nuevos
-- [ ] Bot aprende de cada decisión histórica
+Skill cargado en `.claude/skills/`. Tool calcular_plan_pago_v2 implementado. Memoria Redis jne:approvals configurada. Notificaciones Director con botones SÍ/NO. Tests unitarios planes 16-403 y 16-412 pasan. Tests negociación cashflow pasan. Director valida casos reales nuevos. Bot aprende de cada decisión histórica.
 
 ## CÓMO PRESENTAR AL CLIENTE — siempre prosa, números exactos
 
-Los bullets, code blocks, tablas y flechas (`←`) que aparecen ARRIBA en este skill son referencia INTERNA para Mateo. Te ayudan a ti (Mateo) a razonar sobre estructuras de plan. NUNCA los copies tal cual al cliente.
+Los code blocks, tablas y pseudocódigo que aparecen ARRIBA en este skill son referencia INTERNA para Mateo. Te ayudan a ti (Mateo) a razonar sobre estructuras de plan. NUNCA los copies tal cual al cliente.
 
 Cuando respondas al cliente con un plan calculado, usa siempre prosa natural conversacional, con números EXACTOS (no `$124K`, sino `$124,000`), sin bullets, sin asteriscos markdown, sin etiquetas tipo "Down Payment" o "Cuota 2".
 
@@ -417,8 +261,8 @@ Referencia interna (lo que tienes ARRIBA en este skill, NO lo copias al cliente)
 
 ```
 Reserva (firma):                  $2,000
-Cuotas 2-5 (4 cuotas grandes):    $3,308.57 c/u   ← fraccionando 10% inicial
-Cuotas 6-36 (31 cuotas chicas):   $708.57 c/u     ← cuotas aliviadas
+Cuotas 2-5 (4 cuotas grandes):    $3,308.57 c/u
+Cuotas 6-36 (31 cuotas chicas):   $708.57 c/u
 Contra entrega (mar 2029):        $86,800
 Total:                            $124,000
 ```
@@ -427,25 +271,12 @@ Respuesta al cliente (lo que envías por WhatsApp):
 
 > "Mira, te armé algo que te cuadra. Apartas con $2,000 al firmar. Después, durante los primeros 5 meses, pagas $3,308.57 mensuales — eso completa el 10% inicial y ahí JPREZ te firma el contrato oficial. A partir del mes 6, las cuotas bajan a $708.57 mensuales hasta que entreguen en marzo 2029. Al final, contra entrega son $86,800 que cubres con banco. Total $124,000. ¿Te cuadra?"
 
-Diferencias clave:
-
-1. Cero bullets, cero guiones, cero `←`, cero code blocks.
-2. Números EXACTOS siempre ($3,308.57, $708.57, $2,000, $86,800), nunca redondeados a "$3K" o "mil y pico".
-3. Conectores naturales ("apartas con", "después", "a partir del mes 6", "al final").
-4. El plazo se dice ("marzo 2029"), no "en unos años".
-5. Una sola pregunta natural al final ("¿te cuadra?").
+Diferencias clave: cero bullets, cero guiones, cero flechas, cero code blocks. Números EXACTOS siempre ($3,308.57, $708.57, $2,000, $86,800), nunca redondeados a "$3K" o "mil y pico". Conectores naturales ("apartas con", "después", "a partir del mes 6", "al final"). El plazo se dice exacto ("marzo 2029"), no "en unos años". Una sola pregunta natural al final ("¿te cuadra?").
 
 ### Anti-ejemplo que NO debes emitir
 
-> ❌ MAL: "Plan 16-412:
-> - Reserva: $2,000
-> - Cuotas 2-5: **$3,308.57** c/u
-> - Cuotas 6-36: $708.57
-> - Contra entrega: $86,800"
-
-Esto parece factura de Excel + bullets + asteriscos markdown que WhatsApp no renderiza. Cliente recibe glitch visual. NO emitas eso.
+MAL — texto que NUNCA debes mandar al cliente. Si describiéramos el Plan 16-412 con factura tipo Excel, sería una respuesta llena de etiquetas tipo "Reserva: $2,000", "Cuotas 2-5: $3,308.57 c/u", "Cuotas 6-36: $708.57", "Contra entrega: $86,800" — todo con guiones de lista y a veces asteriscos como `**$3,308.57**`. Eso parece factura de Excel y bullets que WhatsApp no renderiza bien. Cliente recibe glitch visual. NO emitas ese formato MAL bajo ningún caso. Siempre prosa natural conversacional con números exactos embebidos.
 
 ---
 
-**El límite solo está en tu mente.**
-**Bot vendedor → Bot negociador.**
+El límite solo está en tu mente. Bot vendedor → Bot negociador.
