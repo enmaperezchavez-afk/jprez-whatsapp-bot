@@ -1,34 +1,29 @@
-#!/usr/bin/env node
-// scripts/skill-linter.mjs — Hotfix-22 V2 b3.
+// scripts/skill-linter.mjs — Hotfix-22 V2 b3 (modulo puro, sin CLI logic).
 //
 // Linter automatico para skills Markdown bajo .claude/skills/**/*.md.
-// Detecta formato Excel (bullets / **bold** / tablas) que el LLM
-// imitaria al responder al cliente. Previene Bug #29 (asteriscos en
-// produccion) por skill nuevo copiado del Drive sin limpiar.
+// Detecta formato Excel (bullets / **bold** / tablas) que el LLM imitaria
+// al responder al cliente. Previene Bug #29 (asteriscos en produccion)
+// por skill nuevo copiado del Drive sin limpiar.
 //
-// MODOS:
-//   default: escanea todo .claude/skills/**/*.md y reporta.
-//   --strict: exit code 2 si rojo (CI bloquea merge).
-//   --staged: solo archivos en git diff --cached (pre-commit hook).
+// HOTFIX-22 V3 r1: este modulo ahora es PURO (solo logic + exports). El
+// CLI entrypoint vive en scripts/skill-linter-cli.mjs. Razon: vitest 4.x
+// rompia al colectar tests/skill-linter.test.mjs porque el top-level
+// `if (isMain) { ... }` (con import.meta.url + process.argv) tropezaba
+// el transformer interno reportando "SyntaxError: Invalid or unexpected
+// token" engañoso (real era TypeError en runner.config). Splittear en
+// modulo puro + CLI entrypoint resolvio loud el issue: el modulo se
+// puede importar desde tests sin side effects, el CLI conserva el
+// shebang + behavior idéntico.
 //
 // THRESHOLDS (configurables via SKILL_LINTER_* env si fuera necesario):
 //   MAX_BOLDS       =  5  (1-2 OK por anti-ejemplo, 5+ es Excel)
 //   MAX_BULLETS     = 10  (estricto: skill prosa)
 //   MAX_TABLES      =  0  (no permitido)
 //   MAX_CODE_BLOCKS =  8  (warning si excede)
-//
-// EXIT CODES:
-//   0 = todos los skills OK (o solo green)
-//   1 = al menos un yellow warning (sin --strict no bloquea)
-//   2 = al menos un red critical (excede thresholds duros)
 
-import { readdir, readFile, stat } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { execSync } from "node:child_process";
-
-const args = process.argv.slice(2);
-const STRICT = args.includes("--strict");
-const STAGED = args.includes("--staged");
 
 const SKILLS_ROOT = ".claude/skills";
 
@@ -43,18 +38,10 @@ const SKIP_DIRS = [
 ];
 
 // LEGACY_WAIVERS: archivos que SI se inyectan al prompt del bot pero que
-// arrastran formato Excel pre-Hotfix-22 V2. Ya estan en producion y
-// limpiarlos esta FUERA del scope b3 (requiere reescritura completa de
-// cada archivo, similar a a2 pero mas grande). Por ahora: el linter los
-// reporta pero NO los bloquea hasta que el Director decida limpiarlos
-// en un hotfix futuro. Si se agrega skill nuevo a esta lista, eso es un
-// hand-wave para el Director — la deuda tecnica acumula.
-//
-// TODO(hotfix-22-v3): limpiar vendedor-whatsapp-jprez/SKILL.md (158 bolds,
-// 90 bullets, 32 tablas) y references/inventario-precios.md (64 bolds,
-// 58 bullets, 37 tablas). Ambos son SKILL_CONTENT y INVENTORY_CONTENT
-// inyectados al staticBlock — son origen del Bug #2 al mismo nivel que
-// los skills nuevos limpiados en a2.
+// arrastran formato Excel pre-Hotfix-22 V2. B5 + B6 limpiaron ambos
+// archivos a [GREEN], pero la lista queda como precaucion: si una
+// seccion futura agrega bullets/bold por error, el waiver evita que CI
+// se rompa hasta que el Director decida limpiar.
 const LEGACY_WAIVERS = new Set([
   ".claude/skills/vendedor-whatsapp-jprez/SKILL.md",
   ".claude/skills/vendedor-whatsapp-jprez/references/inventario-precios.md",
@@ -203,29 +190,6 @@ async function runLinter({ staged = false } = {}) {
   return { results, exitCode };
 }
 
-// CLI entrypoint — solo se ejecuta si llamado directamente, NO si se
-// importa desde tests.
-const isMain = import.meta.url === ("file:///" + process.argv[1].replace(/\\/g, "/"));
-if (isMain) {
-  const { results, exitCode, reason } = await runLinter({ staged: STAGED });
-  if (results.length === 0) {
-    if (reason === "no_staged_skills") {
-      // Pre-commit hook: nada que validar.
-    } else {
-      console.log("[skill-linter] no skills found in " + SKILLS_ROOT);
-    }
-  } else {
-    console.log(formatReport(results));
-    const summary =
-      "[skill-linter] " + results.length + " skills scanned. " +
-      "exitCode=" + exitCode + (STRICT ? " (--strict)" : "");
-    console.log(summary);
-  }
-  // En modo no-strict, yellow (1) NO bloquea — devolvemos 0.
-  // Red (2) siempre bloquea.
-  process.exit(STRICT ? exitCode : (exitCode === 2 ? 2 : 0));
-}
-
 export {
   runLinter,
   lintFile,
@@ -242,4 +206,5 @@ export {
   RE_BULLET,
   RE_TABLE,
   RE_CODE_BLOCK,
+  SKILLS_ROOT,
 };
