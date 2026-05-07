@@ -84,6 +84,24 @@ try {
   CALCULATOR_SKILL_CONTENT = "";
 }
 
+// Hotfix-22 c2: skill mercado-inmobiliario-rd. Conocimiento del mercado
+// inmobiliario dominicano (bancos, fideicomiso, bono primera vivienda,
+// CONFOTUR, proceso de compra, costos legales, asesoria a extranjeros).
+// Mismo patron de loader independiente que CALCULATOR_SKILL: si el archivo
+// falta, el prompt sigue operativo sin el conocimiento de mercado, Mateo
+// escala a Enmanuel cualquier consulta financiera/legal compleja. NO va
+// en el hash de MATEO_V5_2 — agregar/iterar este skill no invalida
+// historiales activos.
+let MARKET_RD_SKILL_CONTENT = "";
+try {
+  const marketRdSkillPath = path.join(__dirname, "..", ".claude", "skills", "mercado-inmobiliario-rd", "SKILL.md");
+  MARKET_RD_SKILL_CONTENT = fs.readFileSync(marketRdSkillPath, "utf8");
+  console.log("[prompt] market-rd skill loaded: " + MARKET_RD_SKILL_CONTENT.length + " chars");
+} catch (e) {
+  console.error("[prompt] ERROR loading market-rd skill:", e.message);
+  MARKET_RD_SKILL_CONTENT = "";
+}
+
 // ============================================
 // PROMPT MATEO REYES v5.2 (operacional + tono + filosofía Trusted Advisor)
 // ============================================
@@ -798,6 +816,9 @@ function buildSystemPromptBlocks() {
     // Si el archivo no se cargo (env preview, error de bundle), el string
     // queda vacio y el join produce un trailing newline inocuo.
     CALCULATOR_SKILL_CONTENT,
+    // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
+    // Mismo contrato: fallback string vacio + trailing newline inocuo.
+    MARKET_RD_SKILL_CONTENT,
   ].join("\n");
 
   // dynamicHeader trailing newline para que el handler pueda concatenar
