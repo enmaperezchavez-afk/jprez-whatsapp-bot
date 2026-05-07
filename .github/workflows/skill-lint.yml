@@ -21,6 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
       - name: Run skill format linter (--strict)
         run: node scripts/skill-linter.mjs --strict
