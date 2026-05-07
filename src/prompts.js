@@ -39,6 +39,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { validateStaticBlockOrder } = require("./validators/static-block-order");
 const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
 const { COMMERCIAL_LAYER } = require("./prompts/commercial-layer");
 const { STYLE_LAYER } = require("./prompts/style-layer");
@@ -831,6 +832,17 @@ function buildSystemPromptBlocks() {
     // ultima instruccion que el LLM procesa antes de generar.
     STYLE_LAYER,
   ].join("\n");
+
+  // Hotfix-22 V2 b4: validar orden del staticBlock antes de retornar.
+  // Si un refactor futuro reordena los layers (ej: alguien mueve
+  // STYLE_LAYER al medio o inserta un skill al final), el guard atrapa
+  // la violacion al primer cold start en Vercel y loguea estructurado.
+  // NO bloqueamos el retorno (cliente sigue recibiendo respuesta) pero
+  // emitimos warning loud para que el Director vea la alarma en Axiom.
+  const orderCheck = validateStaticBlockOrder(staticBlock);
+  if (!orderCheck.ok) {
+    console.error("[prompt] static_block_order_violation:", JSON.stringify(orderCheck.violations));
+  }
 
   // dynamicHeader trailing newline para que el handler pueda concatenar
   // clientContext/profileContext/holdingContext sin preocuparse por
