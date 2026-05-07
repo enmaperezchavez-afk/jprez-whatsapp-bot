@@ -782,6 +782,56 @@ Array de strings cortos. Ejemplos: ["diaspora", "USA-NY", "primera-vivienda", "i
 // dinamico, no afecta cache hit. Behavioral: para Mateo, recibir la fecha
 // despues del bloque estatico es equivalente — el modelo usa toda la
 // system prompt en conjunto, no orden-dependiente para fecha.
+
+// Hotfix-22 V2 c1: STATIC_BLOCK construido UNA vez al cargar el modulo
+// (cold start). Componentes son constantes post-load. Antes se reconstruia
+// y revalidaba en cada llamada a buildSystemPromptBlocks() (~1ms x N
+// requests/dia desperdiciados). Order check tambien movido aqui.
+//
+// Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
+// No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
+// lo que iterar sobre ellos NO invalida historiales de clientes activos.
+//
+// Hotfix-22 V2 a3: STYLE_LAYER al FINAL (despues de los skills) como
+// autoridad de formato. last-seen-wins: la regla de prosa con numeros
+// exactos es la ultima palabra que el LLM procesa antes de generar.
+const STATIC_BLOCK = [
+  SKILL_CONTENT,
+  "",
+  "---",
+  "",
+  "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
+  "",
+  INVENTORY_CONTENT,
+  "",
+  "---",
+  "",
+  MATEO_PROMPT_V5_2,
+  GLOSSARY_LAYER,
+  COMMERCIAL_LAYER,
+  // Hotfix-22a: skill calculadora-plan-pago. Carga independiente; si el
+  // archivo no esta bundleado en Vercel, queda string vacio y el join
+  // produce un trailing newline inocuo.
+  CALCULATOR_SKILL_CONTENT,
+  // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
+  // Mismo contrato: fallback string vacio + trailing newline inocuo.
+  MARKET_RD_SKILL_CONTENT,
+  // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
+  STYLE_LAYER,
+].join("\n");
+
+// Hotfix-22 V2 b4 + c1: validacion de orden ejecutada al cold start, no
+// por request. Si un refactor futuro reordena los layers, el guard atrapa
+// la violacion al primer cold start en Vercel y loguea estructurado a
+// Axiom. NO crashea el modulo — el bot sigue respondiendo, pero el
+// Director ve la alarma loud.
+{
+  const orderCheck = validateStaticBlockOrder(STATIC_BLOCK);
+  if (!orderCheck.ok) {
+    console.error("[prompt] static_block_order_violation:", JSON.stringify(orderCheck.violations));
+  }
+}
+
 function buildSystemPromptBlocks() {
   const now = new Date();
   const iso = now.toISOString().slice(0, 10);
@@ -795,61 +845,15 @@ function buildSystemPromptBlocks() {
   });
   const fechaHeader = "Hoy es: " + iso + " (" + legible + ")\nHora actual: " + hora + " (Santo Domingo)";
 
-  // Hotfix-19: layers composables se anaden DESPUES de MATEO_PROMPT_V5_2.
-  // No estan en el hash (prompt-version hashea solo MATEO_PROMPT_V5_2), por
-  // lo que iterar sobre ellos NO invalida historiales de clientes activos.
-  //
-  // Hotfix-22 V2 a3: STYLE_LAYER movido al FINAL del staticBlock (despues
-  // de los skills). El LLM aprende del material mas reciente (last-seen-wins):
-  // si STYLE_LAYER va antes de los skills, el modelo ve "no markdown
-  // bullets/bold" y luego ve code blocks + pseudocodigo + ejemplos en los
-  // skills, e interpreta esos formatos como permitidos. Con STYLE_LAYER al
-  // final, la regla de prosa con numeros exactos es la ultima palabra que
-  // procesa antes de generar la respuesta. Bug #2 post-PR #30.
-  const staticBlock = [
-    SKILL_CONTENT,
-    "",
-    "---",
-    "",
-    "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
-    "",
-    INVENTORY_CONTENT,
-    "",
-    "---",
-    "",
-    MATEO_PROMPT_V5_2,
-    GLOSSARY_LAYER,
-    COMMERCIAL_LAYER,
-    // Hotfix-22a: skill calculadora-plan-pago. Carga independiente; si el
-    // archivo no esta bundleado en Vercel, queda string vacio y el join
-    // produce un trailing newline inocuo.
-    CALCULATOR_SKILL_CONTENT,
-    // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
-    // Mismo contrato: fallback string vacio + trailing newline inocuo.
-    MARKET_RD_SKILL_CONTENT,
-    // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
-    // Refuerza prosa + numeros exactos + sin markdown bullets/bold como
-    // ultima instruccion que el LLM procesa antes de generar.
-    STYLE_LAYER,
-  ].join("\n");
-
-  // Hotfix-22 V2 b4: validar orden del staticBlock antes de retornar.
-  // Si un refactor futuro reordena los layers (ej: alguien mueve
-  // STYLE_LAYER al medio o inserta un skill al final), el guard atrapa
-  // la violacion al primer cold start en Vercel y loguea estructurado.
-  // NO bloqueamos el retorno (cliente sigue recibiendo respuesta) pero
-  // emitimos warning loud para que el Director vea la alarma en Axiom.
-  const orderCheck = validateStaticBlockOrder(staticBlock);
-  if (!orderCheck.ok) {
-    console.error("[prompt] static_block_order_violation:", JSON.stringify(orderCheck.violations));
-  }
-
-  // dynamicHeader trailing newline para que el handler pueda concatenar
-  // clientContext/profileContext/holdingContext sin preocuparse por
-  // separadores.
+  // Hotfix-22 V2 c1: STATIC_BLOCK se construye y valida UNA sola vez al
+  // cargar el modulo (cold start). Es estable a traves de requests porque
+  // todos sus componentes (skills, layers, MATEO_V5_2) son constantes
+  // post-load. El dynamicHeader es lo unico que cambia por request (fecha
+  // + hora). Esto evita reconstruir + revalidar en cada mensaje (~1ms x N
+  // requests/dia desperdiciados antes).
   const dynamicHeader = fechaHeader + "\n";
 
-  return { staticBlock, dynamicHeader };
+  return { staticBlock: STATIC_BLOCK, dynamicHeader };
 }
 
 // buildSystemPrompt: backwards-compat wrapper. Algunos tests existentes
