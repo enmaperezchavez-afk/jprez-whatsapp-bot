@@ -1,0 +1,94 @@
+{
+  "_doc": "Hotfix-22 V2 b2 — Smoke E2E LLM mock fixtures. Cada escenario define un input del cliente, la response programada del mock Claude, y los asserts esperados sobre el reply final que llega a sendWhatsApp. Los antiKeywords detectan regresiones cosmeticas (asteriscos markdown, crash phrases). Las keywords detectan que el pipeline post-LLM (strip perfil_update, detect signals, send) preservo el contenido esperado.",
+
+  "scenario_test_on": {
+    "input": "/test-on",
+    "isAdmin": true,
+    "_note": "Comando admin, no llega a Claude. El handler responde directo con admin-testing-mode.",
+    "expectedKeywords": ["testing"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_info_crux": {
+    "input": "info Crux",
+    "mockResponse": "Mira, Crux del Prado tiene dos opciones. Tenemos las Etapas 1 y 2 listas para entregar desde RD$5,650,000, o la Torre 6 que esta en construccion desde US$99,000 con plan 10/30/60 y entrega en julio 2027. ¿Cual te interesa?",
+    "expectedKeywords": ["Etapa", "Torre 6", "RD$5,650,000", "US$99,000"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo", "- "]
+  },
+
+  "scenario_calculadora_pse3": {
+    "input": "calculame plan PSE3 124000",
+    "_note": "Cliente pide cotizacion PSE3 con precio especifico. El mock simula tool_use de calcular_plan_pago + iter final con prosa.",
+    "useTool": true,
+    "toolName": "calcular_plan_pago",
+    "toolInput": { "proyecto": "puertoPlata", "precio_usd": 124000, "etapa": "E3" },
+    "mockResponse": "Mira, para esa unidad de PSE3 a $124,000: bajas $12,400 para apartar, despues cuotas mensuales durante construccion hasta marzo 2029, y al final $86,800 contra entrega que cubres con banco. ¿Te cuadra esa estructura?",
+    "expectedKeywords": ["$124,000", "$12,400", "$86,800", "marzo 2029"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo", "$124K", "$12K"]
+  },
+
+  "scenario_extranjero": {
+    "input": "soy extranjero, ¿puedo comprar?",
+    "mockResponse": "Mira, los extranjeros tienen los mismos derechos que los dominicanos para comprar aqui. Solo necesitas pasaporte vigente y documentacion financiera. Si te interesa financiamiento, los bancos te dan hasta el 70%-80%. Y si compras en proyecto CONFOTUR, te ahorras el 3% de transferencia y 15 anos de IPI. ¿Te interesa saber mas?",
+    "expectedKeywords": ["extranjero", "CONFOTUR", "pasaporte"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_banco": {
+    "input": "¿que banco recomiendas?",
+    "mockResponse": "Mira, en JPREZ trabajamos con varios bancos. APAP esta dando 12.50% nominal (13.32% TAE) y financian hasta RD$4,000,000 con plazo de 240 meses. Banco Popular y Banreservas tambien tienen buenas opciones, hasta 80%-90% de financiamiento. Lo primero es que te pre-aprueben. ¿Quieres que te diga que documentos necesitas?",
+    "expectedKeywords": ["APAP", "12.50%", "Banreservas"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_fideicomiso": {
+    "input": "¿como funciona fideicomiso?",
+    "mockResponse": "El fideicomiso es lo que protege tu inversion. Funciona asi: cuando pagas, el dinero NO va al constructor directamente, va a una cuenta del fideicomiso, que es una entidad separada bajo Ley 189-11. El constructor solo puede sacar dinero presentando solicitudes que la fiduciaria aprueba segun avance de obra. Si por algo el proyecto no avanza, los fondos se devuelven al comprador. Por eso JPREZ trabaja todo bajo fideicomiso.",
+    "expectedKeywords": ["fideicomiso", "Ley 189-11", "fiduciaria"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_en_planos_with_sentdocs": {
+    "input": "en planos",
+    "_note": "Cliente YA tiene crux.brochure + crux.images. Bug #23 reproducido + verificado.",
+    "preState": {
+      "sentDocs": {
+        "crux.brochure": "2026-05-05T18:00:00Z",
+        "crux.images": "2026-05-05T18:01:00Z"
+      }
+    },
+    "mockResponse": "Para Torre 6 los precios arrancan en US$99,000 con plan 10/30/60 y entrega julio 2027. Te mando el listado de precios Torre 6 ahorita para que veas pisos y disponibilidad.",
+    "expectedKeywords": ["Torre 6", "US$99,000"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"],
+    "expectNoBrochureResent": true
+  },
+
+  "scenario_cashflow_ajustado": {
+    "input": "calculame con $500 mensuales",
+    "mockResponse": "Mira, te entiendo. Lo que podemos hacer es dividir el 10% inicial en cuotas mensuales en vez de una sola cuota grande. Por ejemplo, podemos hacer 4-5 cuotas hasta completar el 10% — que es cuando JPREZ te firma el contrato oficial. Despues las cuotas serian mas chicas hasta la entrega. ¿Que apartamento te interesa para calcularte algo concreto?",
+    "expectedKeywords": ["10%", "dividir", "cuotas"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_audio": {
+    "input": "[mock_audio] hola que tal",
+    "_note": "Audio transcrito (mock). El handler detecta type=audio y prepende [audio transcrito].",
+    "mockResponse": "Hola, que bueno saber de ti. Soy Mateo, vendedor de JPREZ. ¿En que proyecto te interesa que te oriente?",
+    "expectedKeywords": ["Mateo"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_manda_otra_vez": {
+    "input": "manda otra vez el brochure de Crux",
+    "_note": "Override explicit-retransmit: aunque el cliente YA tenga el brochure, debe reenviarse.",
+    "preState": {
+      "sentDocs": {
+        "crux.brochure": "2026-05-05T18:00:00Z"
+      }
+    },
+    "mockResponse": "Dale, te lo paso de nuevo. Te mando el brochure de Crux ahorita.",
+    "expectedKeywords": ["brochure"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"],
+    "expectBrochureResent": true
+  }
+}
