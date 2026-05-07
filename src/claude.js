@@ -2,19 +2,43 @@
 // CLIENTE ANTHROPIC (Claude API) + tool-use loop
 // ============================================
 // Extraido desde api/webhook.js en Dia 2 sin cambios de comportamiento
-// observable. Hardcodes actuales: modelo claude-sonnet-4-6,
-// max_tokens 4096 (Hotfix-22 V2 — pre-fix era 2048 desde Hotfix-20B,
-// pero PR #30 sumo skill mercado-inmobiliario-rd 22.5KB al staticBlock.
-// El prompt creció ~25-30%, modelo razona con mas material y la iter
-// final tendia a truncarse mid-respuesta tras emitir <perfil_update>
-// pero antes del reply al cliente — empty-reply guard disparaba el
-// fallback "Dame un segundo, se me complico". Es Bug #14/#26 reapareciendo
-// por skill mas grande. Cap subido a 4096 da margen 2x para perfil_update
-// + tags + reply incluso con todos los skills cargados. MAX_TOOL_ITERATIONS
-// 3. Cliente construido por request (no memoizada, igual que hoy).
+// observable. Modelo claude-sonnet-4-6 sigue hardcoded.
+//
+// MAX_TOKENS history: 500 (pre-Hotfix-20B) -> 2048 (Hotfix-20B Bug #14)
+// -> 4096 (Hotfix-22 V2 — PR #30 sumo skill mercado-inmobiliario-rd 22.5KB
+// al staticBlock, prompt crecio ~25-30%, modelo razonaba con mas material
+// y la iter final tendia a truncarse mid-respuesta tras emitir
+// <perfil_update> pero antes del reply al cliente — empty-reply guard
+// disparaba el fallback "Dame un segundo, se me complico". Es Bug #14/#26
+// reapareciendo por skill mas grande).
+//
+// HOTFIX-22 V2 c3: max_tokens es ahora env var CLAUDE_MAX_TOKENS con
+// default 4096. Permite tunear sin redeploy si el cap vuelve a quedar
+// corto (skill nuevo grande, perfil_update v2, etc). Director ajusta
+// en Vercel env settings sin tocar codigo. Cap parseado UNA vez al
+// cargar el modulo y loggeado al boot para auditoria.
 
 const Anthropic = require("@anthropic-ai/sdk");
 const { botLog } = require("./log");
+
+const DEFAULT_MAX_TOKENS = 4096;
+const MAX_TOKENS = (() => {
+  const raw = process.env.CLAUDE_MAX_TOKENS;
+  if (!raw) return DEFAULT_MAX_TOKENS;
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed) || parsed < 256 || parsed > 32000) {
+    botLog("warn", "claude_max_tokens_invalid", {
+      raw, fallback: DEFAULT_MAX_TOKENS,
+    });
+    return DEFAULT_MAX_TOKENS;
+  }
+  return parsed;
+})();
+
+botLog("info", "claude_max_tokens_configured", {
+  max_tokens: MAX_TOKENS,
+  source: process.env.CLAUDE_MAX_TOKENS ? "env" : "default",
+});
 
 function getAnthropic() {
   return new Anthropic({
@@ -40,7 +64,7 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
   while (iteration < MAX_TOOL_ITERATIONS) {
     response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+      max_tokens: MAX_TOKENS,
       system,
       tools,
       messages: workingMessages,

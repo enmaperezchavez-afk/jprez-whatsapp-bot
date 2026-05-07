@@ -77,19 +77,28 @@ const SRC = readFileSync("src/claude.js", "utf-8");
 
 // === Source-inspection tests ===
 
-describe("Hotfix-22 V2 c1 — Source: max_tokens 4096 (post-Hotfix-20B)", () => {
-  it("Test 1: max_tokens es exactamente 4096", () => {
-    expect(SRC).toContain("max_tokens: 4096");
+describe("Hotfix-22 V2 c1 + c3 — Source: max_tokens via env var with 4096 default", () => {
+  it("Test 1: API call usa la constante MAX_TOKENS (no literal hardcoded)", () => {
+    // Hotfix-22 V2 c3: el literal `max_tokens: 4096` se reemplazo por
+    // referencia a constante MAX_TOKENS que parsea CLAUDE_MAX_TOKENS env
+    // var con default 4096. Source-inspection adaptada: buscamos el
+    // patron del .create con la constante referenciada.
+    expect(SRC).toMatch(/max_tokens:\s*MAX_TOKENS/);
+    // El default sigue siendo 4096 (cero env var = mismo comportamiento).
+    expect(SRC).toMatch(/DEFAULT_MAX_TOKENS\s*=\s*4096/);
   });
 
   it("Test 2: regresion guard — max_tokens 500 y 2048 ya no existen en codigo activo", () => {
     // Permitimos mencion en comments historicos (ej. "pre-fix era 2048"),
-    // pero NO en codigo. Buscamos la forma del literal en config de API.
+    // pero NO en codigo activo. Buscamos la forma del literal en config
+    // de API o en defaults.
     expect(SRC).not.toMatch(/^\s*max_tokens:\s*500\s*,/m);
     expect(SRC).not.toMatch(/^\s*max_tokens:\s*2048\s*,/m);
+    expect(SRC).not.toMatch(/DEFAULT_MAX_TOKENS\s*=\s*500/);
+    expect(SRC).not.toMatch(/DEFAULT_MAX_TOKENS\s*=\s*2048/);
   });
 
-  it("Test 3: header comment refleja Hotfix-22 V2 + nuevo valor 4096 + Bug #14 historia", () => {
+  it("Test 3: header comment refleja Hotfix-22 V2 + nuevo valor 4096 + env var + Bug #14 historia", () => {
     // Las primeras lineas (header) deben mencionar la causa raiz para
     // auditoria futura — alguien que llegue a este archivo entiende el
     // "por que" sin tener que ir al PR.
@@ -97,6 +106,8 @@ describe("Hotfix-22 V2 c1 — Source: max_tokens 4096 (post-Hotfix-20B)", () => 
     expect(header).toContain("4096");
     expect(header).toContain("Hotfix-22 V2");
     expect(header).toContain("Bug #14");
+    // C3: env var CLAUDE_MAX_TOKENS documentada en header.
+    expect(header).toContain("CLAUDE_MAX_TOKENS");
   });
 });
 
