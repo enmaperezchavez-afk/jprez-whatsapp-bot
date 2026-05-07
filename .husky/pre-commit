@@ -11,9 +11,11 @@ done
 # Implementado en Node.js (no bash) para portabilidad cross-platform.
 node scripts/check-encoding.mjs || exit 1
 
-# Hotfix-22 V2 b3: skill format linter en archivos staged. Bloquea commit
-# si un skill nuevo trae formato Excel (bullets/bold/tablas excesivos)
+# Hotfix-22 V2 b3 + V3 r1: skill format linter en archivos staged. Bloquea
+# commit si un skill nuevo trae formato Excel (bullets/bold/tablas excesivos)
 # que el LLM imitaria al responder al cliente. Modo --staged solo evalua
 # .claude/skills/**/*.md cambiados en este commit. Modo no-strict: bloquea
-# solo en exit 2 (red), permite yellow.
-node scripts/skill-linter.mjs --staged || exit 1
+# solo en exit 2 (red), permite yellow. CLI entrypoint vive en
+# scripts/skill-linter-cli.mjs (V3 r1 splittea modulo puro de CLI para
+# resolver vitest test collection bug).
+node scripts/skill-linter-cli.mjs --staged || exit 1

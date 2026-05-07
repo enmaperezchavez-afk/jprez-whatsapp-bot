@@ -24,4 +24,4 @@ jobs:
           cache: "npm"
 
       - name: Run skill format linter (--strict)
-        run: node scripts/skill-linter.mjs --strict
+        run: node scripts/skill-linter-cli.mjs --strict
