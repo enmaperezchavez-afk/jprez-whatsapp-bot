@@ -3,13 +3,15 @@
 // ============================================
 // Extraido desde api/webhook.js en Dia 2 sin cambios de comportamiento
 // observable. Hardcodes actuales: modelo claude-sonnet-4-6,
-// max_tokens 2048 (Hotfix-20B Bug #14 — pre-fix era 500, insuficiente
-// para la iteracion final post-tool-use que debe emitir <perfil_update>
-// JSON + tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...] + reply al cliente
-// en una sola respuesta. Cap se agotaba mid-respuesta tipicamente justo
-// despues del bloque perfil_update → cleanedText vacio → empty-reply
-// guard "se me complico"), MAX_TOOL_ITERATIONS 3. Cliente construido
-// por request (no memoizada, igual que hoy).
+// max_tokens 4096 (Hotfix-22 V2 — pre-fix era 2048 desde Hotfix-20B,
+// pero PR #30 sumo skill mercado-inmobiliario-rd 22.5KB al staticBlock.
+// El prompt creció ~25-30%, modelo razona con mas material y la iter
+// final tendia a truncarse mid-respuesta tras emitir <perfil_update>
+// pero antes del reply al cliente — empty-reply guard disparaba el
+// fallback "Dame un segundo, se me complico". Es Bug #14/#26 reapareciendo
+// por skill mas grande. Cap subido a 4096 da margen 2x para perfil_update
+// + tags + reply incluso con todos los skills cargados. MAX_TOOL_ITERATIONS
+// 3. Cliente construido por request (no memoizada, igual que hoy).
 
 const Anthropic = require("@anthropic-ai/sdk");
 const { botLog } = require("./log");
@@ -38,7 +40,7 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
   while (iteration < MAX_TOOL_ITERATIONS) {
     response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+      max_tokens: 4096,
       system,
       tools,
       messages: workingMessages,
