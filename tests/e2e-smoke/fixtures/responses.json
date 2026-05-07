@@ -90,5 +90,18 @@
     "expectedKeywords": ["brochure"],
     "antiKeywords": ["**", "se me complic", "Dame un segundo"],
     "expectBrochureResent": true
+  },
+
+  "scenario_extranjero_post_calculo": {
+    "input": "soy extranjero, ¿puedo comprar?",
+    "_note": "Hotfix-22 V3 r2: smoke pipeline post-calculo. Cliente acaba de pedir cotizacion PSE3 y luego pivota a tema extranjeros. Smoke valida que el pipeline procesa el nuevo turno sin crash + sin asteriscos + con keywords del skill mercado-rd. LIMITACION: el mock devuelve respuesta pre-programada — NO testea pivoteo LLM real (regla ii del OVERRIDES_LAYER). Para validar pivoteo real, smoke MANUAL del Director post-merge.",
+    "preState": {
+      "sentDocs": {
+        "puertoPlata.brochure": "2026-05-07T10:00:00Z"
+      }
+    },
+    "mockResponse": "Mira, los extranjeros tienen los mismos derechos que los dominicanos para comprar en RD. Solo necesitas pasaporte vigente y documentacion financiera. Si te interesa financiamiento, los bancos te dan hasta el 70%-80%. Y si compras CONFOTUR, te ahorras el 3% de transferencia y 15 anos de IPI. Si quieres, seguimos con el calculo de PSE3 que te quedo pendiente.",
+    "expectedKeywords": ["extranjero", "CONFOTUR", "PSE3"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo"]
   }
 }
