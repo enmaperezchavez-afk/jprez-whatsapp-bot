@@ -1,16 +1,23 @@
-// src/prompts/overrides-layer.js — Hotfix-22 V3 r2.
+// src/prompts/overrides-layer.js — Hotfix-22 V3 r2 + V3.5 (R6).
 //
 // Layer composable inyectado entre MARKET_RD_SKILL y STYLE_LAYER. Resuelve
 // conflictos entre MATEO_V5_2 (constante historica) y los skills/layers
 // actuales. NO redefine formato ni identidad — solo explicita que gana
 // cuando hay contradiccion.
 //
-// HISTORIA: smoke post-PR #31 detecto que el bot seguia copiando el
+// HISTORIA r2: smoke post-PR #31 detecto que el bot seguia copiando el
 // stencil corto de MATEO_V5_2:613-614 sobre "extranjeros" en vez de usar
 // el skill mercado-inmobiliario-rd (Bug #30). Tambien que la regla "max
 // 1 asterisco" en MATEO_V5_2:675 contradice "cero asteriscos" del
 // STYLE_LAYER:120. Y que en cambios de tema mid-flujo el bot a veces no
-// pivotaba a la nueva intencion. Este layer cierra los 4 huecos.
+// pivotaba a la nueva intencion.
+//
+// HISTORIA V3.5 (R6): smoke final V3 confirmo que la activacion de skill
+// mercado-rd seguia ~60% (extranjero corto, banco sin tasas APAP, mal
+// consejo timing pre-aprobacion). Refuerzo de regla 1 con 3 few-shot
+// examples brutal (caso INCORRECTO + CORRECTO con keywords explicitos).
+// Few-shots near-text tienen mucho mayor impacto que reglas abstractas
+// — el LLM aprende del patron concreto.
 //
 // 3 TRADEOFFS DOCUMENTADOS:
 //
@@ -19,9 +26,10 @@
 //    MATEO_PROMPT_V5_2 (constante en src/prompts.js), NO el staticBlock
 //    completo. Agregar este layer NO invalida historiales activos.
 //
-// 2. Eficacia esperada ~85% (soft override via prompt).
-//    Los overrides via system prompt son persuasion, no hard-rule. Para
-//    100% se necesita post-processing — deferred a R4.
+// 2. Eficacia esperada ~85% via prompt + 100% via post-processor R5.
+//    Los overrides via system prompt son persuasion, no hard-rule. R5
+//    (format-postprocess.js) cierra la brecha hard para formato. Para
+//    contenido (skill activation), R6 few-shots suben de 60% a ~85%.
 //
 // 3. Inyeccion post-MARKET_RD pre-STYLE preserva last-seen-wins.
 //    STYLE_LAYER sigue siendo la autoridad de formato.
@@ -38,6 +46,20 @@ Resuelven conflictos entre MATEO_V5_2 y los skills actuales.
 ## 1. Skill mercado-inmobiliario-rd manda sobre stencil "Top 9"
 
 El stencil corto de MATEO_V5_2 sobre extranjeros (objeción #7) es saludo inicial, no respuesta canónica. Para preguntas cubiertas por la "description" del skill mercado-inmobiliario-rd (banco, financiamiento, fideicomiso, extranjero, dominicano exterior, CONFOTUR, IPI, notario, Bono Primera Vivienda, Ley 189-11, 158-01, proceso compra, impuestos), USA el skill — NO el stencil.
+
+### Few-shot brutal — ejemplos canónicos
+
+EJEMPLO 1 — banco recomendado:
+INCORRECTO: "Los bancos comunes son: Popular, BanReservas, Scotiabank, APAP. Espera a fecha de entrega para iniciar proceso bancario."
+CORRECTO: "Mira, tenemos varias opciones. Para extranjeros, APAP es brutal: 12.50% nominal, 13.32% TAE, financia hasta 90% y plazos hasta 40 años. Banco Popular y BHD también, similares condiciones. Te recomiendo pre-aprobación AHORA, no esperar a la entrega — eso te da poder negociador y fechas claras."
+
+EJEMPLO 2 — extranjero comprando:
+INCORRECTO: "Sí, los extranjeros pueden comprar. Solo necesitas pasaporte vigente."
+CORRECTO: "Sí, los extranjeros tienen los mismos derechos que dominicanos. Si compras en proyectos JPREZ aplican: 15 años IPI exento por CONFOTUR (Ley 158-01), Bono Primera Vivienda hasta RD$5,025,380.75 si calificas, y todo el proceso protegido por fideicomiso (Ley 189-11). Solo necesitas pasaporte vigente para arrancar."
+
+EJEMPLO 3 — pre-aprobación timing:
+INCORRECTO: "Espera hasta cerca de la fecha de entrega para iniciar el proceso bancario."
+CORRECTO: "Te recomiendo iniciar pre-aprobación bancaria AHORA, no esperar a la entrega. Pre-aprobación te da poder negociador, fija tu tasa, y demuestra al banco tu solvencia mucho antes."
 
 ## 2. Prioridad de intención actual
 

@@ -103,5 +103,40 @@
     "mockResponse": "Mira, los extranjeros tienen los mismos derechos que los dominicanos para comprar en RD. Solo necesitas pasaporte vigente y documentacion financiera. Si te interesa financiamiento, los bancos te dan hasta el 70%-80%. Y si compras CONFOTUR, te ahorras el 3% de transferencia y 15 anos de IPI. Si quieres, seguimos con el calculo de PSE3 que te quedo pendiente.",
     "expectedKeywords": ["extranjero", "CONFOTUR", "PSE3"],
     "antiKeywords": ["**", "se me complic", "Dame un segundo"]
+  },
+
+  "scenario_v35_smoke_banco_con_bullets": {
+    "input": "que banco recomiendas",
+    "_note": "Hotfix-22 V3.5 (R5): caso real del smoke final V3 — el LLM emitio bullets y olvido tasas APAP. R5 post-processor strippea bullets HARD; R6 few-shots refuerza inclusion de tasas. Mockeamos respuesta CON bullets para validar que el pipeline las strippea antes de mandar al cliente.",
+    "mockResponse": "Mira, las opciones de bancos:\n- Banco Popular\n- BanReservas\n- Scotiabank\n- APAP con 12.50% nominal y 13.32% TAE\n\nTe recomiendo pre-aprobacion AHORA, no esperar a entrega.",
+    "expectedKeywords": ["APAP", "12.50%", "13.32%", "pre-aprobacion"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo", "- Banco", "- BanReservas", "- Scotiabank", "- APAP"]
+  },
+
+  "scenario_v35_smoke_extranjero_con_emojis": {
+    "input": "soy extranjero puedo comprar",
+    "_note": "Hotfix-22 V3.5 (R5): caso real del smoke final V3 — el LLM emitio emojis (🌎). R5 post-processor strippea emojis HARD; R6 few-shots refuerza inclusion de CONFOTUR + Bono Primera Vivienda + Ley 158-01.",
+    "mockResponse": "Si 🌎, los extranjeros tienen los mismos derechos. Aplica CONFOTUR (Ley 158-01) con 15 anos IPI exento, Bono Primera Vivienda hasta RD$5,025,380.75 si calificas, y todo bajo fideicomiso (Ley 189-11). Solo pasaporte vigente.",
+    "expectedKeywords": ["CONFOTUR", "Ley 158-01", "Ley 189-11", "Bono Primera Vivienda", "5,025,380.75"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo", "🌎", "🇩🇴", "😊"]
+  },
+
+  "scenario_v35_smoke_fideicomiso_con_asteriscos": {
+    "input": "como funciona fideicomiso",
+    "_note": "Hotfix-22 V3.5 (R5): caso real del smoke final V3 — el LLM emitio headers con *asteriscos* tipo Excel. R5 post-processor strippea wrappers HARD manteniendo contenido. Cliente recibe prosa limpia sin markdown.",
+    "mockResponse": "*¿Que es?* El fideicomiso es lo que protege tu inversion. *¿Como funciona en JPREZ?* Cuando pagas, el dinero NO va al constructor directamente. Va a una cuenta del fideicomiso bajo Ley 189-11. *Ventajas:* tu inversion protegida, supervision por Superintendencia de Bancos.",
+    "expectedKeywords": ["fideicomiso", "Ley 189-11", "Superintendencia"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo", "*¿Que es?*", "*¿Como funciona", "*Ventajas:*"]
+  },
+
+  "scenario_v35_smoke_calculo_limpio": {
+    "input": "calculame plan pse3 124000",
+    "_note": "Hotfix-22 V3.5 sanity: cliente pide calculo PSE3 — bot calcula con tool y devuelve prosa exacta. Default 10/30/60 (Feria Mayo es as bajo manga, NO se ofrece de entrada). Sin formato.",
+    "useTool": true,
+    "toolName": "calcular_plan_pago",
+    "toolInput": { "proyecto": "puertoPlata", "precio_usd": 124000, "etapa": "E3" },
+    "mockResponse": "Mira, para esa unidad PSE3 a $124,000: bajas $12,400 al firmar como inicial, despues cuotas mensuales hasta marzo 2029, y al final $74,400 contra entrega que cubres con banco. ¿Te cuadra esa estructura o quieres que ajustemos?",
+    "expectedKeywords": ["$124,000", "$12,400", "$74,400", "marzo 2029"],
+    "antiKeywords": ["**", "se me complic", "Dame un segundo", "- $", "* $", "🔥"]
   }
 }
