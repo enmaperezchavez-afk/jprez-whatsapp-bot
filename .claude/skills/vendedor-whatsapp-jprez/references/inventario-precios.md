@@ -257,54 +257,8 @@ Fuente: PDF oficial PDF_PP_PRECIOS_E4 ("Listados de Precios Introducción Etapa 
 
 ---
 
-## NOTA SOBRE CÁLCULO DE CUOTAS MENSUALES — PUERTO PLATA
+## NOTA SOBRE CÁLCULO DE CUOTAS — PUERTO PLATA
 
-LEE ESTO ANTES DE CALCULAR NADA. Los meses dependen de la fecha de HOY. El porcentaje depende de si el cliente usa plan normal o plan feria.
+Fechas de entrega fijas: E3 marzo 2029, E4 diciembre 2027 (E4 entrega ANTES que E3). Plan normal cuota mensual igual a 30% del precio dividido entre los meses desde HOY hasta entrega. Plan Feria Mayo 2026 (solo abril–mayo 2026) cuota mensual igual a 20% del precio dividido entre los meses desde HOY hasta entrega. Junio o después solo plan normal.
 
-### Fechas fijas de entrega
-
-E3 entrega marzo 2029. E4 entrega diciembre 2027 (E4 entrega ANTES que E3).
-
-### Fórmulas
-
-Plan normal (siempre): cuota mensual igual a 30% del precio dividido entre los meses desde HOY hasta la entrega.
-
-Plan Feria Mayo 2026 (solo abril–mayo 2026): cuota mensual igual a 20% del precio dividido entre los meses desde HOY hasta la entrega.
-
-Proceso. Pregunta al cliente de qué etapa habla (E3 o E4) — las fechas de entrega son distintas. Consulta la fecha de HOY del sistema. Verifica si la feria de mayo sigue activa (abril–mayo 2026). Si es junio o después, solo plan normal. Cuenta los meses desde el mes actual hasta la entrega de esa etapa. Aplica la fórmula correspondiente. Si calcular_plan_pago no acepta meses personalizados, declara la limitación y calcula manualmente.
-
-### Ejemplo dinámico — E4 2 hab 76m² a US$163,400 (plan normal)
-
-Si hoy es abril 2026, son 20 meses hasta diciembre 2027, cuota mensual aproximadamente US$2,451 al mes (30% es US$49,020 entre 20 meses).
-
-Si hoy es mayo 2026, son 19 meses, cuota mensual aproximadamente US$2,580 al mes.
-
-Si hoy es enero 2027, son 11 meses, cuota mensual aproximadamente US$4,456 al mes.
-
-Desglose E4 2 hab US$163,400 (plan normal 10/30/60): 10% separación al firmar son US$16,340. 30% en cuotas durante el plazo son US$49,020 dividido entre los meses hasta diciembre 2027. 60% contra entrega son US$98,040.
-
-### Ejemplo dinámico — E4 2 hab 76m² a US$163,400 (plan FERIA MAYO, solo abril–mayo 2026)
-
-Si hoy es abril 2026, son 20 meses hasta diciembre 2027, cuota mensual aproximadamente US$1,634 al mes (20% es US$32,680 entre 20 meses).
-
-Si hoy es mayo 2026, son 19 meses, cuota mensual aproximadamente US$1,720 al mes.
-
-Desglose E4 2 hab US$163,400 (plan feria 10/20/70): 10% separación al firmar son US$16,340. 20% en cuotas durante el plazo son US$32,680 dividido entre los meses hasta diciembre 2027. 70% contra entrega son US$114,380.
-
-### Ejemplo dinámico — E4 3 hab 93m² a US$195,300 (plan normal)
-
-Si hoy es abril 2026, son 20 meses hasta diciembre 2027, cuota mensual aproximadamente US$2,930 al mes (30% es US$58,590 entre 20 meses).
-
-Si hoy es mayo 2026, son 19 meses, cuota mensual aproximadamente US$3,084 al mes.
-
-### Ejemplo dinámico — E3 2 hab 67m² a US$138,000 (plan normal)
-
-Si hoy es abril 2026, son 35 meses hasta marzo 2029, cuota mensual aproximadamente US$1,183 al mes (30% es US$41,400 entre 35 meses).
-
-Si hoy es mayo 2026, son 34 meses, cuota mensual aproximadamente US$1,218 al mes.
-
-La cuota mensual sube cada mes que el cliente posterga — argumento de cierre legítimo. En la feria de mayo, además, el inicial baja del 30% al 20%, otro argumento de urgencia.
-
-### Conversión a pesos dominicanos (DOP)
-
-Cuando el cliente pida precio en DOP, NUNCA uses una tasa memorizada. Consulta la tasa del día en vivo (herramienta web o API). Fórmula: DOP igual a USD por la tasa del día. Si no tienes acceso a consultar tasa en vivo, di: "Un momento, déjame verificar el tipo de cambio de hoy para darte el número exacto" y escala a humano.
+La tool `calcular_plan_pago` hace el cálculo (parámetro etapa obligatorio E3 o E4 porque las fechas de entrega son distintas). Para conversión USD→DOP usa siempre tasa del día en vivo, nunca memorizada. La fórmula y los ejemplos detallados de cuotas viven en el skill de cálculo de planes que se carga aparte.

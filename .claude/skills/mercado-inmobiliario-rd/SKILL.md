@@ -247,22 +247,6 @@ CRUX TORRE 6 (construcción). Plan base 5/25/70. Negociable 5/20/75 (75% financi
 
 CRUX LISTOS (Etapas 1, 2). Pago contado o financiamiento bancario directo. Entrega inmediata.
 
-## INTEGRACIÓN FUTURA — SCRAPING DINÁMICO
-
-### Visión del Director
-
-Bot debe tener data viva del mercado RD actualizada automáticamente.
-
-### Spec Técnica Propuesta
-
-Endpoint Vercel `/api/market-data` (skeleton implementado en Hotfix-22 c3). El GET retorna un JSON con `tasas_hipotecarias` por banco (Popular, Reservas, Scotiabank, APAP, BHD), `porcentajes_financiamiento` por banco y para extranjeros promedio, el `tope_vivienda_bajo_costo` (5025380.75 en 2026), `ipi_valor_exento` (6500000), `tasa_transferencia` (3) y `ultima_actualizacion` con timestamp ISO.
-
-Las fuentes de scraping son apap.com.do (PDF tarifario oficial — implementado), popularenlinea.com (Banco Popular — pendiente), bancoreservas.com.do (pendiente), do.scotiabank.com (pendiente), bhdleon.com.do (pendiente) y dgii.gov.do (vivienda bajo costo, IPI).
-
-Cron schedule diario 6 AM para tasas, mensual día 1 para topes y exenciones. Cache Redis con TTL 24h.
-
-Tool en bot `consultar_tasas_bancarias` (schema definido en Hotfix-22 c3, no activado todavía). Memoria Redis con keys `market:rates:[banco]` (JSON tasas vigentes), `market:rates:last_update` (timestamp) y `market:bvc:tope` (5025380.75).
-
 ## CASOS BRUTAL — SCRIPT MATEO COMPLETO
 
 ### Caso 1: Cliente primera vivienda
@@ -302,14 +286,6 @@ Tool en bot `consultar_tasas_bancarias` (schema definido en Hotfix-22 c3, no act
 > ¿Qué significa esto para ti? Que tu inversión está protegida. Si por algo el proyecto no avanzara, los fondos se devuelven al comprador, no se pierden en deudas del constructor.
 >
 > Por eso JPREZ ha entregado más de 1,300 unidades en 23+ años con cero problemas. ¿Quieres que veamos algún proyecto?"
-
-## LECCIONES BRUTAL APRENDIDAS
-
-Bot vendedor != bot asesor: Mateo es asesor experto del mercado RD completo. Conocimiento es poder de cierre: cliente educado compra con confianza. Fideicomiso es seguridad: elemento central de venta JPREZ. Bono Primera Vivienda es killer feature: 8% a 10% ahorro real. Extranjeros son mercado grande: sin restricciones legales. CONFOTUR es ahorro fiscal: 15 años IPI exento. Pre-aprobación es poder negociador: cliente con papel firma rápido. Cada banco es perfil diferente: Popular vs APAP vs Reservas. Documentación clara es cliente tranquilo: lista checklist siempre. Director es autoridad final: casos especiales escalan.
-
-## FUENTES DE VERDAD
-
-Ley 189-11 (Mercado Hipotecario y Fideicomiso), Ley 338-21 (modificación Vivienda Bajo Costo), Ley 158-01 (CONFOTUR), Norma 01-15 (Bono Primera Vivienda), DGII.gov.do (impuestos y fideicomisos), Superintendencia de Bancos, Banco Central RD (tasas referenciales), PDF oficial APAP "Tarifario Escala de Tasas Activas y Pasivas" vigente 01 abril 2026 (`data/apap-tasas-2026-04-01.json`) e investigación web Vegeta 6 mayo 2026.
 
 ---
 
