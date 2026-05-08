@@ -59,45 +59,9 @@ Estructura: 10% fraccionado en 5 meses + cuotas chicas + 70% entrega. Cliente: "
 
 ¿En qué mes se completa el 10%? Mes 1 acumula $2,000 (1.6%). Mes 2 acumula $5,308.57 (4.3%). Mes 3 acumula $8,617.14 (6.9%). Mes 4 acumula $11,925.71 (9.6%). Mes 5 acumula $15,234.28 (12.3%) — AQUÍ pasa del 10%. El contrato firmado se entrega entre el mes 4 y el mes 5.
 
-## LÓGICA DEL CÁLCULO
+## LÓGICA DEL CÁLCULO (regla brutal)
 
-### Función calcular_plan_estandar(precio, meses_construccion)
-
-```
-inicial_objetivo = precio * 0.10
-cuotas_totales   = precio * 0.20
-contra_entrega   = precio * 0.70
-
-cuota_2_inicial  = inicial_objetivo - reserva_estandar
-cuota_mensual    = cuotas_totales / (meses_construccion - 1)
-
-# Reserva estándar:
-# - Precio < $130K → reserva $1,000
-# - Precio >= $130K → reserva $2,000
-```
-
-### Función calcular_plan_ajustado(precio, meses_construccion, prefiere_inicio_alto)
-
-```
-SI prefiere_inicio_alto:
-    # Cliente tiene liquidez al principio
-    meses_inicial_distribuido = 4 a 6 meses
-    cuota_inicial_grande = (precio * 0.10) / meses_inicial_distribuido
-    cuota_resto_chica    = (precio * 0.20) / (meses_construccion - meses_inicial_distribuido)
-
-SI prefiere_inicio_bajo:
-    # Cliente quiere alivio mensual desde el principio
-    cuota_uniforme = (precio * 0.30) / meses_construccion
-    # Riesgo: contrato no se entrega hasta acumular 10%
-```
-
-### Validación final
-
-```
-total_calculado = reserva + sum(cuotas) + contra_entrega
-ASSERT total_calculado == precio
-ASSERT contra_entrega == precio * 0.70
-```
+La tool `calcular_plan_pago` implementa los cálculos. Mateo no calcula a mano, llama la tool. Reglas duras que la tool respeta: 70% contra entrega FIJO siempre. 30% pre-entrega flexible (10% inicial + 20% cuotas, o 10% fraccionado en hasta 6 meses + cuotas chicas). Reserva estándar: precio menor a US$130,000 reserva US$1,000, precio mayor o igual reserva US$2,000. Validación final: la suma reserva más cuotas más contra entrega debe igualar el precio total exacto.
 
 ## CÓMO MATEO DEBE NEGOCIAR
 
@@ -191,63 +155,11 @@ El 70% contra entrega es CONSTANTE (regla dura del contrato). El 30% pre-entrega
 >
 > [Si fuera del rango → notifica Director con SÍ/NO]
 
-## INTEGRACIÓN FUTURA — JNE NEGOTIATOR ENGINE
-
-Este skill será la BASE de la tool calcular_plan_pago_v2 y de la memoria Redis jne:approvals.
-
-### Tool: calcular_plan_pago_v2
-
-```javascript
-calcular_plan_pago_v2({
-  proyecto: "PSE3",
-  precio: 124000,
-  meses_construccion: 36,
-  modalidad: "ajustado",  // "tradicional" | "ajustado"
-  cliente_cashflow: {
-    capacidad_mensual: 800,
-    liquidez_inicial: "media",   // baja | media | alta
-    meses_para_completar_10pct: 5
-  }
-})
-
-// Returns:
-{
-  estructura: "ajustada",
-  reserva: 2000,
-  cuotas_iniciales: [
-    { mes: 2, monto: 3308.57 },
-    { mes: 3, monto: 3308.57 },
-    { mes: 4, monto: 3308.57 },
-    { mes: 5, monto: 3308.57 }
-  ],
-  cuotas_construccion: { meses: 31, monto: 708.57 },
-  contra_entrega: 86800,
-  total: 124000,
-  validado: true,
-  contrato_firma_mes: 5,
-  requiere_aprobacion_director: false
-}
-```
-
-### Memoria: jne:approvals (Redis)
-
-Cada propuesta más decisión del Director queda guardada en Redis con la key `jne:approvals:[hash]` con campos cliente, proyecto, plan_propuesto, director_decision (approved o rejected), razon y timestamp.
-
-Mateo consulta histórico antes de proponer planes similares. Aprende del SÍ/NO del Director con cada interacción.
-
-## FUENTES DE VERDAD
-
-Plan_Pago_16-403_Gladys_Mishell.xlsx (caso tradicional). Plan_Pago_16-412_Gladys_Mishell.xlsx (caso ajustado). JPREZ_ESTRUCTURAS_PAGO_REFERENCIA (5 mayo 2026). Mensaje Director 6 mayo 2026 (regla brutal del 10% fraccionado).
-
 ## FRASE CLAVE DEL DIRECTOR PARA MATEO
 
 > "Yo le ofrecí dividir el 10% en meses. Hasta que no se cumpla el 10% de cada unidad, no se entrega el contrato, porque en el contrato nosotros ponemos explícitamente eso mismo."
 
 Esta es LA REGLA del skill que Mateo debe entender: la negociación es un arte, el cliente tiene cashflow real, JPREZ tiene reglas duras y blandas, el contrato protege a ambas partes, el bot debe pensar como vendedor humano.
-
-## CHECKLIST INTEGRACIÓN
-
-Skill cargado en `.claude/skills/`. Tool calcular_plan_pago_v2 implementado. Memoria Redis jne:approvals configurada. Notificaciones Director con botones SÍ/NO. Tests unitarios planes 16-403 y 16-412 pasan. Tests negociación cashflow pasan. Director valida casos reales nuevos. Bot aprende de cada decisión histórica.
 
 ## CÓMO PRESENTAR AL CLIENTE — siempre prosa, números exactos
 
