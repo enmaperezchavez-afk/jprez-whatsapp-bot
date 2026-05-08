@@ -88,8 +88,10 @@ describe("Hotfix-22 V3 r2 — overrides-layer", () => {
     // RED, R3 (trim) debe ejecutarse antes de hacer merge.
     expect(result.estimatedTokens).toBeLessThan(BUDGET_MAX_TOKENS);
     expect(result.status).not.toBe("red");
-    // OVERRIDES_LAYER suma minimal — no es la causa del yellow.
-    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(1500);
+    // OVERRIDES_LAYER originalmente target ≤1500 chars (R2). V3.5 (R6)
+    // sumo few-shot examples brutal — Director aprobado, target subio
+    // a ≤3500 chars con +441 tokens reales (yellow alto seguia OK).
+    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(3500);
   });
 
   // ===== P1 =====
@@ -155,9 +157,11 @@ describe("Hotfix-22 V3 r2 — overrides-layer", () => {
     // Tradeoff 1: hash invariante.
     expect(header).toMatch(/hash MATEO_V5_2/);
     expect(header).toMatch(/handlers\/message\.js:573/);
-    // Tradeoff 2: eficacia ~85% soft override.
+    // Tradeoff 2: eficacia via prompt (R2 original ~85%; V3.5 R5
+    // post-processor cierra a 100% para formato + R6 few-shots
+    // suben skill activation a ~85%).
     expect(header).toMatch(/85%/);
-    expect(header).toMatch(/soft override/i);
+    expect(header).toMatch(/via prompt|persuasion/i);
     // Tradeoff 3: last-seen-wins / inyeccion antes de STYLE.
     expect(header).toMatch(/last-seen-wins/i);
     expect(header).toMatch(/STYLE_LAYER/);

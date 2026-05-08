@@ -51,6 +51,7 @@ const { validateSystemPromptSize } = require("../validators/token-budget");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
+const { cleanFormat } = require("./format-postprocess");
 const adminTesting = require("../admin-testing-mode");
 const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 
@@ -731,13 +732,43 @@ async function processMessage(body) {
     const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(textWithoutProfile);
     let botReply = cleanReply;
 
-    // Empty-reply guard caso 4 (hotfix-2 Día 3): si despues del strip de bloque
-    // perfil_update + tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...] el texto
-    // quedo vacio o solo whitespace, Mateo emitio solo metadata sin contenido
-    // visible. Reemplazamos por fallback amable en lugar de mandar vacio que
-    // WhatsApp rechazaria con error 4xx (que ademas seria atrapado por el
-    // catch top-level y dejaria al cliente en visto). Regla universal de
-    // Enmanuel: Mateo SIEMPRE responde.
+    // Hotfix-22 V3.5 (R5): post-processor HARD del formato. Smoke final
+    // V3 mostro que el LLM ignora STYLE_LAYER y emite bullets, asteriscos
+    // markdown y emojis con frecuencia. Strippear hard antes de mandar
+    // a WhatsApp garantiza que el cliente NUNCA ve formato malo (eficacia
+    // 100% vs 85% del soft override R2). Si counters > 0, log para que
+    // Director vea en Axiom si el LLM sigue emitiendo formato malo.
+    //
+    // ORDEN: aplicar DESPUES de detectLeadSignals (cleanReply ya sin
+    // tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...]) y ANTES del empty-
+    // reply guard caso 4. Asi si el strip vacia el texto (caso edge:
+    // bot solo emitio "*X*"), el guard atrapa con fallback. Encadena
+    // R4+R5 brutal.
+    const formatResult = cleanFormat(botReply);
+    botReply = formatResult.text;
+    if (
+      formatResult.counts.bullets > 0 ||
+      formatResult.counts.bolds > 0 ||
+      formatResult.counts.italics > 0 ||
+      formatResult.counts.emojis > 0
+    ) {
+      botLog("info", "format_postprocessed", {
+        phone: senderPhone,
+        bullets_stripped: formatResult.counts.bullets,
+        bolds_stripped: formatResult.counts.bolds,
+        italics_stripped: formatResult.counts.italics,
+        emojis_stripped: formatResult.counts.emojis,
+      });
+    }
+
+    // Empty-reply guard caso 4 (hotfix-2 Día 3, extendido R4 + R5): si
+    // despues del strip de bloque perfil_update + tags + post-processor
+    // de formato el texto quedo vacio o solo whitespace, Mateo emitio
+    // solo metadata/formato sin contenido visible. Reemplazamos por
+    // fallback amable en lugar de mandar vacio que WhatsApp rechazaria
+    // con error 4xx (que ademas seria atrapado por el catch top-level
+    // y dejaria al cliente en visto). Regla universal de Enmanuel:
+    // Mateo SIEMPRE responde.
     if (!botReply || botReply.trim().length === 0) {
       botLog("warn", "empty_reply_after_strip", {
         phone: senderPhone,
@@ -745,6 +776,7 @@ async function processMessage(body) {
         rawReplyPreview: rawReply.slice(0, 200),
         stop_reason: stopReason,
         truncated_recovery_applied: truncatedRecoveryApplied,
+        format_stripped_to_empty: formatResult.counts.bullets + formatResult.counts.bolds + formatResult.counts.italics + formatResult.counts.emojis > 0,
       });
       botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
     }

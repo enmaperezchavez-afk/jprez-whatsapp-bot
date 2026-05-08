@@ -355,4 +355,44 @@ describe("Hotfix-22 V2 b2 — Smoke E2E golden (10 escenarios)", () => {
     expect(texts.length).toBeGreaterThan(0);
     assertGoldenReply(texts[0], scenario);
   }, 20000);
+
+  it("Test 12: V3.5 R5 — banco con bullets → post-processor strippea hard", async () => {
+    // Caso real del smoke final V3: LLM emitio bullets en lista de bancos.
+    // R5 cleanFormat strippea los "- " antes de mandar al cliente.
+    const { texts, scenario } = await runScenario("scenario_v35_smoke_banco_con_bullets");
+    expect(texts.length).toBeGreaterThan(0);
+    assertGoldenReply(texts[0], scenario);
+    // Sanity: contenido critico preservado (tasas APAP).
+    expect(texts[0]).toContain("APAP");
+    expect(texts[0]).toContain("12.50%");
+  }, 20000);
+
+  it("Test 13: V3.5 R5 — extranjero con emojis → post-processor strippea hard", async () => {
+    // Caso real del smoke final V3: LLM emitio 🌎. R5 strip + R6 keywords.
+    const { texts, scenario } = await runScenario("scenario_v35_smoke_extranjero_con_emojis");
+    expect(texts.length).toBeGreaterThan(0);
+    assertGoldenReply(texts[0], scenario);
+    // Sanity: leyes y CONFOTUR preservados.
+    expect(texts[0]).toContain("CONFOTUR");
+    expect(texts[0]).toContain("Ley 158-01");
+  }, 20000);
+
+  it("Test 14: V3.5 R5 — fideicomiso con asteriscos → post-processor strippea hard", async () => {
+    // Caso real del smoke final V3: LLM emitio "*¿Qué es?*" estilo header.
+    // R5 cleanFormat strip wrappers manteniendo contenido.
+    const { texts, scenario } = await runScenario("scenario_v35_smoke_fideicomiso_con_asteriscos");
+    expect(texts.length).toBeGreaterThan(0);
+    assertGoldenReply(texts[0], scenario);
+    // Sanity: contenido preservado sin asteriscos.
+    expect(texts[0]).toContain("Que es?");
+    expect(texts[0]).toContain("fideicomiso");
+    expect(texts[0]).not.toContain("*¿");
+  }, 20000);
+
+  it("Test 15: V3.5 sanity — calculo PSE3 sin formato (default 10/30/60)", async () => {
+    // El bot debe usar plan default, NO Feria Mayo (as bajo la manga).
+    const { texts, scenario } = await runScenario("scenario_v35_smoke_calculo_limpio");
+    expect(texts.length).toBeGreaterThan(0);
+    assertGoldenReply(texts[0], scenario);
+  }, 20000);
 });
