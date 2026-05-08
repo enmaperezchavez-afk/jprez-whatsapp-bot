@@ -29,6 +29,21 @@
 // log "claude_retry_exhausted" cuando el SDK propaga error final.
 // MAX_RETRIES tambien tunable via env var CLAUDE_MAX_RETRIES (default 3,
 // rango 0-5) para que Director ajuste sin redeploy.
+//
+// HOTFIX-22 V3 r4: arregla bug latente de R1 — claude_ratelimit_status
+// nunca disparaba en producción porque el SDK Anthropic NO expone
+// `response.headers` en responses exitosas (solo en `e.headers` de
+// APIError). Para acceder a headers en éxito hay que usar
+// `client.messages.create(...).withResponse()` que retorna
+// { data, response } donde response.headers es Headers HTTP estándar
+// (.get()). Cambiamos al patrón withResponse + adapter shape interno
+// para que el caller siga viendo el mismo objeto data.
+//
+// HOTFIX-22 V3 r4: agrega claude_ratelimit_warning (level warn) cuando
+// input_tokens_remaining < CLAUDE_RATELIMIT_WARN_THRESHOLD (default
+// 5000, rango 0-30000). Permite al Director ver patrón de saturación
+// en Axiom antes de saturar y disparar 429s. Replace pre-flight check
+// del plan original — warn post-response es más simple y mismo valor.
 
 const Anthropic = require("@anthropic-ai/sdk");
 const { botLog } = require("./log");
@@ -61,11 +76,27 @@ const MAX_RETRIES = (() => {
   return parsed;
 })();
 
+const DEFAULT_RATELIMIT_WARN_THRESHOLD = 5000;
+const RATELIMIT_WARN_THRESHOLD = (() => {
+  const raw = process.env.CLAUDE_RATELIMIT_WARN_THRESHOLD;
+  if (!raw) return DEFAULT_RATELIMIT_WARN_THRESHOLD;
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed) || parsed < 0 || parsed > 30000) {
+    botLog("warn", "claude_ratelimit_warn_threshold_invalid", {
+      raw, fallback: DEFAULT_RATELIMIT_WARN_THRESHOLD,
+    });
+    return DEFAULT_RATELIMIT_WARN_THRESHOLD;
+  }
+  return parsed;
+})();
+
 botLog("info", "claude_config", {
   max_tokens: MAX_TOKENS,
   max_retries: MAX_RETRIES,
+  ratelimit_warn_threshold: RATELIMIT_WARN_THRESHOLD,
   max_tokens_source: process.env.CLAUDE_MAX_TOKENS ? "env" : "default",
   max_retries_source: process.env.CLAUDE_MAX_RETRIES ? "env" : "default",
+  ratelimit_warn_threshold_source: process.env.CLAUDE_RATELIMIT_WARN_THRESHOLD ? "env" : "default",
 });
 
 function getAnthropic() {
@@ -100,14 +131,33 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
     // aqui para loggear "claude_retry_exhausted" con status, headers de
     // rate limit y attempts. El error sigue propagandose al handler,
     // que tiene su propio safety net (sendWhatsAppMessage fallback).
+    //
+    // Hotfix-22 V3 r4: usar .withResponse() para acceder a los headers
+    // HTTP en respuestas exitosas. El SDK Anthropic NO expone
+    // response.headers directamente en el data — solo via withResponse
+    // que retorna { data, response } donde response.headers es Headers
+    // HTTP estándar (.get()). Sin esto, claude_ratelimit_status nunca
+    // disparaba en exito (bug latente desde R1).
+    let httpResp = null;
     try {
-      response = await anthropic.messages.create({
+      // Hotfix-22 V3 r4: detectar si la promesa expone .withResponse()
+      // (SDK real >=0.30 — necesario para leer headers en exito) o
+      // cae al patron plano (mocks de tests existentes que retornan
+      // directo response). Mantiene compat sin tocar todos los mocks.
+      const reqPromise = anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: MAX_TOKENS,
         system,
         tools,
         messages: workingMessages,
       });
+      if (typeof reqPromise.withResponse === "function") {
+        const wrapped = await reqPromise.withResponse();
+        response = wrapped.data;
+        httpResp = wrapped.response;
+      } else {
+        response = await reqPromise;
+      }
     } catch (e) {
       const status = e?.status;
       const headers = e?.headers;
@@ -126,19 +176,36 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
       });
       throw e;
     }
-    // Hotfix-22 V3 r1: log proactivo de rate limit headers en cada
+    // Hotfix-22 V3 r1+r4: log proactivo de rate limit headers en cada
     // response exitosa. Permite al Director ver en Axiom cuan cerca
-    // esta del cap por minuto antes de saturar. Headers vienen en
-    // response.headers cuando el SDK los expone (depende de version).
-    const respHeaders = response?.headers || {};
-    if (respHeaders["anthropic-ratelimit-input-tokens-remaining"]) {
+    // esta del cap por minuto antes de saturar. R4 cambia a leer de
+    // httpResp.headers (Headers HTTP estándar via withResponse).
+    const getHeader = (name) => httpResp?.headers?.get?.(name) || null;
+    const inputTokensRemainingRaw = getHeader("anthropic-ratelimit-input-tokens-remaining");
+    const inputTokensRemaining = inputTokensRemainingRaw != null
+      ? parseInt(inputTokensRemainingRaw, 10)
+      : null;
+    if (inputTokensRemainingRaw != null) {
       botLog("info", "claude_ratelimit_status", {
         phone,
         iteration,
-        input_tokens_remaining: respHeaders["anthropic-ratelimit-input-tokens-remaining"],
-        input_tokens_reset: respHeaders["anthropic-ratelimit-input-tokens-reset"],
-        requests_remaining: respHeaders["anthropic-ratelimit-requests-remaining"],
+        input_tokens_remaining: inputTokensRemainingRaw,
+        input_tokens_reset: getHeader("anthropic-ratelimit-input-tokens-reset"),
+        requests_remaining: getHeader("anthropic-ratelimit-requests-remaining"),
+        requests_reset: getHeader("anthropic-ratelimit-requests-reset"),
       });
+      // Hotfix-22 V3 r4: warning si remaining cerca del cap. Director
+      // ve en Axiom cuando se acerca a la zona caliente sin necesidad
+      // de pre-flight separado (replace pre-flight del plan).
+      if (Number.isFinite(inputTokensRemaining) && inputTokensRemaining < RATELIMIT_WARN_THRESHOLD) {
+        botLog("warn", "claude_ratelimit_warning", {
+          phone,
+          iteration,
+          input_tokens_remaining: inputTokensRemaining,
+          threshold: RATELIMIT_WARN_THRESHOLD,
+          input_tokens_reset: getHeader("anthropic-ratelimit-input-tokens-reset"),
+        });
+      }
     }
     // Hotfix-20B Bug #14: log stop_reason + usage por iteracion para
     // diagnostico futuro. Si "max_tokens" vuelve a aparecer como
