@@ -47,17 +47,34 @@ class MockAnthropic {
     constructorCalls.push(opts);
     this.opts = opts;
     this.messages = {
-      create: async (args) => {
+      create: (args) => {
         createCalls.push(args);
+        // Hotfix-22 V3 r4: emular .withResponse() del SDK real para que
+        // el wrapper en src/claude.js detecte y use el path correcto.
         // FIFO: si hay error pendiente, lanzar; si no, retornar response.
-        if (nextErrors.length > 0) {
-          throw nextErrors.shift();
-        }
-        const resp = nextResponses.shift();
-        if (!resp) {
-          throw new Error("MockAnthropic: out of mocked responses (call #" + createCalls.length + ")");
-        }
-        return resp;
+        const promise = (async () => {
+          if (nextErrors.length > 0) throw nextErrors.shift();
+          const resp = nextResponses.shift();
+          if (!resp) throw new Error("MockAnthropic: out of mocked responses (call #" + createCalls.length + ")");
+          return resp;
+        })();
+        // .withResponse() retorna { data, response } donde response.headers
+        // tiene .get(name). Si la response mockeada incluye `headers` plano,
+        // los exponemos via Headers-like adapter.
+        promise.withResponse = () => promise.then((data) => {
+          const flatHeaders = data?.headers || {};
+          // Stripear headers del data para emular SDK real (que retorna
+          // data sin headers — los headers viven solo en response).
+          const dataClean = { ...data };
+          delete dataClean.headers;
+          return {
+            data: dataClean,
+            response: {
+              headers: { get: (name) => flatHeaders[name] != null ? flatHeaders[name] : null },
+            },
+          };
+        });
+        return promise;
       },
     };
   }

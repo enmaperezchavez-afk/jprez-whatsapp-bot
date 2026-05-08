@@ -653,8 +653,57 @@ async function processMessage(body) {
 
     // Extraer el texto final (ignorando bloques tool_use residuales)
     const textBlocks = response.content.filter((b) => b.type === "text");
-    const rawReply = textBlocks.map((b) => b.text).join("\n").trim() || "Dejame un momento, te respondo en seguida.";
+    const rawReplyJoined = textBlocks.map((b) => b.text).join("\n").trim();
+    const rawReply = rawReplyJoined || "Dejame un momento, te respondo en seguida.";
     console.log("Respuesta del bot: " + rawReply);
+
+    // Hotfix-22 V3 r4: empty-reply guard de 4 niveles. Detecta:
+    //   1. Bloque cerrado normal — strip via extractProfileUpdate
+    //      (el que ya funciona desde hotfix-2). Caso default.
+    //   2. stop_reason="max_tokens" con bloque <perfil_update>
+    //      truncado SIN cierre — el regex de extractProfileUpdate
+    //      requiere </perfil_update> y NO match → JSON crudo
+    //      leakeaba al cliente. Recovery: regex fallback que strip
+    //      todo desde "<perfil_update>" al final, preserva texto
+    //      previo si existe. Log claude_truncated_with_recovery.
+    //   3. stop_reason="max_tokens" SIN bloque (texto puro
+    //      truncado) — mandar texto parcial al cliente, log
+    //      claude_truncated_no_block.
+    //   4. Empty post-strip (Mateo emitio SOLO metadata) — fallback
+    //      generico (caso original hotfix-2).
+    //
+    // Aplicamos la deteccion ANTES de extractProfileUpdate para
+    // capturar el caso 2: si hay bloque sin cierre, NO podemos
+    // confiar en el extractor — strip manual primero.
+    const stopReason = response.stop_reason;
+    let preStripReply = rawReply;
+    let truncatedRecoveryApplied = false;
+    if (stopReason === "max_tokens") {
+      const openTag = preStripReply.indexOf("<perfil_update>");
+      const closeTag = preStripReply.indexOf("</perfil_update>");
+      if (openTag !== -1 && closeTag === -1) {
+        // Caso 2: bloque truncado sin cierre. Strip todo desde el
+        // open tag al final y preservar texto previo (si lo hay).
+        const beforeBlock = preStripReply.slice(0, openTag).trim();
+        botLog("warn", "claude_truncated_with_recovery", {
+          phone: senderPhone,
+          beforeBlockChars: beforeBlock.length,
+          rawReplyChars: preStripReply.length,
+          stop_reason: stopReason,
+        });
+        preStripReply = beforeBlock;
+        truncatedRecoveryApplied = true;
+      } else if (openTag === -1) {
+        // Caso 3: max_tokens sin bloque, texto parcial al cliente.
+        botLog("warn", "claude_truncated_no_block", {
+          phone: senderPhone,
+          rawReplyChars: preStripReply.length,
+          stop_reason: stopReason,
+        });
+      }
+      // Si openTag !== -1 && closeTag !== -1, el bloque cerro a
+      // tiempo aunque max_tokens hizo stop — extractor lo limpia.
+    }
 
     // Extraer bloque <perfil_update> ANTES que cualquier otro detect. El bloque
     // puede contener JSON con mentions de proyectos/tags que confundirian a
@@ -667,9 +716,9 @@ async function processMessage(body) {
     // textWithoutProfile vacio y el empty-reply guard mas abajo lo cubre con
     // un fallback amable.
     let profileDeltas = null;
-    let textWithoutProfile = rawReply;
+    let textWithoutProfile = preStripReply;
     if (!isStaff && !isSupervisor) {
-      const { json, cleanedText } = extractProfileUpdate(rawReply);
+      const { json, cleanedText } = extractProfileUpdate(preStripReply);
       textWithoutProfile = cleanedText;
       if (json && validateProfileUpdate(json)) {
         profileDeltas = json;
@@ -682,7 +731,7 @@ async function processMessage(body) {
     const { isHotLead, needsEscalation, booking, cleanReply } = detectLeadSignals(textWithoutProfile);
     let botReply = cleanReply;
 
-    // Empty-reply guard (hotfix-2 Día 3): si despues del strip de bloque
+    // Empty-reply guard caso 4 (hotfix-2 Día 3): si despues del strip de bloque
     // perfil_update + tags [LEAD_CALIENTE]/[ESCALAR]/[AGENDAR|...] el texto
     // quedo vacio o solo whitespace, Mateo emitio solo metadata sin contenido
     // visible. Reemplazamos por fallback amable en lugar de mandar vacio que
@@ -690,10 +739,12 @@ async function processMessage(body) {
     // catch top-level y dejaria al cliente en visto). Regla universal de
     // Enmanuel: Mateo SIEMPRE responde.
     if (!botReply || botReply.trim().length === 0) {
-      botLog("warn", "Reply vacio post-strip", {
+      botLog("warn", "empty_reply_after_strip", {
         phone: senderPhone,
         rawReplyLength: rawReply.length,
         rawReplyPreview: rawReply.slice(0, 200),
+        stop_reason: stopReason,
+        truncated_recovery_applied: truncatedRecoveryApplied,
       });
       botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
     }
