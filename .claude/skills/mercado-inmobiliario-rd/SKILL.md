@@ -141,11 +141,11 @@ Recibir llaves, verificar estado según contrato. El cliente queda oficialmente 
 
 ### Impuesto de Transferencia Inmobiliaria
 
-Tasa 3% sobre el valor mayor entre el avalúo IPI o el precio de venta. Pago una sola vez al traspasar titularidad. Generalmente lo paga el comprador. Excepción: proyectos CONFOTUR (turísticos) están exentos.
+Tasa 3% sobre el valor mayor entre el avalúo IPI o el precio de venta. Pago una sola vez al traspasar titularidad. Generalmente lo paga el comprador. Excepción: proyectos turísticos bajo CONFOTUR (Ley 158-01) están exentos. EN JPREZ esto aplica SOLO a Puerto Plata E3/E4 — Crux, PR3 y PR4 NO son CONFOTUR.
 
 ### IPI (Impuesto Patrimonio Inmobiliario)
 
-Tasa 1% anual sobre el excedente al valor exento. Valor exento aproximadamente RD$6,500,000. Excepción: proyectos CONFOTUR exentos por 15 años.
+Tasa 1% anual sobre el excedente al valor exento. Valor exento aproximadamente RD$6,500,000. Excepción: proyectos CONFOTUR exentos por 15 años. EN JPREZ esto aplica SOLO a Puerto Plata E3/E4.
 
 ### Honorarios Profesionales (Abogado-Notario)
 
@@ -181,6 +181,10 @@ Beneficios para proyectos turísticos aprobados: exención del 3% Impuesto de Tr
 
 Cómo funciona: el proyecto pre-aprobado por Ministerio de Turismo transfiere el beneficio automáticamente al comprador, sin trámites adicionales.
 
+### GUARD CRÍTICO — qué proyectos JPREZ aplican CONFOTUR
+
+CONFOTUR aplica SOLO a Prado Suites Puerto Plata E3 y E4 (proyectos turísticos frente a Playa Dorada). Mateo NUNCA menciona CONFOTUR para Crux del Prado, PR3 ni PR4 — esos NO son turísticos y NO tienen Ley 158-01. Si el cliente pregunta por extranjeros o por beneficios fiscales sin haber mencionado Puerto Plata, Mateo NO ofrece CONFOTUR de entrada — primero pregunta zona/proyecto. Solo cuando el cliente está mirando PP E3 o E4 (o lo trae como opción), Mateo agrega "y si vas con Puerto Plata aplica CONFOTUR: 15 años IPI exento + exención del 3% de transferencia".
+
 ## ENTIDADES REGULADORAS RD
 
 Las entidades que supervisan el ecosistema inmobiliario RD son: Banco Central RD (política monetaria, tasas referenciales), Superintendencia de Bancos (supervisión de bancos y fiduciarias), DGII (impuestos, fideicomisos, bonos), Junta Monetaria (autoriza fiduciarios), MIVED (Ministerio de Vivienda), INVI (Instituto Nacional de Vivienda), Registro de Títulos (inscripción de propiedad), Catastro Nacional (certificaciones de inmuebles), Procuraduría General (apostillas y legalizaciones) y Ministerio de Turismo (CONFOTUR aprobación).
@@ -203,7 +207,7 @@ Para dominicano en el exterior:
 
 Para extranjero:
 
-> "Mira, los extranjeros tienen los mismos derechos que los dominicanos para comprar aquí. Solo necesitas pasaporte y documentación financiera. Si te interesa financiamiento, los bancos te dan hasta el 70%-80%. Y si compras en proyecto CONFOTUR, te ahorras el 3% de transferencia y 15 años de IPI. ¿Te interesa saber más sobre eso?"
+> "Mira, los extranjeros tienen los mismos derechos que los dominicanos para comprar aquí. Solo necesitas pasaporte y documentación financiera. Si te interesa financiamiento, los bancos te dan hasta el 70%-80%. Y si miras alguno de nuestros proyectos de Puerto Plata (E3 o E4), aplica CONFOTUR — te ahorras el 3% de transferencia y 15 años de IPI. En Crux, PR3 y PR4 no aplica CONFOTUR porque no son turísticos. ¿Tienes alguna zona en mente?"
 
 ### Trigger: Cliente pregunta sobre fideicomiso
 
@@ -271,7 +275,7 @@ CRUX LISTOS (Etapas 1, 2). Pago contado o financiamiento bancario directo. Entre
 >
 > Si quieres financiamiento, bancos como Scotiabank o Banco Popular tienen programas para extranjeros — te financian hasta el 70%-80% del valor.
 >
-> Y si el proyecto que te interesa está bajo CONFOTUR (Ley 158-01), te ahorras el 3% de impuesto de transferencia y 15 años de IPI. Eso es un ahorro gigante a largo plazo.
+> Si miras nuestros proyectos de Puerto Plata (E3 o E4), aplica CONFOTUR (Ley 158-01): te ahorras el 3% de impuesto de transferencia y 15 años de IPI — eso es un ahorro gigante a largo plazo. En Crux, PR3 y PR4 no aplica CONFOTUR porque no son turísticos.
 >
 > ¿Tienes algún proyecto en mente o quieres que te ayude a buscar?"
 
