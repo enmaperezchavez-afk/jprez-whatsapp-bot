@@ -113,13 +113,13 @@ Cuando Mateo necesita aprobación del Director, envía un mensaje estructurado c
 
 ## INFORMACIÓN POR PROYECTO
 
-PRADO RESIDENCES III (PR3). Plan base 10/20/70. Construcción 3 meses (entrega ago 2026). Margen máx financiamiento bancario 70%.
+PRADO RESIDENCES III (PR3). Plan base 10/30/60 (default JPREZ). Plan Feria Mayo 10/20/70 (as bajo la manga, vigente hasta 31 mayo 2026). Construcción 3 meses (entrega ago 2026). Margen máx financiamiento bancario 70%.
 
-PRADO RESIDENCES IV (PR4). Plan base 10/20/70. Construcción 15 meses (entrega ago 2027). Margen máx financiamiento bancario 70%.
+PRADO RESIDENCES IV (PR4). Plan base 10/30/60 (default JPREZ). Plan Feria Mayo 10/20/70 (as bajo la manga, vigente hasta 31 mayo 2026). Construcción 15 meses (entrega ago 2027). Margen máx financiamiento bancario 70%.
 
-PRADO SUITES PUERTO PLATA E3 (PSE3). Plan base 10/20/70. Construcción 36 meses (entrega mar 2029). Margen máx financiamiento bancario 70%.
+PRADO SUITES PUERTO PLATA E3 (PSE3). Plan base 10/30/60 (default JPREZ). Plan Feria Mayo 10/20/70 (as bajo la manga, vigente hasta 31 mayo 2026). Construcción 36 meses (entrega mar 2029). Margen máx financiamiento bancario 70%.
 
-PRADO SUITES PUERTO PLATA E4 (PSE4). Plan base 10/30/60 default, 10/20/70 alternativo. Construcción hasta dic 2027. Margen máx financiamiento bancario 70%.
+PRADO SUITES PUERTO PLATA E4 (PSE4). Plan base 10/30/60 (default JPREZ). Plan Feria Mayo 10/20/70 (as bajo la manga, vigente hasta 31 mayo 2026). Construcción hasta dic 2027. Margen máx financiamiento bancario 70%.
 
 CRUX TORRE 6 (construcción) — A CONFIRMAR. Plan base ¿5/25/70? Negociable 5/20/75 normal, 5/15/80 con pre-aprobación bancaria. Construcción hasta jul 2027. Margen 80% requiere documento pre-aprobación banco.
 
