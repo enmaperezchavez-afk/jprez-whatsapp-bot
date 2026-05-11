@@ -77,12 +77,12 @@ describe("Hotfix-22 V3.5 R6 — skill activation few-shots", () => {
     expect(staticBlock.indexOf("OVERRIDES CRÍTICOS")).toBeGreaterThan(-1);
   });
 
-  it("Test 6: OVERRIDES sigue bajo limite razonable (~3K chars target post-R6)", () => {
-    // R6 sumo ~700-1300 chars al original 1487. Target documentado en plan
-    // ~2200-2300, realidad ~2700 (las explicaciones brutales del Director
-    // son largas). Aceptamos hasta 3500 como sanity max — si rebasa,
-    // el plan se desvio y hay que auditarlo.
-    expect(OVERRIDES_LAYER.length).toBeLessThan(3500);
+  it("Test 6: OVERRIDES sigue bajo limite razonable (V3.6 Documento Maestro completo)", () => {
+    // R6 sumo ~700-1300 chars al original 1487. V3.6 (Hotfix-23) inyecta
+    // el Documento Maestro completo del Director: proceso comercial 5
+    // pasos + documentos por perfil + voz Mateo + 3 ejemplos canónicos.
+    // Target ~9-11K chars (~2500 tokens). Sanity max 12000 chars.
+    expect(OVERRIDES_LAYER.length).toBeLessThan(12000);
     // Sigue sobre el original 1487 (sanity: el refuerzo SI se aplico).
     expect(OVERRIDES_LAYER.length).toBeGreaterThan(2000);
   });
