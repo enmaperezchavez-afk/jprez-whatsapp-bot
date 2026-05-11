@@ -39,14 +39,17 @@ describe("Hotfix-22 V3.5 R6 — skill activation few-shots", () => {
     expect(OVERRIDES_LAYER).toMatch(/CORRECTO/i);
   });
 
-  it("Test 2: few-shot extranjero con CONFOTUR + Bono + leyes 158-01/189-11", () => {
+  it("Test 2: few-shot extranjero con CONFOTUR + leyes 158-01/189-11 + aclaración BPV NO aplica", () => {
+    // V3.6 (Hotfix-23): BPV eliminado como oferta positiva. Si "Bono Primera
+    // Vivienda" aparece en OVERRIDES debe ser en contexto de aclaración
+    // "JPREZ NO aplica / nuestros proyectos no califican".
     expect(OVERRIDES_LAYER).toContain("CONFOTUR");
     expect(OVERRIDES_LAYER).toContain("Ley 158-01");
     expect(OVERRIDES_LAYER).toContain("Ley 189-11");
-    expect(OVERRIDES_LAYER).toContain("Bono Primera Vivienda");
-    expect(OVERRIDES_LAYER).toContain("5,025,380.75");
     // 15 anios IPI exento mencionado.
     expect(OVERRIDES_LAYER).toMatch(/15 a[ñn]os IPI/i);
+    // BPV solo permitido en contexto negativo (aclaración honesta).
+    expect(OVERRIDES_LAYER).toMatch(/Bono Primera Vivienda no aplica|no aplica con JPREZ|no califican como Vivienda Bajo Costo/i);
   });
 
   it("Test 3: few-shot pre-aprobacion timing — AHORA no esperar a entrega", () => {
@@ -74,12 +77,12 @@ describe("Hotfix-22 V3.5 R6 — skill activation few-shots", () => {
     expect(staticBlock.indexOf("OVERRIDES CRÍTICOS")).toBeGreaterThan(-1);
   });
 
-  it("Test 6: OVERRIDES sigue bajo limite razonable (~3K chars target post-R6)", () => {
-    // R6 sumo ~700-1300 chars al original 1487. Target documentado en plan
-    // ~2200-2300, realidad ~2700 (las explicaciones brutales del Director
-    // son largas). Aceptamos hasta 3500 como sanity max — si rebasa,
-    // el plan se desvio y hay que auditarlo.
-    expect(OVERRIDES_LAYER.length).toBeLessThan(3500);
+  it("Test 6: OVERRIDES sigue bajo limite razonable (V3.6 Documento Maestro completo)", () => {
+    // R6 sumo ~700-1300 chars al original 1487. V3.6 (Hotfix-23) inyecta
+    // el Documento Maestro completo del Director: proceso comercial 5
+    // pasos + documentos por perfil + voz Mateo + 3 ejemplos canónicos.
+    // Target ~9-11K chars (~2500 tokens). Sanity max 12000 chars.
+    expect(OVERRIDES_LAYER.length).toBeLessThan(12000);
     // Sigue sobre el original 1487 (sanity: el refuerzo SI se aplico).
     expect(OVERRIDES_LAYER.length).toBeGreaterThan(2000);
   });

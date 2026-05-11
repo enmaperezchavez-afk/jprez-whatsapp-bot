@@ -104,7 +104,7 @@ Constructora JPREZ tiene más de 23 años de experiencia y más de 1,300 unidade
 
 ### PROYECTO 1: CRUX DEL PRADO (Torre 6)
 
-Para quién: familias buscando su hogar, primera vivienda. Ubicación: Santo Domingo Norte, Colinas del Arroyo II. Entrega: julio 2027. Disponibilidad: 43 de 50 unidades disponibles. Área: 100 m² todos los apartamentos. Distribución: 3 habitaciones, 2 baños, sala, comedor, cocina, balcón, área de lavado. Parqueos: 2 incluidos por apartamento. Niveles: 13 pisos.
+Para quién: familias buscando su hogar. Ubicación: Santo Domingo Norte, Colinas del Arroyo II. Entrega: julio 2027. Disponibilidad: 43 de 50 unidades disponibles. Área: 100 m² todos los apartamentos. Distribución: 3 habitaciones, 2 baños, sala, comedor, cocina, balcón, área de lavado. Parqueos: 2 incluidos por apartamento. Niveles: 13 pisos.
 
 Plan de pago normal (siempre): Reserva con solo US$1,000, 5% a la firma del contrato, 25% en cuotas mensuales durante construcción, 70% contra entrega.
 

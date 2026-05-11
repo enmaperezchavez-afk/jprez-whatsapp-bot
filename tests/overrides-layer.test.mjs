@@ -91,7 +91,11 @@ describe("Hotfix-22 V3 r2 — overrides-layer", () => {
     // OVERRIDES_LAYER originalmente target ≤1500 chars (R2). V3.5 (R6)
     // sumo few-shot examples brutal — Director aprobado, target subio
     // a ≤3500 chars con +441 tokens reales (yellow alto seguia OK).
-    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(3500);
+    // V3.6 (Hotfix-23): Director aprobado el Documento Maestro completo
+    // como doctrina inyectada — proceso comercial 5 pasos + documentos
+    // por perfil + voz Mateo + 3 ejemplos canónicos verbatim. Target
+    // sube a ≤12000 chars (~3000 tokens). Sigue dentro del budget cache.
+    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(12000);
   });
 
   // ===== P1 =====

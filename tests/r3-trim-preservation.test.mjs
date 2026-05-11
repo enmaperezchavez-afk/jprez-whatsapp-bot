@@ -94,11 +94,12 @@ describe("Hotfix-22 V3 r3 — preservación post-trim", () => {
     // Leyes intocables (Director marcó).
     expect(MARKET_RD_SKILL).toContain("Ley 189-11");
     expect(MARKET_RD_SKILL).toContain("Ley 158-01");
-    // Bono Primera Vivienda tope 2026.
-    expect(MARKET_RD_SKILL).toContain("5,025,380.75");
     // CONFOTUR + IPI.
     expect(MARKET_RD_SKILL).toContain("CONFOTUR");
     expect(MARKET_RD_SKILL).toContain("IPI");
+    // V3.6 (Hotfix-23): BPV ya NO se preserva como oferta. Sección renombrada
+    // a "POR QUÉ JPREZ NO OFRECE BONO PRIMERA VIVIENDA" — explicación honesta.
+    expect(MARKET_RD_SKILL).toMatch(/POR QUÉ JPREZ NO OFRECE BONO PRIMERA VIVIENDA|JPREZ NO ofrece Bono Primera Vivienda|no califican como Vivienda Bajo Costo/i);
   });
 
   // ===== description DEL SKILL mercado-rd (REFERENCIADA POR OVERRIDES) =====
@@ -117,8 +118,12 @@ describe("Hotfix-22 V3 r3 — preservación post-trim", () => {
     expect(frontmatter).toContain("fideicomiso");
     expect(frontmatter).toContain("extranjero");
     expect(frontmatter).toContain("CONFOTUR");
-    expect(frontmatter).toContain("Bono Primera Vivienda");
     expect(frontmatter).toContain("Ley 189-11");
+    // V3.6 (Hotfix-23): description avisa que JPREZ NO ofrece BPV + agrega
+    // "primera vivienda" + "bono" como triggers para responder con honestidad.
+    expect(frontmatter).toContain("Bono Primera Vivienda");
+    expect(frontmatter).toMatch(/NO ofrece|NO aplica|no aplica/i);
+    expect(frontmatter).toContain("primera vivienda");
   });
 
   // ===== INVARIANTES VENDEDOR-JPREZ (REGLAS DE ORO + PROMOCIÓN) =====
