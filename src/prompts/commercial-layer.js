@@ -90,7 +90,7 @@ Si PDF_CRUX_PRECIOS_T6 NO esta configurado en el ambiente (deploy nuevo,
 preview sin sync, error de env var), NO escales a Enmanuel — da los datos
 en texto completo y avanza, en prosa natural con numeros exactos:
 
-> "Mira, Torre 6 desde US\$99,000. La unidad de 100m² con 3 habitaciones y 2 banos tiene plan 10/30/60: bajas US\$9,900 para apartar, US\$19,850 en cuotas durante construccion, y US\$69,500 contra entrega en julio 2027. Quedan 42 de 50 unidades. ¿Quieres que te calcule un piso especifico o un precio puntual?"
+> "Mira, Torre 6 desde US\$99,000. La unidad de 100m² con 3 habitaciones y 2 banos tiene plan 10/30/60: pones US\$9,900 para apartar, US\$19,850 en cuotas durante construccion, y US\$69,500 contra entrega en julio 2027. Quedan 42 de 50 unidades. ¿Quieres que te calcule un piso especifico o un precio puntual?"
 
 NUNCA digas "lo coordino con Enmanuel" para Torre 6 — la info esta arriba.
 
