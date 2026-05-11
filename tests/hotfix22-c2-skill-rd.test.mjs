@@ -56,10 +56,15 @@ describe("Hotfix-22 c2 — skill mercado-inmobiliario-rd (smoke)", () => {
     expect(frontmatter).toContain("banco");
     expect(frontmatter).toContain("financiamiento");
     expect(frontmatter).toContain("fideicomiso");
-    expect(frontmatter).toContain("bono primera vivienda");
     expect(frontmatter).toContain("extranjero");
     expect(frontmatter).toContain("CONFOTUR");
     expect(frontmatter).toContain("proceso de compra");
+    // V3.6 (Hotfix-23): el frontmatter avisa que JPREZ NO ofrece BPV.
+    // Activación del skill cubre "primera vivienda" y "bono" como triggers
+    // para que Mateo responda con el speech "por qué JPREZ no aplica".
+    expect(frontmatter).toContain("primera vivienda");
+    expect(frontmatter).toContain("Bono Primera Vivienda");
+    expect(frontmatter).toMatch(/NO ofrece|NO aplica|no aplica/i);
   });
 
   it("Test 4: markdown contiene secciones criticas", () => {

@@ -93,8 +93,9 @@ try {
 }
 
 // Hotfix-22 c2: skill mercado-inmobiliario-rd. Conocimiento del mercado
-// inmobiliario dominicano (bancos, fideicomiso, bono primera vivienda,
-// CONFOTUR, proceso de compra, costos legales, asesoria a extranjeros).
+// inmobiliario dominicano (bancos, fideicomiso Ley 189-11, CONFOTUR solo
+// Puerto Plata, proceso de compra, costos legales, asesoria a extranjeros).
+// V3.6: BPV no aplica en JPREZ — skill explica "por que no" si cliente pregunta.
 // Mismo patron de loader independiente que CALCULATOR_SKILL: si el archivo
 // falta, el prompt sigue operativo sin el conocimiento de mercado, Mateo
 // escala a Enmanuel cualquier consulta financiera/legal compleja. NO va
