@@ -258,4 +258,28 @@ describe("Hotfix-22 V3 r4 — empty-reply guard 4 niveles", () => {
     expect(emptyLog.level).toBe("warn");
     expect(emptyLog.data.truncated_recovery_applied).toBe(false);
   });
+
+  it("Caso 7 (Hotfix-24 R4 c5): max_tokens + reply válido + <parameter> truncado → strip + pass", async () => {
+    // Evidencia 11 mayo 2026 14:33:04, Caso A formal PR4 — Director vio
+    // <parameter name="..."> crudo en el reply. El R4 caso 2 solo cubre
+    // <perfil_update>; el caso 5 (este test) cubre tool-use XML truncado
+    // emitido como texto en content[].text.
+    const reply = "Buenas tardes. Con gusto le doy información de PR4. Los precios van desde US$140,000.\n\n<parameter name=\"proyecto\">prado";
+    claudeMockSequence = [mockResponse(reply, "max_tokens")];
+    await processMessage(buildBody("18097777777", "buenas tardes, info PR4"));
+    expect(lastSentMessage).toBeTruthy();
+    // El texto válido antes del <parameter> truncado queda preservado.
+    expect(lastSentMessage.text).toContain("Buenas tardes");
+    expect(lastSentMessage.text).toContain("PR4");
+    // El bloque <parameter> truncado fue stripeado.
+    expect(lastSentMessage.text).not.toContain("<parameter");
+    expect(lastSentMessage.text).not.toContain("prado");
+    // No cae al fallback porque hay texto válido antes del bloque.
+    expect(lastSentMessage.text).not.toContain("se me complic");
+    // Log del strip emitido.
+    const stripLog = botLogCalls.find((c) => c.message === "perfil_update_truncated_stripped");
+    expect(stripLog).toBeDefined();
+    expect(stripLog.level).toBe("warn");
+    expect(stripLog.data.strippedChars).toBeGreaterThan(0);
+  });
 });

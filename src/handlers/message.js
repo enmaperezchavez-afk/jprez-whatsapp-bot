@@ -52,6 +52,7 @@ const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
 const { cleanFormat } = require("./format-postprocess");
+const { stripParameterBlocks } = require("./parameter-block-cleaner");
 const adminTesting = require("../admin-testing-mode");
 const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 
@@ -761,14 +762,39 @@ async function processMessage(body) {
       });
     }
 
-    // Empty-reply guard caso 4 (hotfix-2 Día 3, extendido R4 + R5): si
-    // despues del strip de bloque perfil_update + tags + post-processor
-    // de formato el texto quedo vacio o solo whitespace, Mateo emitio
-    // solo metadata/formato sin contenido visible. Reemplazamos por
-    // fallback amable en lugar de mandar vacio que WhatsApp rechazaria
-    // con error 4xx (que ademas seria atrapado por el catch top-level
-    // y dejaria al cliente en visto). Regla universal de Enmanuel:
-    // Mateo SIEMPRE responde.
+    // Hotfix-24 (R4 caso 5): strip de bloques <parameter>/<invoke>/
+    // <function_calls> truncados al final por max_tokens hit. El R4
+    // existente (Hotfix-22 V3 r4) solo cubre <perfil_update> truncado,
+    // pero el LLM también puede emitir tool-use XML como texto en
+    // content[].text — si max_tokens corta a mitad de un <parameter
+    // name="..."> sin </parameter> cerrante, leakea al cliente.
+    // EVIDENCIA: 11 mayo 2026 14:33:04, Caso A formal PR4, Director vio
+    // <parameter name="..."> crudo en el reply.
+    //
+    // Orden: aplicar DESPUES de cleanFormat (R5 post-processor strippea
+    // markdown, no XML — orden preservado) y ANTES del empty-reply guard
+    // caso 4. Si después del strip queda vacío, el guard caso 4 captura
+    // con el fallback amable. Si queda texto válido, pasa intacto.
+    const parameterStripResult = stripParameterBlocks(botReply);
+    if (parameterStripResult.stripped) {
+      botLog("warn", "perfil_update_truncated_stripped", {
+        phone: senderPhone,
+        strippedChars: parameterStripResult.strippedChars,
+        beforeStripLength: botReply.length,
+        stop_reason: stopReason,
+      });
+      botReply = parameterStripResult.text;
+      truncatedRecoveryApplied = true;
+    }
+
+    // Empty-reply guard caso 4 (hotfix-2 Día 3, extendido R4 + R5 + Hotfix-24):
+    // si despues del strip de bloque perfil_update + tags + post-processor
+    // de formato + strip de parameter-blocks truncados el texto quedo
+    // vacio o solo whitespace, Mateo emitio solo metadata/formato sin
+    // contenido visible. Reemplazamos por fallback amable en lugar de
+    // mandar vacio que WhatsApp rechazaria con error 4xx (que ademas
+    // seria atrapado por el catch top-level y dejaria al cliente en
+    // visto). Regla universal de Enmanuel: Mateo SIEMPRE responde.
     if (!botReply || botReply.trim().length === 0) {
       botLog("warn", "empty_reply_after_strip", {
         phone: senderPhone,
