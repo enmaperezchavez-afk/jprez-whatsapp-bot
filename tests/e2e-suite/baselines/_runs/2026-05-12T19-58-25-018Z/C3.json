@@ -1,0 +1,34 @@
+{
+  "id": "C3",
+  "bloque": "C_objeciones",
+  "title": "Prefiero esperar a ver terminado",
+  "perfil": "neutral_conservador",
+  "input": "Prefiero esperar a que el proyecto esté terminado para ver antes de comprar",
+  "passed": true,
+  "api_error": null,
+  "reply": "Te entiendo perfecto, y es una postura completamente válida.\n\nLo que sí te cuento es que cuando un proyecto está terminado, dos cosas cambian: los precios suben (a veces bastante), y las mejores unidades ya no están disponibles. Los que entran en preventa se llevan los pisos y vistas que quieren, al precio más bajo.\n\nEn JPREZ llevamos 23 años entregando proyectos a tiempo — más de 1,300 unidades entregadas. El fideicomiso bajo Ley 189-11 protege tu dinero desde el día uno: no va directo a nosotros, lo administra un banco fiduciario independiente. Si por alguna razón el proyecto no avanza, los fondos se devuelven.\n\nDicho eso, cuéntame: ¿qué proyecto te llama la atención y qué es lo que más te gustaría ver antes de decidir?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"prefiere esperar a que el proyecto esté terminado para ver antes de comprar\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-esperar-terminado\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"followup_3d\"\n}\n</perfil_update>",
+  "reply_length": 1385,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "C4",
+  "bloque": "C_objeciones",
+  "title": "Espero a estar más cerca de entrega",
+  "perfil": "neutral_pragmatico",
+  "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+  "passed": false,
+  "reply": "Entiendo la lógica, pero te cuento algo que mucha gente no considera al principio.\n\nLas cuotas mensuales de JPREZ NO son un gasto — son parte del precio del apartamento que ya ibas a pagar de todas formas. La diferencia es que cuanto más tiempo tienes, más pequeña queda cada cuota.\n\nSi esperas a que esté cerca de la entrega, pasa lo contrario: menos meses = cuotas más altas (o tienes que pagar más de golpe). Y las unidades que quedan suelen ser las menos deseadas o a precios más altos.\n\nLos que entran temprano tienen las mejores unidades, los mejores pisos y las cuotas más cómodas distribuidas en más tiempo.\n\n¿Qué proyecto te está interesando? Con ese dato te calculo exactamente cómo quedarían los números hoy vs esperando.\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"prefiere entrar tarde para evitar pagar cuotas mucho tiempo\",\n  \"objecion_nueva\": true,\n  \"objecion_nueva_texto\": \"Cliente cree que es mejor comprar cerca de la entrega para no pagar cuotas durante mucho tiempo. Desconoce que cuotas más tarde = cuotas más altas.\",\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1169,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: rejuego | cuotas más bajas | plan más cómodo | cash flow | cash]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

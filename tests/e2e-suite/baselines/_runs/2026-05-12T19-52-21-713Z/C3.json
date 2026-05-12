@@ -1,0 +1,33 @@
+{
+  "id": "C3",
+  "bloque": "C_objeciones",
+  "title": "Prefiero esperar a ver terminado",
+  "perfil": "neutral_conservador",
+  "input": "Prefiero esperar a que el proyecto esté terminado para ver antes de comprar",
+  "passed": true,
+  "reply": "Te entiendo perfecto. Y es una postura válida — querer ver antes de comprometerte es lo más natural del mundo.\n\nSolo te comparto algo que vale la pena tener en mente: cuando el proyecto está terminado, las unidades que quedan suelen ser las últimas (las que nadie escogió primero), y el precio sube porque ya no hay riesgo de construcción para el comprador.\n\nLos que compran en preventa se llevan las mejores unidades, al mejor precio, y con un plan de pagos extendido que les permite ir pagando durante la construcción en vez de soltar todo junto al final.\n\nEn Puerto Plata E4, por ejemplo, ya van en 76% vendido y todavía está en construcción. Cuando entreguen en diciembre 2027, lo que quede será poco y más caro.\n\n¿Qué es lo que más te preocupa de comprar antes de verlo terminado? A veces hay formas de resolver esa duda sin tener que esperar años.\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"quiere ver terminado antes de comprar\",\n  \"objecion_nueva\": false,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"siguiente_accion_sugerida\": \"followup_3d\",\n  \"tags_nuevos\": [\"objecion-esperar-terminado\"]\n}\n</perfil_update>",
+  "reply_length": 1137,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

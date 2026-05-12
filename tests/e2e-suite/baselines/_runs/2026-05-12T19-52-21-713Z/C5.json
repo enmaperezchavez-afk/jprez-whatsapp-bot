@@ -1,0 +1,35 @@
+{
+  "id": "C5",
+  "bloque": "C_objeciones",
+  "title": "No me gusta la fecha de entrega PSE3",
+  "perfil": "neutral_timing",
+  "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+  "passed": false,
+  "reply": "Mira, te entiendo. Marzo 2029 suena lejos, pero hay una forma de verlo que cambia todo.\n\nHoy es mayo 2026 — eso son 34 meses. Y durante esos 34 meses tú estás pagando cuotas pequeñas, no el precio completo. Es decir, entras con poco, vas pagando cómodo, y cuando llegue la entrega el apartamento ya vale más de lo que pagaste.\n\nEn Puerto Plata el boom turístico es real ahora mismo. Playa Dorada es una de las zonas con mayor ocupación vacacional del país. Quien compró en preventa hace 3 años hoy tiene una plusvalía brutal.\n\nY si lo que te preocupa es el retorno rápido, tenemos la Etapa 4 que entrega en diciembre 2027 — son solo 19 meses desde hoy. Eso sí es rápido. Los apartamentos son de 2 hab (76m²) desde $163,400 y de 3 hab (93m²) desde $195,300. Ya va en 76% vendido, así que el inventario es limitado.\n\n¿Qué te interesa más — el precio de entrada de E3 o la entrega rápida de E4?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": null,\n  \"objecion_detectada\": \"tiempo de espera largo (E3 marzo 2029)\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-plazo-entrega\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1216,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: alternativas | opciones]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

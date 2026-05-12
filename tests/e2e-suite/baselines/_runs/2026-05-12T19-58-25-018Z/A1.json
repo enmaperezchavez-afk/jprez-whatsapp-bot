@@ -1,0 +1,49 @@
+{
+  "id": "A1",
+  "bloque": "A_calculos",
+  "title": "PSE3 estudio US$73,000",
+  "perfil": "neutral_primer_contacto",
+  "input": "Hola, info pse3 estudio 73k",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, te tengo. Para el Estudio de 27m² en PSE3 a $73,000 te queda así:\n\nPones $2,000 para reservar y bloquear la unidad. Después arrancamos la vinculación con los documentos. Al firmar el contrato, el 10% son $7,300. Luego cuotas mensuales de $608 durante 34 meses hasta la entrega en marzo 2029. Y contra entrega son $43,800, que normalmente se cubre con banco.\n\nEso es el plan estándar. También tenemos el plan de Feria de Mayo activo solo hasta el 31 de mayo, donde la cuota mensual baja bastante. ¿Quieres que te calcule con ese también para comparar?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"Estudio 27m² E3\",\n  \"presupuesto_mencionado\": 73000,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata\", \"E3\", \"estudio\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1171,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 73000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "US$73,000"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

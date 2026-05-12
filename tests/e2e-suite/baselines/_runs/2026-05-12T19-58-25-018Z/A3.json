@@ -1,0 +1,51 @@
+{
+  "id": "A3",
+  "bloque": "A_calculos",
+  "title": "PSE4 3hab US$195,300 cliente popi",
+  "perfil": "popi_suelto",
+  "input": "klk mateo dame el de 3 habitaciones de puerto plata etapa 4",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buena elección, te tengo. Para el de 3 habitaciones en Etapa 4 te calculo el plan ahora mismo.\nMira, el 3 habitaciones en Etapa 4 arranca desde $195,300 (93m², 2 baños, 1 parqueo, frente a Playa Dorada). El plan te queda así:\n\nPones $2,000 para reservar y bloquear la unidad. Después $19,530 completan el 10% inicial. Luego $3,662 mensuales por 16 meses mientras construyen. Y contra entrega en diciembre 2027 son $117,180 — esos los cubres con banco.\n\nTengo también un plan de Feria de Mayo activo hasta el 31 de mayo donde la cuota mensual baja bastante. ¿Quieres que te lo calcule para que compares?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"3hab-93m2-E4\",\n  \"presupuesto_mencionado\": 195300,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata-e4\", \"3hab\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 942,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 195300,
+        "plan": "10/30/60",
+        "etapa": "E4"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "US$195,300",
+        "Puerto Plata"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: US$19,530 | el 10% son | pones US$]",
+        "[any of: CONFOTUR | fideicomiso]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

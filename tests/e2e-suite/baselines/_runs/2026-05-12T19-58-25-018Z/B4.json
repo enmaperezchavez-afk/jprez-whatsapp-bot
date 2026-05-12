@@ -1,0 +1,43 @@
+{
+  "id": "B4",
+  "bloque": "B_perfiles",
+  "title": "Segunda vivienda — alquiler o personal",
+  "perfil": "neutral_experimentado",
+  "input": "Tengo casa propia, busco apartamento adicional, puede ser para mí o alquilar",
+  "passed": true,
+  "api_error": null,
+  "reply": "Qué bueno que nos escribes. Mira, con esa flexibilidad — uso propio o alquiler — tienes varias opciones interesantes en JPREZ.\n\nPara ayudarte a recomendar la ideal, dime: ¿tienes alguna zona preferida en Santo Domingo, o estás abierto a explorar también Puerto Plata como opción de inversión turística?\n\nY un dato más: ¿manejas un presupuesto estimado en mente?\n<perfil_update>\n{\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\", \"segunda-vivienda\", \"tiene-casa-propia\"],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 697,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

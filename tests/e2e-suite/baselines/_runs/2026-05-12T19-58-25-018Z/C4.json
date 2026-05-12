@@ -1,0 +1,36 @@
+{
+  "id": "C4",
+  "bloque": "C_objeciones",
+  "title": "Espero a estar más cerca de entrega",
+  "perfil": "neutral_pragmatico",
+  "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+  "passed": false,
+  "api_error": null,
+  "reply": "Entiendo la lógica, pero te doy vuelta al argumento:\n\nMientras más cerca de la entrega, menos cuotas pagás... pero el precio ya subió. En preventa agarrás el precio más bajo y las cuotas son pequeñas porque se distribuyen en más meses.\n\nEl que espera termina pagando más por la misma unidad, y sin opciones de elegir la unidad que le gusta porque las mejores ya están tomadas.\n\n¿Qué proyecto te interesa? Con eso te calculo exactamente cómo quedan los números hoy.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"prefiere esperar a estar más cerca de entrega para no pagar cuotas largo tiempo\",\n  \"objecion_nueva\": false,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"tags_nuevos\": [\"objecion-timing-cuotas\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1079,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: rejuego | cuotas más bajas | plan más cómodo | cash flow | cash]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

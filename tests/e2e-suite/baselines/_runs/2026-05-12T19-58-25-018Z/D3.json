@@ -1,0 +1,50 @@
+{
+  "id": "D3",
+  "bloque": "D_legales",
+  "title": "Cliente en inglés — preguntar idioma",
+  "perfil": "extranjero_ingles",
+  "input": "Hi, can foreigners buy property in Dominican Republic?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, claro que sí — foreigners have the exact same property rights as Dominicans here in the DR. No restrictions, no residency required.\n\nHere's what you need to know:\n\nYou can buy, rent out, sell, and even inherit property just like a local. The whole process is protected by a real estate trust (fideicomiso) under Law 189-11 — meaning your money is held by an independent fiduciary bank from day one, not directly by the developer. That's a big deal for peace of mind.\n\nFor documentation, you'd typically need your valid passport, a secondary ID from your country, last year's tax return, bank statements from the last 3 months, and if you're salaried — a letter from your employer. We handle the KYC form (fiduciaria) after you reserve a unit.\n\nIf you're interested in financing, banks like Scotiabank and Banco Popular offer mortgages to foreigners — typically up to 70-80% of the property value.\n\nAnd if you're looking at our Puerto Plata projects (Etapa 3 or Etapa 4), there's a big bonus: CONFOTUR (Law 158-01) applies, meaning you get a 15-year IPI tax exemption plus you skip the 3% transfer tax. That's a significant long-term saving. Our other projects (Crux, PR3, PR4) are not tourist-classified, so CONFOTUR doesn't apply there.\n\nOne honest heads-up: our projects don't qualify as \"low-cost housing\" under DGII, so the First Home Bonus (Bono Primera Vivienda) doesn't apply — but the fideicomiso protection and CONFOTUR benefits more than make up for it depending on your goals.\n\nWhat are you looking for — a vacation home, a rental investment, or a place to live? That'll help me point you to the right project. 🌴\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"extranjero\", \"primera-consulta\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 2208,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 163400,
+        "etapa": "E4",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: idioma | language | english | spanish | español | inglés | prefer | prefieres]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": false,
+      "found": [
+        "Bono Primera Vivienda",
+        "Bono Primera Vivienda"
+      ]
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

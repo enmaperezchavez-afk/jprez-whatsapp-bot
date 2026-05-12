@@ -14,8 +14,8 @@
 //
 // Si ANTHROPIC_API_KEY no está, la suite skipea todos los tests (sin fallar).
 
-import { describe, it, expect } from "vitest";
-import { readFileSync, mkdirSync, writeFileSync } from "fs";
+import { describe, it, expect, afterAll } from "vitest";
+import { readFileSync, mkdirSync, writeFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -35,8 +35,14 @@ const fixtures = JSON.parse(
 
 const HAS_API_KEY = !!process.env.ANTHROPIC_API_KEY;
 
-// Acumulador de resultados para escribir baseline JSON al final.
-const baselineResults = [];
+// Setup run dir: cada test escribe SU result a un archivo individual aquí.
+// Survival-first: si vitest paraleliza workers o si afterAll falla, el
+// run dir igual tiene los results parseable después.
+const RUN_TIMESTAMP = new Date().toISOString().replace(/[:.]/g, "-");
+const RUN_DIR = join(__dirname, "baselines", "_runs", RUN_TIMESTAMP);
+if (HAS_API_KEY) {
+  mkdirSync(RUN_DIR, { recursive: true });
+}
 
 describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
   for (const esc of fixtures.escenarios) {
@@ -44,8 +50,22 @@ describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
     runOrSkip(
       `${esc.id}: ${esc.title}`,
       async () => {
-        const response = await askMateo(esc.input);
-        const text = response.text;
+        // Pacing 3s entre tests: cada call usa ~30K input tokens.
+        // Tier 2 Sonnet = 450K tokens/min sliding window. 20 tests
+        // back-to-back saturaron en runs previos → algunos abortan.
+        // 3s pacing = ~20 tests/min = 600K/min, todavía caliente pero
+        // distribuido. Si vuelve a saturar, subir a 5s.
+        await new Promise((r) => setTimeout(r, 3000));
+
+        let response, text, errorMsg = null;
+        try {
+          response = await askMateo(esc.input);
+          text = response.text || "";
+        } catch (e) {
+          errorMsg = e.message || String(e);
+          response = { iterations: 0, stop_reasons: [], tool_calls: [] };
+          text = "";
+        }
 
         // Combinar anti-keywords del escenario + universales
         const allAntiKeywords = [
@@ -63,35 +83,41 @@ describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
         const r3 = validateAntiKeywords(text, allAntiKeywords);
         const r4 = validateToneSignals(text, esc.expectedToneSignals, allAntiTone);
 
-        const allPassed = r1.passed && r2.passed && r3.passed && r4.passed;
+        const allPassed = !errorMsg && r1.passed && r2.passed && r3.passed && r4.passed;
 
-        // Guardar para baseline
-        baselineResults.push({
+        // Persist INMEDIATO a archivo per-scenario (sobrevive a crashes
+        // y a paralelización de vitest workers + errores de API).
+        const result = {
           id: esc.id,
           bloque: esc.bloque,
           title: esc.title,
           perfil: esc.perfil,
           input: esc.input,
           passed: allPassed,
+          api_error: errorMsg,
           reply: text,
           reply_length: text.length,
           iterations: response.iterations,
           stop_reasons: response.stop_reasons,
           tool_calls: response.tool_calls,
-          checks: {
+          checks: errorMsg ? null : {
             keywords_required: r1,
             keywords_any: r2,
             anti_keywords: r3,
             tone: r4,
           },
-        });
+        };
+        writeFileSync(join(RUN_DIR, `${esc.id}.json`), JSON.stringify(result, null, 2));
 
         // Build error message si falla
         const errors = [];
-        if (!r1.passed) errors.push(`KEYWORDS missing: ${r1.missing.join(", ")}`);
-        if (!r2.passed) errors.push(`KEYWORDS-ANY missing: ${r2.missing.join(" | ")}`);
-        if (!r3.passed) errors.push(`ANTI-KEYWORDS found: ${r3.found.join(", ")}`);
-        if (!r4.passed) errors.push(`TONE: ${r4.reasons.join(" | ")}`);
+        if (errorMsg) errors.push(`API ERROR: ${errorMsg}`);
+        if (!errorMsg) {
+          if (!r1.passed) errors.push(`KEYWORDS missing: ${r1.missing.join(", ")}`);
+          if (!r2.passed) errors.push(`KEYWORDS-ANY missing: ${r2.missing.join(" | ")}`);
+          if (!r3.passed) errors.push(`ANTI-KEYWORDS found: ${r3.found.join(", ")}`);
+          if (!r4.passed) errors.push(`TONE: ${r4.reasons.join(" | ")}`);
+        }
 
         expect(
           allPassed,
@@ -102,10 +128,19 @@ describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
     );
   }
 
-  // After-all hook: escribir baseline JSON al disco.
-  // No es un test — corre siempre que la suite haya corrido.
-  it("zz_write_baseline (writes baseline file, never fails)", () => {
-    if (!HAS_API_KEY || baselineResults.length === 0) return;
+  // afterAll: lee todos los archivos individuales del RUN_DIR y los
+  // consolida al baseline JSON. Robust contra paralelización porque
+  // cada test escribió SU archivo inmediato.
+  afterAll(() => {
+    if (!HAS_API_KEY) return;
+
+    const files = readdirSync(RUN_DIR).filter((f) => f.endsWith(".json"));
+    if (files.length === 0) return;
+
+    const results = files
+      .map((f) => JSON.parse(readFileSync(join(RUN_DIR, f), "utf-8")))
+      // Ordenar por bloque + id para output predecible
+      .sort((a, b) => a.id.localeCompare(b.id));
 
     const baselineDir = join(__dirname, "baselines");
     mkdirSync(baselineDir, { recursive: true });
@@ -115,10 +150,11 @@ describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
       version: "1.0",
       generated_at: new Date().toISOString(),
       doctrine: "V3.6 base (commit 5925d4c, Hotfix-24 final)",
-      total: baselineResults.length,
-      passed: baselineResults.filter((r) => r.passed).length,
-      failed: baselineResults.filter((r) => !r.passed).length,
-      results: baselineResults,
+      run_dir: RUN_DIR,
+      total: results.length,
+      passed: results.filter((r) => r.passed).length,
+      failed: results.filter((r) => !r.passed).length,
+      results,
     };
 
     writeFileSync(
@@ -129,7 +165,5 @@ describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
       join(baselineDir, "baseline-latest.json"),
       JSON.stringify(out, null, 2),
     );
-
-    expect(true).toBe(true); // always passes
   });
 });

@@ -1,0 +1,38 @@
+{
+  "id": "C2",
+  "bloque": "C_objeciones",
+  "title": "No tengo el 10% completo",
+  "perfil": "neutral_interesado",
+  "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+  "passed": false,
+  "reply": "Claro que sí, eso lo trabajamos sin problema.\n\nPrimero dime, ¿qué proyecto te interesa y cuánto puedes manejar mensual? Con eso te armo un plan que te cuadre.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"no tiene el 10% completo\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"liquidez-limitada-inicio\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 764,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: 5% | fraccionar | dividir | cuotas | completar]",
+        "[any of: reserva | apartar]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [tranquilo, te tengo, mira]"
+      ]
+    }
+  }
+}

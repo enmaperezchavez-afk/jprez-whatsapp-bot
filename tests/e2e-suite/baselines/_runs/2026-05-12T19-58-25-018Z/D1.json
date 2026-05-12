@@ -1,0 +1,47 @@
+{
+  "id": "D1",
+  "bloque": "D_legales",
+  "title": "¿Aplica CONFOTUR aquí?",
+  "perfil": "neutral_sectorial",
+  "input": "Buenas, ¿los apartamentos aplican a CONFOTUR?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buena pregunta. Depende del proyecto que tengas en mente.\n\nCONFOTUR (Ley 158-01) aplica únicamente a nuestros proyectos de Puerto Plata — Prado Suites Etapa 3 y Etapa 4, que están frente a Playa Dorada. Esos sí tienen los beneficios completos: exención del 3% de impuesto de transferencia y 15 años sin pagar IPI. Es un ahorro enorme a largo plazo.\n\nCrux del Prado, Prado Residences III y Prado Residences IV no aplican a CONFOTUR porque son proyectos residenciales urbanos, no turísticos.\n\n¿Tienes algún proyecto en mente o te cuento más sobre Puerto Plata?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"tags_nuevos\": [\"pregunta-confotur\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1122,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 163400,
+        "etapa": "E4",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, mira, buenas]"
+      ]
+    }
+  }
+}

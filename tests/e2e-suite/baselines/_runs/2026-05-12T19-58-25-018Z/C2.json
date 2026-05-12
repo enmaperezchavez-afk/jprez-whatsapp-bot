@@ -1,0 +1,34 @@
+{
+  "id": "C2",
+  "bloque": "C_objeciones",
+  "title": "No tengo el 10% completo",
+  "perfil": "neutral_interesado",
+  "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Tranquilo, eso se trabaja. Tenemos dos formas de manejarlo.\n\nPrimera: puedes reservar con solo $2,000 y eso bloquea la unidad para ti. Después vamos completando el 10% en cuotas mensuales durante los primeros meses, sin necesidad de tenerlo todo de una vez.\n\nSegunda: si el flujo mensual te aprieta, podemos fraccionar ese 10% en 4 a 6 cuotas más cómodas antes de pasar a las cuotas normales de construcción.\n\nLo único que sí es regla fija: el contrato firmado te llega cuando completes ese 10%, porque así está estipulado en el contrato JPREZ.\n\n¿Qué proyecto te interesa y cuánto puedes manejar mensual? Con eso te armo un plan que te cuadre.\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"no tiene el 10% completo\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 843,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}
