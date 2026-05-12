@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JPREZ Bot — Health</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 24px;
+  min-height: 100vh;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #30363d;
+}
+h1 { font-size: 24px; color: #58a6ff; }
+.window-selector select {
+  background: #161b22;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+}
+.card h2 {
+  font-size: 12px;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.card .value {
+  font-size: 28px;
+  font-weight: 600;
+  color: #e6edf3;
+}
+.card .sub {
+  font-size: 12px;
+  color: #8b949e;
+  margin-top: 4px;
+}
+.status-good { color: #3fb950; }
+.status-warn { color: #d29922; }
+.status-bad { color: #f85149; }
+.errors {
+  background: #2d1414;
+  border: 1px solid #f85149;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: #ffa198;
+}
+.errors h3 { margin-bottom: 6px; }
+.last-update {
+  text-align: right;
+  font-size: 11px;
+  color: #6e7681;
+  margin-top: 16px;
+}
+.loading, .error-panel {
+  text-align: center;
+  padding: 40px;
+  color: #8b949e;
+}
+.error-panel { color: #f85149; }
+input[type="password"] {
+  background: #161b22;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 280px;
+  margin-right: 8px;
+}
+button {
+  background: #238636;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:hover { background: #2ea043; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>JPREZ Bot — Health</h1>
+    <div class="window-selector">
+      <label for="hours">Ventana:</label>
+      <select id="hours">
+        <option value="1">1 hora</option>
+        <option value="6">6 horas</option>
+        <option value="24" selected>24 horas</option>
+        <option value="168">7 días</option>
+      </select>
+    </div>
+  </header>
+
+  <div id="auth" style="display:none; padding: 24px; background: #161b22; border-radius: 8px; margin-bottom: 16px;">
+    <p style="margin-bottom: 12px;">Ingresa el HEALTH_DASHBOARD_TOKEN para acceder:</p>
+    <input type="password" id="token-input" placeholder="Token..." />
+    <button onclick="saveToken()">Acceder</button>
+  </div>
+
+  <div id="content" class="loading">Cargando métricas...</div>
+
+  <div class="last-update" id="last-update"></div>
+</div>
+
+<script>
+const AUTH_KEY = "jprez_health_token";
+
+function getToken() {
+  return sessionStorage.getItem(AUTH_KEY);
+}
+
+function saveToken() {
+  const v = document.getElementById("token-input").value.trim();
+  if (!v) return;
+  sessionStorage.setItem(AUTH_KEY, v);
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("content").style.display = "";
+  fetchHealth();
+}
+
+function showAuth() {
+  document.getElementById("auth").style.display = "";
+  document.getElementById("content").style.display = "none";
+}
+
+function fmt(n) {
+  if (typeof n !== "number") return "—";
+  return n.toLocaleString("en-US");
+}
+
+function statusClass(value, thresholds) {
+  // thresholds: { good: <=, warn: <=, bad: > }
+  if (value <= thresholds.good) return "status-good";
+  if (value <= thresholds.warn) return "status-warn";
+  return "status-bad";
+}
+
+async function fetchHealth() {
+  const token = getToken();
+  if (!token) { showAuth(); return; }
+  const hours = document.getElementById("hours").value;
+  const content = document.getElementById("content");
+  content.className = "loading";
+  content.textContent = "Cargando métricas...";
+
+  try {
+    const res = await fetch(`/api/health?hours=${hours}`, {
+      headers: { "Authorization": "Bearer " + token },
+    });
+    if (res.status === 401) {
+      sessionStorage.removeItem(AUTH_KEY);
+      showAuth();
+      return;
+    }
+    if (!res.ok) {
+      const body = await res.text();
+      content.className = "error-panel";
+      content.textContent = "Error " + res.status + ": " + body.slice(0, 300);
+      return;
+    }
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    content.className = "error-panel";
+    content.textContent = "Network error: " + e.message;
+  }
+}
+
+function render(d) {
+  const content = document.getElementById("content");
+  content.className = "";
+
+  const cacheStatus = statusClass(100 - d.cache.hitRatePct, { good: 30, warn: 60 });
+  const failureStatus = statusClass(d.failures.failureRatePct, { good: 2, warn: 5 });
+  const toolLoopStatus = statusClass(d.toolLoop.avgIterations, { good: 1.5, warn: 2.5 });
+  const promptStatus = statusClass(d.prompt.avgInputTokens, { good: 15000, warn: 30000 });
+  const rateLimitStatus = statusClass(d.ops.rateLimitWarnings, { good: 0, warn: 5 });
+
+  content.innerHTML = `
+    ${d.errors && d.errors.length > 0 ? `
+      <div class="errors">
+        <h3>⚠ Errores en queries (${d.errors.length})</h3>
+        ${d.errors.map(e => `<div>${e.metric}: ${e.error}</div>`).join("")}
+      </div>
+    ` : ""}
+
+    <div class="grid">
+      <div class="card">
+        <h2>System Prompt Size</h2>
+        <div class="value ${promptStatus}">${fmt(d.prompt.avgInputTokens)}</div>
+        <div class="sub">tokens (avg) — max ${fmt(d.prompt.maxInputTokens)}</div>
+      </div>
+
+      <div class="card">
+        <h2>Cache Hit Rate</h2>
+        <div class="value ${cacheStatus}">${d.cache.hitRatePct}%</div>
+        <div class="sub">${fmt(d.cache.readTokens)} read / ${fmt(d.cache.freshInputTokens + d.cache.creationTokens + d.cache.readTokens)} total</div>
+      </div>
+
+      <div class="card">
+        <h2>Tool Use Loop</h2>
+        <div class="value ${toolLoopStatus}">${d.toolLoop.avgIterations}</div>
+        <div class="sub">avg iters — max ${d.toolLoop.maxIterations}</div>
+      </div>
+
+      <div class="card">
+        <h2>Failure Rate</h2>
+        <div class="value ${failureStatus}">${d.failures.failureRatePct}%</div>
+        <div class="sub">${d.failures.seComplicoCount} "se me complicó" / ${d.failures.totalResponses} responses</div>
+      </div>
+
+      <div class="card">
+        <h2>Cost per Message</h2>
+        <div class="value">$${d.cost.perMessageUsd.toFixed(4)}</div>
+        <div class="sub">total $${d.cost.totalUsd.toFixed(2)} — Sonnet 4.6</div>
+      </div>
+
+      <div class="card">
+        <h2>Messages</h2>
+        <div class="value">${fmt(d.volume.messagesReceived)}</div>
+        <div class="sub">${d.volume.uniquePhones} unique phones</div>
+      </div>
+
+      <div class="card">
+        <h2>Rate Limit Warnings</h2>
+        <div class="value ${rateLimitStatus}">${d.ops.rateLimitWarnings}</div>
+        <div class="sub">claude_ratelimit_warning hits</div>
+      </div>
+
+      <div class="card">
+        <h2>Parameter Block Strips</h2>
+        <div class="value">${d.ops.parameterBlockStrips}</div>
+        <div class="sub">R4 c5 Hotfix-24 hits</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("last-update").textContent =
+    "Last updated: " + new Date(d.lastUpdated).toLocaleString() +
+    " · Window: " + d.window.hours + "h";
+}
+
+// Init
+document.getElementById("hours").addEventListener("change", fetchHealth);
+if (getToken()) {
+  fetchHealth();
+  // Auto-refresh cada 60s (mismo cycle que cache CDN)
+  setInterval(fetchHealth, 60000);
+} else {
+  showAuth();
+}
+</script>
+</body>
+</html>
