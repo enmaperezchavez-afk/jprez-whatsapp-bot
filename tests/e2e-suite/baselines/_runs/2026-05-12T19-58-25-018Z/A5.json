@@ -1,0 +1,36 @@
+{
+  "id": "A5",
+  "bloque": "A_calculos",
+  "title": "Crux Torre 6 US$105,000 cliente formal cercano",
+  "perfil": "formal_cercano",
+  "input": "Buenos días, me interesa Crux del Prado. Tienen unidades disponibles en Torre 6?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buenos días, qué bueno que nos escribes. Sí, en Torre 6 de Crux del Prado tenemos 42 de 50 unidades disponibles — hay buena selección todavía.\n\nSon apartamentos de 100m², 3 habitaciones, 2 baños, con 2 parqueos incluidos. Entrega julio 2027. Precios desde US$98,292 en piso 1 hasta US$114,992 en piso 13.\n\nEl plan de pago es cómodo: reservas con solo US$1,000, pagas 5% al firmar el contrato, 25% en cuotas mensuales durante construcción, y el 70% restante contra entrega.\n\n¿Buscas para vivir o como inversión, y tienes preferencia de piso alto o bajo?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"crux\",\n  \"tipologia_interes\": \"Torre 6\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 764,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

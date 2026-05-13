@@ -1,0 +1,45 @@
+{
+  "id": "B5",
+  "bloque": "B_perfiles",
+  "title": "Inversionista renta",
+  "perfil": "neutral_business",
+  "input": "Hola, busco apartamento puramente para inversión, quiero rentarlo. Cuál me conviene?",
+  "passed": false,
+  "reply": "Hola, qué bueno que nos escribes. Para orientarte bien, ayúdame con un par de cosas rápidas:\n\n¿Tienes un presupuesto estimado en mente? ¿Y prefieres algo en Santo Domingo o te interesa también la playa (Puerto Plata)?\n\nCon eso te digo exactamente cuál proyecto te da el mejor retorno. 🎯\n<perfil_update>\n{\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\", \"renta\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 570,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: CONFOTUR | IPI exento | 15 años]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

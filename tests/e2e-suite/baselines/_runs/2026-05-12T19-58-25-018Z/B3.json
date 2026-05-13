@@ -1,0 +1,49 @@
+{
+  "id": "B3",
+  "bloque": "B_perfiles",
+  "title": "Extranjero residente RD — pregunta idioma",
+  "perfil": "extranjero_residente_RD",
+  "input": "Soy americano viviendo en RD hace 3 años, me interesa comprar",
+  "passed": false,
+  "api_error": null,
+  "reply": "¡Qué bueno que nos escribes! Tres años en RD ya te saben a casa 😄\n\nMira, siendo americano con residencia aquí tienes exactamente los mismos derechos que un dominicano para comprar — sin restricciones, sin trámites extra complicados.\n\nTenemos proyectos en Santo Domingo y en Puerto Plata frente al mar. Para orientarte bien, cuéntame: ¿buscas algo para vivir tú mismo, o más como inversión para alquilar?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": \"Santo Domingo, RD\",\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"extranjero\", \"americano\", \"residente-rd\", \"3-años-rd\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1019,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 163500,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: idioma | español | inglés | english | spanish | qué prefieres | language]",
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, hola, welcome, hey]"
+      ]
+    }
+  }
+}

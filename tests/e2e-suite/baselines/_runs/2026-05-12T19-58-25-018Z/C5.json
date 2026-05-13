@@ -1,0 +1,36 @@
+{
+  "id": "C5",
+  "bloque": "C_objeciones",
+  "title": "No me gusta la fecha de entrega PSE3",
+  "perfil": "neutral_timing",
+  "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+  "passed": false,
+  "api_error": null,
+  "reply": "Mira, te entiendo — son casi 3 años desde hoy.\n\nPero hay una forma de verlo diferente: esos 35 meses que faltan hasta marzo 2029 son exactamente los meses que tienes para ir pagando cómodo, sin apuro. En vez de soltar todo de golpe, lo vas distribuyendo poco a poco mientras el apartamento se construye.\n\nY la ubicación es frente a Playa Dorada, Puerto Plata — zona en pleno boom turístico. El que entró hace 3 años ya está viendo la plusvalía.\n\nDicho eso, si quieres algo más pronto, Puerto Plata E4 entrega en diciembre 2027 — un año y pico antes. Eso sí, solo tiene 2 hab y 3 hab estándar, y el precio arranca en $163,400.\n\n¿Qué tipo de unidad tienes en mente? Con eso te digo si E3, E4, o algún otro proyecto te cuadra mejor.\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"objecion_detectada\": \"tiempo de espera largo\",\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-tiempo-espera\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1008,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: alternativas | opciones]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

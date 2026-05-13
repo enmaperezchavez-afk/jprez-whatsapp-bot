@@ -1,0 +1,64 @@
+{
+  "id": "B2",
+  "bloque": "B_perfiles",
+  "title": "Pregunta financiamiento bancario",
+  "perfil": "neutral_pragmatico",
+  "input": "Hola, me interesa PR4. ¿El banco me financia?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, buenas tardes. Claro que sí, PR4 tiene muy buena aceptación bancaria.\n\nEl proceso normal es que el banco financia hasta el 70%-80% del valor de la unidad contra entrega. Bancos como Popular, BHD León, Scotiabank y APAP trabajan bien con proyectos JPREZ. APAP por ejemplo llega hasta el 90% con plazos de hasta 40 años.\n\nLo que te recomiendo es arrancar la pre-aprobación bancaria ahora, no esperar a la entrega en agosto 2027. Eso te da poder negociador y fija condiciones antes de tiempo.\n\nPara empezar necesito saber tu perfil: ¿eres asalariado o tienes negocio propio?\nY para que tengas el panorama completo, te pongo un ejemplo con la unidad más accesible de PR4 (Tipo F, 52m², desde $140,000):\n\nApartas con $2,000, después completas el 10% que son $14,000, cuotas mensuales de $2,800 durante 15 meses, y contra entrega $98,000 — ese monto es el que cubres con el banco.\n\n¿Eres asalariado o tienes negocio propio? Con eso te digo exactamente qué documentos necesitas para arrancar.\nCorrijo los números exactos con la unidad Tipo F a $140,000: pones $14,000 para el 10% inicial, cuotas de $2,800 mensuales por 15 meses, y $84,000 contra entrega que cubre el banco.\n\nAquí te mando el brochure de PR4 para que veas todas las tipologías disponibles. ¿Eres asalariado o tienes negocio propio?",
+  "reply_length": 1297,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "tool_use"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 157500,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 140000,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 140000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]",
+        "[any of: construcción | durante construcción]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

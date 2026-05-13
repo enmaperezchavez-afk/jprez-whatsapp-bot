@@ -1,0 +1,867 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-05-12T20:03:41.178Z",
+  "doctrine": "V3.6 base (commit 5925d4c, Hotfix-24 final)",
+  "run_dir": "C:\\Users\\enmap\\jprez-whatsapp-bot\\tests\\e2e-suite\\baselines\\_runs\\2026-05-12T19-58-25-018Z",
+  "total": 20,
+  "passed": 6,
+  "failed": 14,
+  "results": [
+    {
+      "id": "A1",
+      "bloque": "A_calculos",
+      "title": "PSE3 estudio US$73,000",
+      "perfil": "neutral_primer_contacto",
+      "input": "Hola, info pse3 estudio 73k",
+      "passed": false,
+      "api_error": null,
+      "reply": "Hola, te tengo. Para el Estudio de 27m² en PSE3 a $73,000 te queda así:\n\nPones $2,000 para reservar y bloquear la unidad. Después arrancamos la vinculación con los documentos. Al firmar el contrato, el 10% son $7,300. Luego cuotas mensuales de $608 durante 34 meses hasta la entrega en marzo 2029. Y contra entrega son $43,800, que normalmente se cubre con banco.\n\nEso es el plan estándar. También tenemos el plan de Feria de Mayo activo solo hasta el 31 de mayo, donde la cuota mensual baja bastante. ¿Quieres que te calcule con ese también para comparar?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"Estudio 27m² E3\",\n  \"presupuesto_mencionado\": 73000,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata\", \"E3\", \"estudio\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+      "reply_length": 1171,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "puertoPlata",
+            "precio_usd": 73000,
+            "etapa": "E3",
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": false,
+          "missing": [
+            "US$73,000"
+          ]
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: fideicomiso | Ley 189-11]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "A2",
+      "bloque": "A_calculos",
+      "title": "PSE3 2hab US$138,000 cliente formal",
+      "perfil": "formal_mayor_ejecutivo",
+      "input": "Buenas tardes. Quisiera obtener información sobre el apartamento de dos habitaciones en Prado Suites Puerto Plata, etapa 3.",
+      "passed": false,
+      "api_error": null,
+      "reply": "Buenas tardes. Con gusto le explico todo sobre el 2 habitaciones en Prado Suites Puerto Plata Etapa 3.\n\nEn la Etapa 3 el apartamento de 2 habitaciones tiene 67m², 2 baños y 1 parqueo. Los precios van desde US$138,000 hasta US$154,000 según el nivel y la orientación. La entrega está programada para marzo de 2029.\n\nEl plan de pago es 10/30/60: reserva con US$2,000, después el 10% para completar la separación, luego el 30% en cuotas mensuales durante la construcción, y el 60% contra entrega que normalmente se cubre con financiamiento bancario.\n\nDéjame calcularle las cuotas exactas para que vea los números concretos.\nAquí le presento los números según el rango de precios:\n\nPara una unidad desde US$138,000: pone US$13,800 de inicial (completando el 10%), luego US$1,150 mensuales durante la construcción, y US$82,800 contra entrega en marzo de 2029.\n\nPara una unidad desde US$154,000: pone US$15,400 de inicial, cuotas de US$1,283 al mes, y US$92,400 contra entrega.\n\nEl complejo está frente a Playa Dorada, ideal tanto para uso vacacional como para inversión en renta turística. Toda la operación está protegida bajo fideicomiso Ley 189-11.\n\n¿Le interesa alguna unidad en particular, o prefiere que le indique cuáles están disponibles actualmente en esa tipología?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"2 hab 67m² E3\",\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata-e3\", \"2hab\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+      "reply_length": 1875,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "puertoPlata",
+            "precio_usd": 138000,
+            "etapa": "E3",
+            "plan": "10/30/60"
+          }
+        },
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "puertoPlata",
+            "precio_usd": 154000,
+            "etapa": "E3",
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": false,
+          "missing": [
+            "CONFOTUR"
+          ]
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "A3",
+      "bloque": "A_calculos",
+      "title": "PSE4 3hab US$195,300 cliente popi",
+      "perfil": "popi_suelto",
+      "input": "klk mateo dame el de 3 habitaciones de puerto plata etapa 4",
+      "passed": false,
+      "api_error": null,
+      "reply": "Buena elección, te tengo. Para el de 3 habitaciones en Etapa 4 te calculo el plan ahora mismo.\nMira, el 3 habitaciones en Etapa 4 arranca desde $195,300 (93m², 2 baños, 1 parqueo, frente a Playa Dorada). El plan te queda así:\n\nPones $2,000 para reservar y bloquear la unidad. Después $19,530 completan el 10% inicial. Luego $3,662 mensuales por 16 meses mientras construyen. Y contra entrega en diciembre 2027 son $117,180 — esos los cubres con banco.\n\nTengo también un plan de Feria de Mayo activo hasta el 31 de mayo donde la cuota mensual baja bastante. ¿Quieres que te lo calcule para que compares?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"3hab-93m2-E4\",\n  \"presupuesto_mencionado\": 195300,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata-e4\", \"3hab\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+      "reply_length": 942,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "puertoPlata",
+            "precio_usd": 195300,
+            "plan": "10/30/60",
+            "etapa": "E4"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": false,
+          "missing": [
+            "US$195,300",
+            "Puerto Plata"
+          ]
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: US$19,530 | el 10% son | pones US$]",
+            "[any of: CONFOTUR | fideicomiso]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "A4",
+      "bloque": "A_calculos",
+      "title": "PR4 Tipo D loft US$140,000",
+      "perfil": "neutral_directo",
+      "input": "Cuanto sale el loft de pr4?",
+      "passed": false,
+      "api_error": null,
+      "reply": "Déjame calcular el plan de pago para el loft de PR4 más accesible (el 4D a US$157,500).\nMira, en PR4 tenemos 4 lofts disponibles (Tipo D, 63m², 1 hab, 1.5 baños, 1 parqueo):\n\nPiso 4 a $157,500 — Piso 6 a $160,500 — Piso 8 a $163,500 — Piso 10 a $166,500.\n\nTe tomo el del piso 4 como referencia: pones $15,750 para arrancar, después $3,150 mensuales por 15 meses hasta la entrega en agosto 2027, y $94,500 contra entrega que normalmente se cubre con banco.\n\n¿Buscas piso bajo, intermedio o alto?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": \"loft tipo D\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"siguiente_accion_sugerida\": \"send_brochure\",\n  \"tags_nuevos\": [\"loft\", \"pr4\"]\n}\n</perfil_update>",
+      "reply_length": 745,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr4",
+            "precio_usd": 157500,
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": false,
+          "missing": [
+            "US$140,000"
+          ]
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: US$14,000 | el 10% son | pones US$]",
+            "[any of: Evaristo Morales | Evaristo]",
+            "[any of: fideicomiso | Ley 189-11]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "A5",
+      "bloque": "A_calculos",
+      "title": "Crux Torre 6 US$105,000 cliente formal cercano",
+      "perfil": "formal_cercano",
+      "input": "Buenos días, me interesa Crux del Prado. Tienen unidades disponibles en Torre 6?",
+      "passed": false,
+      "api_error": null,
+      "reply": "Buenos días, qué bueno que nos escribes. Sí, en Torre 6 de Crux del Prado tenemos 42 de 50 unidades disponibles — hay buena selección todavía.\n\nSon apartamentos de 100m², 3 habitaciones, 2 baños, con 2 parqueos incluidos. Entrega julio 2027. Precios desde US$98,292 en piso 1 hasta US$114,992 en piso 13.\n\nEl plan de pago es cómodo: reservas con solo US$1,000, pagas 5% al firmar el contrato, 25% en cuotas mensuales durante construcción, y el 70% restante contra entrega.\n\n¿Buscas para vivir o como inversión, y tienes preferencia de piso alto o bajo?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"crux\",\n  \"tipologia_interes\": \"Torre 6\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+      "reply_length": 764,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: fideicomiso | Ley 189-11]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "B1",
+      "bloque": "B_perfiles",
+      "title": "Primera vivienda sin definir — discovery",
+      "perfil": "neutral_primer_contacto",
+      "input": "Hola, me gustaría comprar un apartamento con ustedes",
+      "passed": false,
+      "api_error": null,
+      "reply": "¡Hola! Qué bueno que nos escribes, bienvenido.\n\nSoy Mateo Reyes, del equipo de JPREZ. Tenemos proyectos en Santo Domingo y Puerto Plata, para todos los perfiles — desde inversión hasta vivienda familiar.\n\nPara orientarte bien, cuéntame: ¿buscas algo para vivir tú, para alquilar/invertir, o tienes algo específico en mente?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 869,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr3",
+            "precio_usd": 156000
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: ¿Con quién tengo el placer? | cómo te llamas | tu nombre]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": false,
+          "found": [
+            "plata"
+          ]
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "B2",
+      "bloque": "B_perfiles",
+      "title": "Pregunta financiamiento bancario",
+      "perfil": "neutral_pragmatico",
+      "input": "Hola, me interesa PR4. ¿El banco me financia?",
+      "passed": false,
+      "api_error": null,
+      "reply": "Hola, buenas tardes. Claro que sí, PR4 tiene muy buena aceptación bancaria.\n\nEl proceso normal es que el banco financia hasta el 70%-80% del valor de la unidad contra entrega. Bancos como Popular, BHD León, Scotiabank y APAP trabajan bien con proyectos JPREZ. APAP por ejemplo llega hasta el 90% con plazos de hasta 40 años.\n\nLo que te recomiendo es arrancar la pre-aprobación bancaria ahora, no esperar a la entrega en agosto 2027. Eso te da poder negociador y fija condiciones antes de tiempo.\n\nPara empezar necesito saber tu perfil: ¿eres asalariado o tienes negocio propio?\nY para que tengas el panorama completo, te pongo un ejemplo con la unidad más accesible de PR4 (Tipo F, 52m², desde $140,000):\n\nApartas con $2,000, después completas el 10% que son $14,000, cuotas mensuales de $2,800 durante 15 meses, y contra entrega $98,000 — ese monto es el que cubres con el banco.\n\n¿Eres asalariado o tienes negocio propio? Con eso te digo exactamente qué documentos necesitas para arrancar.\nCorrijo los números exactos con la unidad Tipo F a $140,000: pones $14,000 para el 10% inicial, cuotas de $2,800 mensuales por 15 meses, y $84,000 contra entrega que cubre el banco.\n\nAquí te mando el brochure de PR4 para que veas todas las tipologías disponibles. ¿Eres asalariado o tienes negocio propio?",
+      "reply_length": 1297,
+      "iterations": 3,
+      "stop_reasons": [
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr4",
+            "precio_usd": 157500,
+            "plan": "10/30/60"
+          }
+        },
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr4",
+            "precio_usd": 140000,
+            "plan": "10/30/60"
+          }
+        },
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr4",
+            "precio_usd": 140000,
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: fideicomiso | Ley 189-11]",
+            "[any of: construcción | durante construcción]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "B3",
+      "bloque": "B_perfiles",
+      "title": "Extranjero residente RD — pregunta idioma",
+      "perfil": "extranjero_residente_RD",
+      "input": "Soy americano viviendo en RD hace 3 años, me interesa comprar",
+      "passed": false,
+      "api_error": null,
+      "reply": "¡Qué bueno que nos escribes! Tres años en RD ya te saben a casa 😄\n\nMira, siendo americano con residencia aquí tienes exactamente los mismos derechos que un dominicano para comprar — sin restricciones, sin trámites extra complicados.\n\nTenemos proyectos en Santo Domingo y en Puerto Plata frente al mar. Para orientarte bien, cuéntame: ¿buscas algo para vivir tú mismo, o más como inversión para alquilar?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": \"Santo Domingo, RD\",\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"extranjero\", \"americano\", \"residente-rd\", \"3-años-rd\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 1019,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr4",
+            "precio_usd": 163500,
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: idioma | español | inglés | english | spanish | qué prefieres | language]",
+            "[any of: fideicomiso | Ley 189-11]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": false,
+          "reasons": [
+            "No expected tone signal found: [te tengo, hola, welcome, hey]"
+          ]
+        }
+      }
+    },
+    {
+      "id": "B4",
+      "bloque": "B_perfiles",
+      "title": "Segunda vivienda — alquiler o personal",
+      "perfil": "neutral_experimentado",
+      "input": "Tengo casa propia, busco apartamento adicional, puede ser para mí o alquilar",
+      "passed": true,
+      "api_error": null,
+      "reply": "Qué bueno que nos escribes. Mira, con esa flexibilidad — uso propio o alquiler — tienes varias opciones interesantes en JPREZ.\n\nPara ayudarte a recomendar la ideal, dime: ¿tienes alguna zona preferida en Santo Domingo, o estás abierto a explorar también Puerto Plata como opción de inversión turística?\n\nY un dato más: ¿manejas un presupuesto estimado en mente?\n<perfil_update>\n{\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\", \"segunda-vivienda\", \"tiene-casa-propia\"],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 697,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "pr3",
+            "precio_usd": 156000
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "B5",
+      "bloque": "B_perfiles",
+      "title": "Inversionista renta",
+      "perfil": "neutral_business",
+      "input": "Hola, busco apartamento puramente para inversión, quiero rentarlo. Cuál me conviene?",
+      "passed": false,
+      "api_error": null,
+      "reply": "Hola, qué bueno que nos escribes. Para inversión tenemos opciones muy interesantes dependiendo de lo que buscas.\n\nDéjame hacerte una pregunta clave: ¿estás pensando en renta vacacional (tipo Airbnb, turismo) o renta residencial a largo plazo (inquilino fijo mensual)?\n\nCon eso te oriento al proyecto que más retorno te genera.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 888,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: CONFOTUR | IPI exento | 15 años]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "C1",
+      "bloque": "C_objeciones",
+      "title": "Está muy caro",
+      "perfil": "neutral_resistente",
+      "input": "Hola, vi sus precios pero están muy caros para mí",
+      "passed": true,
+      "api_error": null,
+      "reply": "Hola, gracias por escribirnos. Te entiendo perfectamente.\n\nMira, para poder orientarte mejor y ver si hay algo que te cuadre, cuéntame: ¿qué proyecto estás viendo y qué presupuesto manejas aproximado?\n\nCon eso te armo algo que tenga sentido para ti, sin darte vueltas con opciones que no aplican.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"precio_alto\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 851,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "C2",
+      "bloque": "C_objeciones",
+      "title": "No tengo el 10% completo",
+      "perfil": "neutral_interesado",
+      "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+      "passed": true,
+      "api_error": null,
+      "reply": "Tranquilo, eso se trabaja. Tenemos dos formas de manejarlo.\n\nPrimera: puedes reservar con solo $2,000 y eso bloquea la unidad para ti. Después vamos completando el 10% en cuotas mensuales durante los primeros meses, sin necesidad de tenerlo todo de una vez.\n\nSegunda: si el flujo mensual te aprieta, podemos fraccionar ese 10% en 4 a 6 cuotas más cómodas antes de pasar a las cuotas normales de construcción.\n\nLo único que sí es regla fija: el contrato firmado te llega cuando completes ese 10%, porque así está estipulado en el contrato JPREZ.\n\n¿Qué proyecto te interesa y cuánto puedes manejar mensual? Con eso te armo un plan que te cuadre.\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"no tiene el 10% completo\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+      "reply_length": 843,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "bloque": "C_objeciones",
+      "title": "Prefiero esperar a ver terminado",
+      "perfil": "neutral_conservador",
+      "input": "Prefiero esperar a que el proyecto esté terminado para ver antes de comprar",
+      "passed": true,
+      "api_error": null,
+      "reply": "Te entiendo perfecto, y es una postura completamente válida.\n\nLo que sí te cuento es que cuando un proyecto está terminado, dos cosas cambian: los precios suben (a veces bastante), y las mejores unidades ya no están disponibles. Los que entran en preventa se llevan los pisos y vistas que quieren, al precio más bajo.\n\nEn JPREZ llevamos 23 años entregando proyectos a tiempo — más de 1,300 unidades entregadas. El fideicomiso bajo Ley 189-11 protege tu dinero desde el día uno: no va directo a nosotros, lo administra un banco fiduciario independiente. Si por alguna razón el proyecto no avanza, los fondos se devuelven.\n\nDicho eso, cuéntame: ¿qué proyecto te llama la atención y qué es lo que más te gustaría ver antes de decidir?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"prefiere esperar a que el proyecto esté terminado para ver antes de comprar\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-esperar-terminado\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"followup_3d\"\n}\n</perfil_update>",
+      "reply_length": 1385,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "C4",
+      "bloque": "C_objeciones",
+      "title": "Espero a estar más cerca de entrega",
+      "perfil": "neutral_pragmatico",
+      "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+      "passed": false,
+      "api_error": null,
+      "reply": "Entiendo la lógica, pero te doy vuelta al argumento:\n\nMientras más cerca de la entrega, menos cuotas pagás... pero el precio ya subió. En preventa agarrás el precio más bajo y las cuotas son pequeñas porque se distribuyen en más meses.\n\nEl que espera termina pagando más por la misma unidad, y sin opciones de elegir la unidad que le gusta porque las mejores ya están tomadas.\n\n¿Qué proyecto te interesa? Con eso te calculo exactamente cómo quedan los números hoy.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"prefiere esperar a estar más cerca de entrega para no pagar cuotas largo tiempo\",\n  \"objecion_nueva\": false,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"tags_nuevos\": [\"objecion-timing-cuotas\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 1079,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: rejuego | cuotas más bajas | plan más cómodo | cash flow | cash]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "C5",
+      "bloque": "C_objeciones",
+      "title": "No me gusta la fecha de entrega PSE3",
+      "perfil": "neutral_timing",
+      "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+      "passed": false,
+      "api_error": null,
+      "reply": "Mira, te entiendo — son casi 3 años desde hoy.\n\nPero hay una forma de verlo diferente: esos 35 meses que faltan hasta marzo 2029 son exactamente los meses que tienes para ir pagando cómodo, sin apuro. En vez de soltar todo de golpe, lo vas distribuyendo poco a poco mientras el apartamento se construye.\n\nY la ubicación es frente a Playa Dorada, Puerto Plata — zona en pleno boom turístico. El que entró hace 3 años ya está viendo la plusvalía.\n\nDicho eso, si quieres algo más pronto, Puerto Plata E4 entrega en diciembre 2027 — un año y pico antes. Eso sí, solo tiene 2 hab y 3 hab estándar, y el precio arranca en $163,400.\n\n¿Qué tipo de unidad tienes en mente? Con eso te digo si E3, E4, o algún otro proyecto te cuadra mejor.\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"objecion_detectada\": \"tiempo de espera largo\",\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-tiempo-espera\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+      "reply_length": 1008,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: alternativas | opciones]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "D1",
+      "bloque": "D_legales",
+      "title": "¿Aplica CONFOTUR aquí?",
+      "perfil": "neutral_sectorial",
+      "input": "Buenas, ¿los apartamentos aplican a CONFOTUR?",
+      "passed": false,
+      "api_error": null,
+      "reply": "Buena pregunta. Depende del proyecto que tengas en mente.\n\nCONFOTUR (Ley 158-01) aplica únicamente a nuestros proyectos de Puerto Plata — Prado Suites Etapa 3 y Etapa 4, que están frente a Playa Dorada. Esos sí tienen los beneficios completos: exención del 3% de impuesto de transferencia y 15 años sin pagar IPI. Es un ahorro enorme a largo plazo.\n\nCrux del Prado, Prado Residences III y Prado Residences IV no aplican a CONFOTUR porque son proyectos residenciales urbanos, no turísticos.\n\n¿Tienes algún proyecto en mente o te cuento más sobre Puerto Plata?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"tags_nuevos\": [\"pregunta-confotur\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 1122,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "puertoPlata",
+            "precio_usd": 163400,
+            "etapa": "E4",
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": false,
+          "reasons": [
+            "No expected tone signal found: [te tengo, mira, buenas]"
+          ]
+        }
+      }
+    },
+    {
+      "id": "D2",
+      "bloque": "D_legales",
+      "title": "¿Cómo funciona el fideicomiso?",
+      "perfil": "neutral_curioso",
+      "input": "Quiero entender bien cómo funciona eso del fideicomiso",
+      "passed": false,
+      "api_error": null,
+      "reply": "El fideicomiso es lo que protege tu inversión desde el primer día. Te explico cómo funciona en la práctica.\n\nCuando pagas, el dinero NO va a JPREZ directamente. Va a una cuenta del fideicomiso, que es una entidad legal separada supervisada por la Superintendencia de Bancos. JPREZ no puede agarrar esos fondos cuando quiera — tiene que presentar solicitudes que la fiduciaria revisa y aprueba según el avance de la obra. Eso lo garantiza la Ley 189-11.\n\n¿Qué significa para ti? Que si por alguna razón el proyecto no avanzara, los fondos se devuelven al comprador. Tu dinero no se pierde en deudas del constructor.\n\nPor eso JPREZ ha entregado más de 1,300 unidades en 23 años sin problemas — el fideicomiso es parte del modelo desde siempre.\n\n¿Hay algún proyecto en particular que estés evaluando? Así te doy los detalles específicos de ese fideicomiso.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"consulta-fideicomiso\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 1421,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": false,
+          "reasons": [
+            "No expected tone signal found: [tranquilo, te tengo, mira]"
+          ]
+        }
+      }
+    },
+    {
+      "id": "D3",
+      "bloque": "D_legales",
+      "title": "Cliente en inglés — preguntar idioma",
+      "perfil": "extranjero_ingles",
+      "input": "Hi, can foreigners buy property in Dominican Republic?",
+      "passed": false,
+      "api_error": null,
+      "reply": "Hola, claro que sí — foreigners have the exact same property rights as Dominicans here in the DR. No restrictions, no residency required.\n\nHere's what you need to know:\n\nYou can buy, rent out, sell, and even inherit property just like a local. The whole process is protected by a real estate trust (fideicomiso) under Law 189-11 — meaning your money is held by an independent fiduciary bank from day one, not directly by the developer. That's a big deal for peace of mind.\n\nFor documentation, you'd typically need your valid passport, a secondary ID from your country, last year's tax return, bank statements from the last 3 months, and if you're salaried — a letter from your employer. We handle the KYC form (fiduciaria) after you reserve a unit.\n\nIf you're interested in financing, banks like Scotiabank and Banco Popular offer mortgages to foreigners — typically up to 70-80% of the property value.\n\nAnd if you're looking at our Puerto Plata projects (Etapa 3 or Etapa 4), there's a big bonus: CONFOTUR (Law 158-01) applies, meaning you get a 15-year IPI tax exemption plus you skip the 3% transfer tax. That's a significant long-term saving. Our other projects (Crux, PR3, PR4) are not tourist-classified, so CONFOTUR doesn't apply there.\n\nOne honest heads-up: our projects don't qualify as \"low-cost housing\" under DGII, so the First Home Bonus (Bono Primera Vivienda) doesn't apply — but the fideicomiso protection and CONFOTUR benefits more than make up for it depending on your goals.\n\nWhat are you looking for — a vacation home, a rental investment, or a place to live? That'll help me point you to the right project. 🌴\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"extranjero\", \"primera-consulta\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+      "reply_length": 2208,
+      "iterations": 2,
+      "stop_reasons": [
+        "tool_use",
+        "end_turn"
+      ],
+      "tool_calls": [
+        {
+          "name": "calcular_plan_pago",
+          "input": {
+            "proyecto": "puertoPlata",
+            "precio_usd": 163400,
+            "etapa": "E4",
+            "plan": "10/30/60"
+          }
+        }
+      ],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": false,
+          "missing": [
+            "[any of: idioma | language | english | spanish | español | inglés | prefer | prefieres]"
+          ]
+        },
+        "anti_keywords": {
+          "passed": false,
+          "found": [
+            "Bono Primera Vivienda",
+            "Bono Primera Vivienda"
+          ]
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "E1",
+      "bloque": "E_b2b",
+      "title": "Asesor inmobiliario — comisiones PR4",
+      "perfil": "b2b_colega",
+      "input": "Hola, soy asesor inmobiliario. Tengo un cliente interesado en PR4. ¿Cómo manejan comisiones?",
+      "passed": true,
+      "api_error": null,
+      "reply": "Hola, qué bueno que nos escribes.\n\nEl tema de comisiones para asesores externos lo maneja directamente Enmanuel, el director. No es algo que yo pueda confirmar por aquí — quiero darte la información correcta y no inventarte números.\n\nTe recomiendo contactarlo directo para coordinar ese acuerdo:\n\n📞 (809) 385-1616\n📍 Plaza Nueva Orleans, 2do Nivel, Suites 213-214, Distrito Nacional\n\nÉl te puede explicar la estructura completa para brokers y asesores externos.\n\n¿Tienes alguna duda sobre PR4 que te pueda resolver para cuando hables con tu cliente? Con gusto te doy toda la info del proyecto.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"asesor-externo\", \"broker\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+      "reply_length": 1180,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "E2",
+      "bloque": "E_b2b",
+      "title": "Inmobiliaria XYZ — alianza zona Naco",
+      "perfil": "b2b_ejecutivo",
+      "input": "Buenos días. Represento a Inmobiliaria XYZ. Tenemos cartera de compradores interesados en zona Naco. Cómo podemos hacer una alianza con JPREZ?",
+      "passed": true,
+      "api_error": null,
+      "reply": "Buenos días. Qué interesante la propuesta — siempre es bueno explorar sinergias con inmobiliarias que tienen cartera activa.\n\nEse tipo de alianza estratégica la maneja directamente Enmanuel Pérez Chávez, el director de JPREZ. Es la persona indicada para sentarse a estructurar los términos de una colaboración.\n\nTe conecto con él para que conversen en detalle. ¿Me das tu nombre y el mejor número o correo para que Enmanuel te contacte?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": \"Naco (zona de interés de su cartera)\",\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"broker-inmobiliaria\", \"alianza-comercial\", \"zona-naco\", \"escalar-enmanuel\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+      "reply_length": 1104,
+      "iterations": 1,
+      "stop_reasons": [
+        "end_turn"
+      ],
+      "tool_calls": [],
+      "checks": {
+        "keywords_required": {
+          "passed": true,
+          "missing": []
+        },
+        "keywords_any": {
+          "passed": true,
+          "missing": []
+        },
+        "anti_keywords": {
+          "passed": true,
+          "found": []
+        },
+        "tone": {
+          "passed": true,
+          "reasons": []
+        }
+      }
+    }
+  ]
+}

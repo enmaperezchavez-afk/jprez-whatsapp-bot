@@ -1,0 +1,34 @@
+{
+  "id": "C1",
+  "bloque": "C_objeciones",
+  "title": "Está muy caro",
+  "perfil": "neutral_resistente",
+  "input": "Hola, vi sus precios pero están muy caros para mí",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, gracias por escribirnos. Te entiendo perfectamente.\n\nMira, para poder orientarte mejor y ver si hay algo que te cuadre, cuéntame: ¿qué proyecto estás viendo y qué presupuesto manejas aproximado?\n\nCon eso te armo algo que tenga sentido para ti, sin darte vueltas con opciones que no aplican.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"precio_alto\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 851,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

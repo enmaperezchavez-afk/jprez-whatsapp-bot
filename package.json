@@ -15,6 +15,8 @@
   "scripts": {
     "prepare": "husky",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e-suite": "vitest run --config tests/e2e-suite/vitest.config.mjs",
+    "test:e2e-suite:report": "vitest run --config tests/e2e-suite/vitest.config.mjs --reporter=verbose"
   }
 }

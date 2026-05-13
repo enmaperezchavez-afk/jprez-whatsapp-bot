@@ -25,6 +25,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/health.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -51,12 +55,20 @@
       "dest": "/api/dashboard.js"
     },
     {
+      "src": "/api/health",
+      "dest": "/api/health.js"
+    },
+    {
       "src": "/dashboard",
       "dest": "/public/dashboard.html"
     },
     {
       "src": "/dashboard/(.*)",
       "dest": "/public/$1"
+    },
+    {
+      "src": "/health",
+      "dest": "/public/health.html"
     }
   ],
   "crons": [

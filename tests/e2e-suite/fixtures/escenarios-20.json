@@ -1,0 +1,335 @@
+{
+  "version": "1.0",
+  "source_doc": "1Tuaw6otd9MccWCXsb3kOmP-YJabaBcM97U4WQuf9Oe4",
+  "generated_at": "2026-05-12",
+  "description": "Suite E2E 20 escenarios JPREZ V1.0 — capturado por Director Día 1. Validación contra LLM real con prompt actual del bot.",
+  "universal_antiKeywords": [
+    "Bono Primera Vivienda",
+    "bajas $",
+    "bajas US$",
+    "$7K",
+    "$12K",
+    "$163K",
+    "$195K"
+  ],
+  "universal_antiToneSignals": [
+    "klk",
+    "manín",
+    "tigre",
+    "carnal",
+    "mojón",
+    "broki",
+    "pana",
+    "joder",
+    "suelta esa vaina"
+  ],
+  "escenarios": [
+    {
+      "id": "A1",
+      "bloque": "A_calculos",
+      "title": "PSE3 estudio US$73,000",
+      "input": "Hola, info pse3 estudio 73k",
+      "perfil": "neutral_primer_contacto",
+      "expectedKeywords": ["US$73,000"],
+      "expectedKeywordsAny": [
+        ["US$7,300", "el 10% son", "pones US$"],
+        ["fideicomiso", "Ley 189-11"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$", "$7K"],
+      "expectedToneSignals": ["te tengo", "mira", "qué bueno", "hey", "hola"],
+      "antiToneSignals": ["estimado cliente", "le informamos"]
+    },
+    {
+      "id": "A2",
+      "bloque": "A_calculos",
+      "title": "PSE3 2hab US$138,000 cliente formal",
+      "input": "Buenas tardes. Quisiera obtener información sobre el apartamento de dos habitaciones en Prado Suites Puerto Plata, etapa 3.",
+      "perfil": "formal_mayor_ejecutivo",
+      "expectedKeywords": ["US$138,000", "Puerto Plata", "CONFOTUR"],
+      "expectedKeywordsAny": [
+        ["US$13,800", "el 10% son"],
+        ["fideicomiso", "Ley 189-11"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$"],
+      "expectedToneSignals": ["usted", "con gusto", "buenas tardes", "permítame", "le tengo"],
+      "antiToneSignals": ["viejo", "chilling", "klk", "hey"]
+    },
+    {
+      "id": "A3",
+      "bloque": "A_calculos",
+      "title": "PSE4 3hab US$195,300 cliente popi",
+      "input": "klk mateo dame el de 3 habitaciones de puerto plata etapa 4",
+      "perfil": "popi_suelto",
+      "expectedKeywords": ["US$195,300", "Puerto Plata"],
+      "expectedKeywordsAny": [
+        ["US$19,530", "el 10% son", "pones US$"],
+        ["CONFOTUR", "fideicomiso"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$", "$195K", "klk"],
+      "expectedToneSignals": ["te tengo", "mira", "tranquilo", "hey", "hola"],
+      "antiToneSignals": ["viejo", "chilling", "estimado", "klk"]
+    },
+    {
+      "id": "A4",
+      "bloque": "A_calculos",
+      "title": "PR4 Tipo D loft US$140,000",
+      "input": "Cuanto sale el loft de pr4?",
+      "perfil": "neutral_directo",
+      "expectedKeywords": ["US$140,000"],
+      "expectedKeywordsAny": [
+        ["US$14,000", "el 10% son", "pones US$"],
+        ["loft", "Tipo D"],
+        ["Evaristo Morales", "Evaristo"],
+        ["fideicomiso", "Ley 189-11"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$", "CONFOTUR"],
+      "expectedToneSignals": ["te tengo", "mira", "hey", "hola"],
+      "antiToneSignals": ["klk", "estimado cliente"]
+    },
+    {
+      "id": "A5",
+      "bloque": "A_calculos",
+      "title": "Crux Torre 6 US$105,000 cliente formal cercano",
+      "input": "Buenos días, me interesa Crux del Prado. Tienen unidades disponibles en Torre 6?",
+      "perfil": "formal_cercano",
+      "expectedKeywords": ["Torre 6", "Crux"],
+      "expectedKeywordsAny": [
+        ["US$1,000", "reserva"],
+        ["fideicomiso", "Ley 189-11"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$", "CONFOTUR", "US$2,000"],
+      "expectedToneSignals": ["usted", "con gusto", "buenos días", "le tengo"],
+      "antiToneSignals": ["klk", "viejo", "chilling"]
+    },
+    {
+      "id": "B1",
+      "bloque": "B_perfiles",
+      "title": "Primera vivienda sin definir — discovery",
+      "input": "Hola, me gustaría comprar un apartamento con ustedes",
+      "perfil": "neutral_primer_contacto",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["¿Con quién tengo el placer?", "cómo te llamas", "tu nombre"],
+        ["te tengo", "qué bueno", "mira"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$", "plata"],
+      "expectedToneSignals": ["hola", "hey", "te tengo", "qué bueno"],
+      "antiToneSignals": ["klk", "carnal", "estimado cliente"]
+    },
+    {
+      "id": "B2",
+      "bloque": "B_perfiles",
+      "title": "Pregunta financiamiento bancario",
+      "input": "Hola, me interesa PR4. ¿El banco me financia?",
+      "perfil": "neutral_pragmatico",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["fideicomiso", "Ley 189-11"],
+        ["construcción", "durante construcción"],
+        ["banco al final", "banco entra al final", "pre-aprobación", "al momento de la entrega", "contra entrega"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "banco desde el día uno", "banco desde día 1"],
+      "expectedToneSignals": ["te tengo", "mira", "hola", "hey"],
+      "antiToneSignals": ["klk", "estimado cliente"]
+    },
+    {
+      "id": "B3",
+      "bloque": "B_perfiles",
+      "title": "Extranjero residente RD — pregunta idioma",
+      "input": "Soy americano viviendo en RD hace 3 años, me interesa comprar",
+      "perfil": "extranjero_residente_RD",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["idioma", "español", "inglés", "english", "spanish", "qué prefieres", "language"],
+        ["mismos derechos", "same rights", "extranjeros"],
+        ["fideicomiso", "Ley 189-11"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$"],
+      "expectedToneSignals": ["te tengo", "hola", "welcome", "hey"],
+      "antiToneSignals": ["viejo", "chilling", "klk"]
+    },
+    {
+      "id": "B4",
+      "bloque": "B_perfiles",
+      "title": "Segunda vivienda — alquiler o personal",
+      "input": "Tengo casa propia, busco apartamento adicional, puede ser para mí o alquilar",
+      "perfil": "neutral_experimentado",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["Puerto Plata", "PR4", "Evaristo", "alquiler", "renta"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "primera vivienda", "bajas $", "bajas US$"],
+      "expectedToneSignals": ["te tengo", "qué bueno", "mira", "hola"],
+      "antiToneSignals": ["klk", "estimado cliente"]
+    },
+    {
+      "id": "B5",
+      "bloque": "B_perfiles",
+      "title": "Inversionista renta",
+      "input": "Hola, busco apartamento puramente para inversión, quiero rentarlo. Cuál me conviene?",
+      "perfil": "neutral_business",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["Puerto Plata", "PR4", "Evaristo", "inversión", "renta", "alquiler"],
+        ["CONFOTUR", "IPI exento", "15 años"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $", "bajas US$", "retorno garantizado", "retorno asegurado"],
+      "expectedToneSignals": ["te tengo", "mira", "brutal", "hey", "hola"],
+      "antiToneSignals": ["klk", "estimado cliente"]
+    },
+    {
+      "id": "C1",
+      "bloque": "C_objeciones",
+      "title": "Está muy caro",
+      "input": "Hola, vi sus precios pero están muy caros para mí",
+      "perfil": "neutral_resistente",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["entiendo", "te entiendo", "comprendo"],
+        ["rango", "presupuesto", "qué miraste", "más accesible", "US$73,000", "estudio"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "no está caro", "es buen precio", "bajas $"],
+      "expectedToneSignals": ["te tengo", "mira", "tranquilo", "entiendo"],
+      "antiToneSignals": ["no está caro", "es buen precio", "klk"]
+    },
+    {
+      "id": "C2",
+      "bloque": "C_objeciones",
+      "title": "No tengo el 10% completo",
+      "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+      "perfil": "neutral_interesado",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["5%", "fraccionar", "dividir", "cuotas", "completar"],
+        ["10% completo", "contrato", "firmar"],
+        ["reserva", "apartar"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "necesitas el 10% completo primero", "ven cuando lo tengas", "bajas $"],
+      "expectedToneSignals": ["tranquilo", "te tengo", "mira"],
+      "antiToneSignals": ["klk", "estimado cliente"]
+    },
+    {
+      "id": "C3",
+      "bloque": "C_objeciones",
+      "title": "Prefiero esperar a ver terminado",
+      "input": "Prefiero esperar a que el proyecto esté terminado para ver antes de comprar",
+      "perfil": "neutral_conservador",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["preventa", "preventa", "elegir unidad", "elegir la unidad"],
+        ["entiendo", "te entiendo", "tiene sentido"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "se van a acabar", "urgencia", "se acaba", "bajas $"],
+      "expectedToneSignals": ["te tengo", "mira", "entiendo"],
+      "antiToneSignals": ["klk", "presión", "urgente"]
+    },
+    {
+      "id": "C4",
+      "bloque": "C_objeciones",
+      "title": "Espero a estar más cerca de entrega",
+      "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+      "perfil": "neutral_pragmatico",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["unidades", "mejores unidades", "ya tomadas", "ya reservadas", "elegir"],
+        ["rejuego", "cuotas más bajas", "plan más cómodo", "cash flow", "cash"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "las cuotas son mínimas", "no las sientes", "bajas $"],
+      "expectedToneSignals": ["te tengo", "mira", "entiendo"],
+      "antiToneSignals": ["klk"]
+    },
+    {
+      "id": "C5",
+      "bloque": "C_objeciones",
+      "title": "No me gusta la fecha de entrega PSE3",
+      "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+      "perfil": "neutral_timing",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["alternativas", "opciones"],
+        ["PSE4", "PR4", "Torre 6", "Crux", "Etapas 1", "listas", "diciembre 2027", "julio 2027", "agosto 2027"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "vale la pena esperar", "bajas $"],
+      "expectedToneSignals": ["te tengo", "mira", "entiendo"],
+      "antiToneSignals": ["klk", "vale la pena esperar"]
+    },
+    {
+      "id": "D1",
+      "bloque": "D_legales",
+      "title": "¿Aplica CONFOTUR aquí?",
+      "input": "Buenas, ¿los apartamentos aplican a CONFOTUR?",
+      "perfil": "neutral_sectorial",
+      "expectedKeywords": ["CONFOTUR", "Puerto Plata"],
+      "expectedKeywordsAny": [
+        ["solo Puerto Plata", "solo en Puerto Plata", "únicamente Puerto Plata", "Crux", "PR3", "PR4", "no aplica"],
+        ["15 años", "IPI", "3% transferencia", "transferencia"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "aplica en todos los proyectos", "aplica en todos", "bajas $"],
+      "expectedToneSignals": ["te tengo", "mira", "buenas"],
+      "antiToneSignals": ["klk", "aplica en todos"]
+    },
+    {
+      "id": "D2",
+      "bloque": "D_legales",
+      "title": "¿Cómo funciona el fideicomiso?",
+      "input": "Quiero entender bien cómo funciona eso del fideicomiso",
+      "perfil": "neutral_curioso",
+      "expectedKeywords": ["fideicomiso"],
+      "expectedKeywordsAny": [
+        ["Ley 189-11"],
+        ["banco aparte", "banco fiduciario", "fiduciaria", "no lo maneja JPREZ", "entidad separada", "cuenta separada", "cuenta aparte"],
+        ["protegido", "protección", "protege"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "marco regulatorio", "administrador legal", "bajas $"],
+      "expectedToneSignals": ["tranquilo", "te tengo", "mira"],
+      "antiToneSignals": ["klk", "marco regulatorio"]
+    },
+    {
+      "id": "D3",
+      "bloque": "D_legales",
+      "title": "Cliente en inglés — preguntar idioma",
+      "input": "Hi, can foreigners buy property in Dominican Republic?",
+      "perfil": "extranjero_ingles",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["idioma", "language", "english", "spanish", "español", "inglés", "prefer", "prefieres"],
+        ["yes", "sí", "foreigners", "extranjeros", "same rights", "mismos derechos"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "bajas $"],
+      "expectedToneSignals": ["hi", "hello", "welcome", "hey", "hola"],
+      "antiToneSignals": ["klk", "chilling", "viejo"]
+    },
+    {
+      "id": "E1",
+      "bloque": "E_b2b",
+      "title": "Asesor inmobiliario — comisiones PR4",
+      "input": "Hola, soy asesor inmobiliario. Tengo un cliente interesado en PR4. ¿Cómo manejan comisiones?",
+      "perfil": "b2b_colega",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["Enmanuel", "Director", "Director Enmanuel"],
+        ["comisiones", "comisión"],
+        ["contacto", "coordinar", "te conecto", "te paso"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "tu primera vivienda", "warm-first", "bajas $"],
+      "expectedToneSignals": ["te tengo", "hola", "mira"],
+      "antiToneSignals": ["klk", "¿con quién tengo el placer?"]
+    },
+    {
+      "id": "E2",
+      "bloque": "E_b2b",
+      "title": "Inmobiliaria XYZ — alianza zona Naco",
+      "input": "Buenos días. Represento a Inmobiliaria XYZ. Tenemos cartera de compradores interesados en zona Naco. Cómo podemos hacer una alianza con JPREZ?",
+      "perfil": "b2b_ejecutivo",
+      "expectedKeywords": [],
+      "expectedKeywordsAny": [
+        ["Enmanuel", "Director", "Director Enmanuel"],
+        ["alianza", "alianzas"],
+        ["contacto", "coordinar", "te conecto", "te paso", "conectarte"]
+      ],
+      "antiKeywords": ["Bono Primera Vivienda", "warm-first", "bajas $"],
+      "expectedToneSignals": ["buenos días", "te tengo", "mira"],
+      "antiToneSignals": ["klk", "viejo", "chilling"]
+    }
+  ]
+}
