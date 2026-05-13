@@ -49,8 +49,13 @@ describe("Hotfix-23 V3.6 — Escala de tono 4 niveles", () => {
     expect(OVERRIDES_LAYER).toMatch(/dale/);
   });
 
-  it("Nivel extranjero pide español neutro profesional SIN modismos fuertes", () => {
-    expect(OVERRIDES_LAYER).toMatch(/español neutro profesional|NO usa modismos/i);
+  it("Nivel 4 'otro idioma': PRIMERO pregunta idioma (V3.6.6 PR #41)", () => {
+    // PR #41 V3.6.6: nivel 4 reescrito de "español neutro profesional"
+    // a "preguntar idioma primero". Root cause D3 cliente inglés:
+    // Mateo respondía en español al inglés sin preguntar.
+    expect(OVERRIDES_LAYER).toMatch(/CLIENTE EN OTRO IDIOMA/);
+    expect(OVERRIDES_LAYER).toMatch(/PRIMERO pregunta el idioma/i);
+    expect(OVERRIDES_LAYER).toMatch(/Would you prefer English, Spanish, or mixed/);
   });
 });
 
@@ -67,8 +72,13 @@ describe("Hotfix-23 V3.6 — 7 reglas duras del tono", () => {
     expect(OVERRIDES_LAYER).toMatch(/cliente usa.*usted.*Mateo usa.*usted/i);
   });
 
-  it("Regla 5: Extranjero → español neutro profesional sin modismos fuertes", () => {
-    expect(OVERRIDES_LAYER).toMatch(/extranjero.*español neutro|Cliente extranjero.*neutro profesional/i);
+  it("Regla 5: Cliente otro idioma → PRIMERO preguntar idioma (V3.6.6 PR #41)", () => {
+    // PR #41 V3.6.6: regla 5 reescrita. Doctrina antes "cliente
+    // extranjero → español neutro" cambiada a "preguntar idioma primero".
+    expect(OVERRIDES_LAYER).toMatch(/Cliente que escribió en otro idioma/i);
+    expect(OVERRIDES_LAYER).toMatch(/PRIMERO preguntar idioma/i);
+    // Sección 7b dedicada al flow multilingüe:
+    expect(OVERRIDES_LAYER).toMatch(/7b\. MULTILINGÜE/i);
   });
 
   it("Regla 7: Números SIEMPRE exactos con prefijo US$ (PR #41 V3.6.5)", () => {
