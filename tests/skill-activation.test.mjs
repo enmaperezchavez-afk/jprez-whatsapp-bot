@@ -93,9 +93,9 @@ describe("Hotfix-22 V3.5 R6 — skill activation few-shots", () => {
     // R6 sumo ~700-1300 chars al original 1487. V3.6 (Hotfix-23) inyecta
     // el Documento Maestro completo del Director. Hotfix-26 P0 sumo ~200
     // chars. PR #41 V3.6.3-V3.6.6: warm-first + multilingüe + rejuego/ICDV
-    // + límites + mentions. Cap ajustado a 17000 chars (sancionado Director
-    // por estimados originales optimistas; sigue 48% del budget cache 35K).
-    expect(OVERRIDES_LAYER.length).toBeLessThan(17000);
+    // + límites + mentions. Cap ajustado a 20000 chars (sancionado Director
+    // — 57% del budget cache 35K, buffer generoso ante ajustes futuros).
+    expect(OVERRIDES_LAYER.length).toBeLessThan(20000);
     // Sigue sobre el original 1487 (sanity: el refuerzo SI se aplico).
     expect(OVERRIDES_LAYER.length).toBeGreaterThan(2000);
   });
