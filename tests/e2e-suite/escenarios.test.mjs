@@ -149,7 +149,7 @@ describe("Suite E2E V3.6 — 20 escenarios JPREZ (LLM real)", () => {
     const out = {
       version: "1.0",
       generated_at: new Date().toISOString(),
-      doctrine: "V3.6 base (commit 5925d4c, Hotfix-24 final)",
+      doctrine: "V3.6 + Hotfix-26 P0 BPV bilingüe (motu proprio fix + guard reactivo es/en)",
       run_dir: RUN_DIR,
       total: results.length,
       passed: results.filter((r) => r.passed).length,

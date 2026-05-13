@@ -1,0 +1,49 @@
+{
+  "id": "A2",
+  "bloque": "A_calculos",
+  "title": "PSE3 2hab US$138,000 cliente formal",
+  "perfil": "formal_mayor_ejecutivo",
+  "input": "Buenas tardes. Quisiera obtener información sobre el apartamento de dos habitaciones en Prado Suites Puerto Plata, etapa 3.",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buenas tardes. Con gusto le explico todo sobre los apartamentos de 2 habitaciones en Prado Suites Puerto Plata, Etapa 3.\n\nSon apartamentos de 67m², con 2 habitaciones, 2 baños y 1 parqueo, frente a Playa Dorada. La entrega está programada para marzo de 2029, y el plan de pago es 10% para separar, 30% en cuotas mensuales durante la construcción, y 60% contra entrega.\n\nEn cuanto a precios, tenemos varias unidades disponibles desde US$138,000 hasta US$154,000, dependiendo del nivel y la vista.\n\nDéjame calcularle el plan de pago con un precio base para que vea los números concretos.\nPara una unidad de US$138,000, el plan quedaría así:\n\nPone US$13,800 para separar (el 10% inicial). Luego cuotas mensuales de US$1,150 durante la construcción hasta marzo de 2029. Y contra entrega son US$82,800, que normalmente se cubre con financiamiento bancario.\n\nTenemos unidades disponibles en los Edificios 15 y 16, con vistas y niveles variados. ¿Le interesa algún nivel en particular, o prefiere que le muestre las opciones disponibles con sus precios exactos?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"2hab-67m2-E3\",\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata-E3\", \"2hab\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 1658,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "CONFOTUR"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

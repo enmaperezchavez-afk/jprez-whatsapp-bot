@@ -1,0 +1,38 @@
+{
+  "id": "B5",
+  "bloque": "B_perfiles",
+  "title": "Inversionista renta",
+  "perfil": "neutral_business",
+  "input": "Hola, busco apartamento puramente para inversión, quiero rentarlo. Cuál me conviene?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buena pregunta. Para inversión y renta hay dos opciones muy distintas según lo que buscas:\n\n**Si quieres renta corporativa/larga (Santo Domingo):**\nPR3 en Ensanche Paraíso, a pasos de Winston Churchill — zona con altísima demanda de ejecutivos y profesionales. Viene equipado (nevera, A/A, estufa, cerradura smart) y entrega en agosto 2026, o sea retorno casi inmediato. Quedan solo 6 unidades.\n\n**Si quieres renta vacacional/Airbnb (turismo):**\nPuerto Plata frente a Playa Dorada — boom turístico total ahora mismo. Etapa 4 entrega diciembre 2027, con apartamentos desde US$163,400.\n\nPara orientarte mejor, cuéntame:\n\n¿Prefieres algo que empiece a rentar rápido (antes de 2026) o puedes esperar un par de años a cambio de una ubicación turística premium?\n\n<parameter name=\"perfil_update\">\n{\n  \"proyecto_interes\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\"],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</parameter>",
+  "reply_length": 970,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: CONFOTUR | IPI exento | 15 años]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, mira, brutal, hey, hola]"
+      ]
+    }
+  }
+}

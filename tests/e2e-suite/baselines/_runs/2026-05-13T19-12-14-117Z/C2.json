@@ -1,0 +1,37 @@
+{
+  "id": "C2",
+  "bloque": "C_objeciones",
+  "title": "No tengo el 10% completo",
+  "perfil": "neutral_interesado",
+  "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Tranquilo, eso tiene solución. Lo que hacemos es dividir el 10% inicial en cuotas mensuales en vez de una sola cuota grande, así no tienes que desembolsar todo de entrada.\n\nPara ayudarte mejor, dime:\n\n1. ¿Qué proyecto te interesa y cuántas habitaciones buscas?\n2. ¿Cuánto puedes manejar mensual cómodamente?\n\nCon eso te armo un plan que te cuadre.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"no_tiene_10_porciento_completo\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-inicial\", \"cashflow-ajustado\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 972,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: 10% completo | contrato | firmar]",
+        "[any of: reserva | apartar]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

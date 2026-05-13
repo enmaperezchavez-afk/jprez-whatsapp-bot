@@ -1,0 +1,37 @@
+{
+  "id": "C5",
+  "bloque": "C_objeciones",
+  "title": "No me gusta la fecha de entrega PSE3",
+  "perfil": "neutral_timing",
+  "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+  "passed": false,
+  "api_error": null,
+  "reply": "Mira, entiendo que marzo 2029 se siente lejos. Pero hay algo interesante ahí: **precisamente porque está lejos, las cuotas son las más cómodas de todos nuestros proyectos.**\n\nDéjame calcularte el plan concreto para que lo veas en números reales. ¿Qué unidad te interesa — estudio, 1 hab, 2 hab o penthouse?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": null,\n  \"objecion_detectada\": \"plazo_largo_espera\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-plazo-e3\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 606,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: alternativas | opciones]",
+        "[any of: PSE4 | PR4 | Torre 6 | Crux | Etapas 1 | listas | diciembre 2027 | julio 2027 | agosto 2027]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

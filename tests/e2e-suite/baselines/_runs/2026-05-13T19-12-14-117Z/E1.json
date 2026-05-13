@@ -1,0 +1,45 @@
+{
+  "id": "E1",
+  "bloque": "E_b2b",
+  "title": "Asesor inmobiliario — comisiones PR4",
+  "perfil": "b2b_colega",
+  "input": "Hola, soy asesor inmobiliario. Tengo un cliente interesado en PR4. ¿Cómo manejan comisiones?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Qué bueno que nos escribes. Sobre comisiones para asesores externos, eso lo maneja directamente Enmanuel, el director de JPREZ.\n\nTe conecto con él para que te den todos los detalles del esquema de colaboración. Aquí el contacto directo: **(809) 385-1616** o puedes escribir al Instagram **@constructorajprez**.\n\n¿Tienes ya info de lo que busca tu cliente en PR4? Con gusto te ayudo a preparar la propuesta para que llegues listo a la conversación con él.\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": true,\n  \"objecion_nueva_texto\": \"Asesor inmobiliario externo pregunta por esquema de comisiones — tema no cubierto en Top 9, escalar a Enmanuel\",\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"asesor-externo\", \"broker\", \"referido\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+  "reply_length": 1159,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 140000
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, hola, mira]"
+      ]
+    }
+  }
+}

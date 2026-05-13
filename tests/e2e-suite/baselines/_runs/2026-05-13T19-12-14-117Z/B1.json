@@ -1,0 +1,36 @@
+{
+  "id": "B1",
+  "bloque": "B_perfiles",
+  "title": "Primera vivienda sin definir — discovery",
+  "perfil": "neutral_primer_contacto",
+  "input": "Hola, me gustaría comprar un apartamento con ustedes",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes. Soy Mateo Reyes, del equipo de JPREZ.\n\nTenemos proyectos bien interesantes activos ahora mismo. Para orientarte mejor, dime: ¿estás buscando para vivir tú, para alquilar/invertir, o como segunda vivienda vacacional?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 795,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: ¿Con quién tengo el placer? | cómo te llamas | tu nombre]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

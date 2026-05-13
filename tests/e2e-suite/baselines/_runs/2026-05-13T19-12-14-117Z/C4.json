@@ -1,0 +1,36 @@
+{
+  "id": "C4",
+  "bloque": "C_objeciones",
+  "title": "Espero a estar más cerca de entrega",
+  "perfil": "neutral_pragmatico",
+  "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+  "passed": false,
+  "api_error": null,
+  "reply": "Entiendo la lógica, pero te cuento algo importante que muchos clientes no consideran al principio.\n\nEn JPREZ, el precio del apartamento no cambia si esperas — pero sí pierdes dos cosas reales:\n\nPrimero, la unidad. Con solo 19 disponibles en E4 y 76% ya vendido, los mejores apartamentos (pisos bajos, vistas específicas) van desapareciendo. Cuando queden 5 unidades, tú elegirías lo que sobró.\n\nSegundo, el tiempo de cuotas es tu aliado, no tu enemigo. Mientras más meses tienes para completar el 30%, más baja es tu cuota mensual. Si esperas y quedan 8 meses para entrega, esa misma cantidad la pagas en menos cuotas — cuota más alta, más presión al bolsillo.\n\nEjemplo rápido con una unidad de $163,400 en E4 (entrega diciembre 2027):\n\nHoy tienes 19 meses — la cuota del 30% te queda en $2,580 al mes.\n\nSi esperas 6 meses y quedan 13 — esa cuota sube a $3,770 al mes.\n\nAsí que paradójicamente, entrar antes te da cuotas más cómodas, no más largas.\n\n¿Qué proyecto y tipología tenías en mente? Con eso te hago el cálculo exacto.\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"prefiere esperar cerca de la entrega para no pagar cuotas mucho tiempo\",\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"objecion_nueva\": false,\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1299,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: rejuego | cuotas más bajas | plan más cómodo | cash flow | cash]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

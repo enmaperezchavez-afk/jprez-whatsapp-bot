@@ -1,0 +1,36 @@
+{
+  "id": "C3",
+  "bloque": "C_objeciones",
+  "title": "Prefiero esperar a ver terminado",
+  "perfil": "neutral_conservador",
+  "input": "Prefiero esperar a que el proyecto esté terminado para ver antes de comprar",
+  "passed": false,
+  "api_error": null,
+  "reply": "Mira, te entiendo perfectamente. La tranquilidad de ver lo terminado vale mucho.\n\nTe cuento lo que pasa en la práctica: los clientes que esperan a que esté listo generalmente se encuentran con que las mejores unidades ya están tomadas, y los precios subieron. En PR3, por ejemplo, ya quedan solo 6 de 60 unidades — y entrega en agosto 2026, que es ya mismo.\n\nLa ventaja real de entrar ahora es que bloqueas tu unidad al precio de hoy, y el plan de pagos te da meses para ir completando sin necesidad de tener todo junto desde el principio.\n\n¿Qué proyecto te llama más la atención? Con eso te muestro cuánto tiempo tienes realmente antes de que se agote.\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"quiere esperar a ver terminado antes de comprar\",\n  \"objecion_nueva\": false,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"siguiente_accion_sugerida\": \"followup_3d\",\n  \"tags_nuevos\": [\"objecion-esperar-terminado\"]\n}\n</perfil_update>",
+  "reply_length": 947,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: preventa | preventa | elegir unidad | elegir la unidad]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

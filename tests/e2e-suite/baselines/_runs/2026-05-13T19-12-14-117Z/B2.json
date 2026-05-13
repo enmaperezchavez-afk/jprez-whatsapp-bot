@@ -1,0 +1,38 @@
+{
+  "id": "B2",
+  "bloque": "B_perfiles",
+  "title": "Pregunta financiamiento bancario",
+  "perfil": "neutral_pragmatico",
+  "input": "Hola, me interesa PR4. ¿El banco me financia?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buena pregunta. Sí, PR4 aplica para financiamiento bancario — la mayoría de los bancos aquí en RD financian hasta el 70%-80% del valor contra entrega.\n\nEl proceso es así: mientras el apartamento está en construcción, vas pagando el 30% inicial en cuotas mensuales. Cuando JPREZ entrega (agosto 2027), ahí es que el banco entra con el 70% restante. Por eso se llama \"contra entrega\" — ese es el momento en que firmas con el banco.\n\nPara arrancar te recomiendo pedir la pre-aprobación bancaria ahora, no esperar a la entrega. Eso te fija condiciones y te da poder negociador. Bancos como Popular, BHD León, Scotiabank y APAP trabajan bien con proyectos JPREZ.\n\n¿Eres asalariado o tienes negocio propio? Con eso te digo exactamente qué documentos necesitas para la pre-aprobación.\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"pr4\",\n  \"fuente_financiamiento\": \"bancario\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\",\n  \"tags_nuevos\": [\"interesa-financiamiento\"]\n}\n</perfil_update>",
+  "reply_length": 1039,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, mira, hola, hey]"
+      ]
+    }
+  }
+}
