@@ -1,0 +1,45 @@
+{
+  "id": "A1",
+  "bloque": "A_calculos",
+  "title": "PSE3 estudio US$73,000",
+  "perfil": "neutral_primer_contacto",
+  "input": "Hola, info pse3 estudio 73k",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, te tengo. Para el estudio de US$73,000 en Prado Suites Puerto Plata Etapa 3 te explico cómo va.\n\nDéjame calcular el plan de pago ahora mismo.\nAquí va el desglose del estudio 16-115 (27m², el más accesible en E3):\n\nReservas con US$1,000 y la unidad queda apartada a tu nombre. Después pones US$7,300 como 10% inicial, cuotas mensuales de US$608 durante 34 meses hasta la entrega en marzo 2029, y US$43,800 contra entrega — eso lo cubres con banco o pago directo al final.\n\nTodo el proceso va protegido por fideicomiso Ley 189-11, y como es Puerto Plata aplica CONFOTUR (Ley 158-01): 15 años de IPI exento y sin el 3% de impuesto de transferencia — ese beneficio es grande.\n\n¿Tienes algo ahorrado para el inicial o quieres que veamos también el plan de Feria de Mayo donde la cuota mensual baja?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"estudio 27m²\",\n  \"presupuesto_mencionado\": 73000,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"pse3\", \"estudio\", \"entry-level\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 1411,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 73000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "A3",
+  "bloque": "A_calculos",
+  "title": "PSE4 3hab US$195,300 cliente popi",
+  "perfil": "popi_suelto",
+  "input": "klk mateo dame el de 3 habitaciones de puerto plata etapa 4",
+  "passed": false,
+  "api_error": null,
+  "reply": "Bueno, te tengo. Para el de 3 habitaciones en Puerto Plata E4 déjame calcular el plan ahora mismo.\nTranquilo, aquí va.\n\nEl de 3 hab en E4 arranca desde US$195,300, son 93m², 2 baños y 1 parqueo. Entrega diciembre 2027.\n\nEl plan queda así: pones US$2,000 para reservar y bloquear la unidad. Después vas completando el 10% inicial, que son US$19,530. Luego cuotas mensuales de US$3,662 por 16 meses hasta la entrega. Y contra entrega son US$117,180, que se cubre con banco.\n\nOjo que en E4 quedan solo 19 unidades disponibles de 80 — el 76% ya está vendido o reservado, así que hay urgencia real.\n\n¿Tienes algo ahorrado para el inicial o quieres que veamos también el plan de Feria de Mayo, que baja la cuota mensual bastante?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"3hab-93m2-E4\",\n  \"presupuesto_mencionado\": 195300,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata-E4\", \"3hab\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1330,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 195300,
+        "plan": "10/30/60",
+        "etapa": "E4"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: CONFOTUR | fideicomiso]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

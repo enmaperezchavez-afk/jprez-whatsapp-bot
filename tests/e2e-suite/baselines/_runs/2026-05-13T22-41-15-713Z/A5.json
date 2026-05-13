@@ -1,0 +1,64 @@
+{
+  "id": "A5",
+  "bloque": "A_calculos",
+  "title": "Crux Torre 6 US$105,000 cliente formal cercano",
+  "perfil": "formal_cercano",
+  "input": "Buenos días, me interesa Crux del Prado. Tienen unidades disponibles en Torre 6?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buenos días! Sí, tenemos muy buena disponibilidad en Torre 6 — quedan 42 de 50 unidades disponibles.\n\nSon todos apartamentos de 100m², 3 habitaciones, 2 baños y 2 parqueos incluidos. Los precios arrancan desde US$98,292 en piso 1 hasta US$114,992 en los pisos altos. El plan de pago es con reserva de solo US$1,000, 5% a la firma del contrato, 25% en cuotas mensuales durante construcción, y 70% contra entrega en julio 2027.\n\n¿Tienes alguna preferencia de piso — alto, medio o bajo? Eso me ayuda a orientarte a la unidad ideal.\nY para que tengas una idea de los números: en la unidad más económica (US$98,292 en piso 1), el plan quedaría así — reservas con US$1,000, pones US$4,915 a la firma del contrato (el 5%), después cuotas de US$2,106 mensuales durante 14 meses de construcción, y US$58,975 contra entrega en julio 2027 que normalmente se cubre con financiamiento bancario.\n\n¿Buscas esto para vivir o como inversión?",
+  "reply_length": 924,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "tool_use"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 98292,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 98292,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 98292
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "Crux"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

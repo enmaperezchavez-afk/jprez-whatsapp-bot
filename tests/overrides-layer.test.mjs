@@ -95,9 +95,15 @@ describe("Hotfix-22 V3 r2 — overrides-layer", () => {
     // como doctrina inyectada — proceso comercial 5 pasos + documentos
     // por perfil + voz Mateo + 3 ejemplos canónicos verbatim.
     // Hotfix-26 P0 BPV bilingüe: +200 chars guard reactivo (es/en) +
-    // frase canónica EN. Target sube a ≤12500 chars (~3100 tokens).
-    // Sigue dentro del budget cache.
-    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(12500);
+    // frase canónica EN.
+    // PR #41 (V3.6.3-V3.6.6): habilitar 6 bloques de doctrina —
+    // warm-first + US$ prefix + multilingüe (preguntar idioma) +
+    // rejuego/ICDV + límites Mateo + mentions obligatorias.
+    // Estimados originales demasiado optimistas (factor 2x observado).
+    // Director sancionó subir cap a 20K para acomodar V3.6.3-V3.6.6
+    // completo + buffer generoso ante ajustes futuros. 20K chars =
+    // ~5,000 tokens = 57% del budget cache 35K — cero riesgo perf.
+    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(20000);
   });
 
   // ===== P1 =====

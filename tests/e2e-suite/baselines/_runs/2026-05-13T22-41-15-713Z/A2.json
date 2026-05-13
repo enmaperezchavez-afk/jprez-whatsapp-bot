@@ -1,0 +1,64 @@
+{
+  "id": "A2",
+  "bloque": "A_calculos",
+  "title": "PSE3 2hab US$138,000 cliente formal",
+  "perfil": "formal_mayor_ejecutivo",
+  "input": "Buenas tardes. Quisiera obtener información sobre el apartamento de dos habitaciones en Prado Suites Puerto Plata, etapa 3.",
+  "passed": true,
+  "api_error": null,
+  "reply": "Buenas tardes, con mucho gusto le ayudo.\n\nEn la Etapa 3 de Prado Suites Puerto Plata, el apartamento de 2 habitaciones tiene 67m², 2 baños y 1 parqueo. Los precios van desde US$138,000 hasta US$154,000 según el nivel y la ubicación dentro del edificio, con vistas disponibles a distintas orientaciones.\n\nLa entrega estimada es marzo 2029, y el proyecto está frente a Playa Dorada, en plena zona turística de Puerto Plata.\n\nEl plan de pago es 10/30/60: 10% para apartar, 30% en cuotas mensuales durante la construcción, y 60% contra entrega — que típicamente se cubre con financiamiento bancario. Todo el proceso queda protegido por fideicomiso bajo Ley 189-11, su dinero lo administra un banco fiduciario independiente desde el primer día.\n\n¿Le gustaría que le calculara el plan de pago con los números exactos para una unidad específica, o prefiere que le muestre las opciones disponibles por precio?\nPara que tenga una referencia, con la unidad más accesible de 2 hab en E3 (US$138,000), los números quedarían así: pone US$13,800 para apartar el 10%, después cuotas de US$1,150 mensuales durante la construcción, y US$82,800 contra entrega en marzo 2029.\n\nTambién aplica CONFOTUR (Ley 158-01) por ser proyecto turístico — eso significa 15 años de IPI exento y exención del 3% de impuesto de transferencia. Un ahorro fiscal importante a largo plazo.\n\n¿Prefiere una unidad específica o le cuento también sobre las unidades disponibles en los distintos niveles?\n¿Con quién tengo el gusto, por favor?",
+  "reply_length": 1498,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "tool_use"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "C5",
+  "bloque": "C_objeciones",
+  "title": "No me gusta la fecha de entrega PSE3",
+  "perfil": "neutral_timing",
+  "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+  "passed": false,
+  "api_error": null,
+  "reply": "Entiendo, 3 años puede sentirse largo. Pero mira, hay una forma de verlo diferente.\n\nHoy es mayo 2026, así que son 34 meses — y esos 34 meses los usas para ir pagando cómodamente en cuotas pequeñas antes de que entre el banco. Mientras esperas, el apartamento está construyéndose y generando plusvalía.\n\nY si lo que buscas es recibir antes, tenemos la Etapa 4 de Puerto Plata que entrega en diciembre 2027 — son solo 19 meses. Claro que el precio sube un poco porque los apartamentos son más grandes (76m² vs 67m²), pero la espera es mucho menor.\n\n¿Qué tipo de unidad estás buscando — estudio, 1 habitación, 2 habitaciones?\nY para que lo veas concreto: en PSE3 a US$138,000 (2 hab, 67m²), el plan te queda en US$1,150 al mes durante la construcción, y US$82,800 contra entrega en marzo 2029. Bastante manejable en el día a día.\n\n¿Me cuentas qué tipología te interesa para darte los números exactos de lo que te aplica?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": null,\n  \"objecion_detectada\": \"plazo de espera largo (PSE3 marzo 2029)\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-plazo-espera\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1243,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: alternativas | opciones]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

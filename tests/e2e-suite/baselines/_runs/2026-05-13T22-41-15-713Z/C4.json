@@ -1,0 +1,47 @@
+{
+  "id": "C4",
+  "bloque": "C_objeciones",
+  "title": "Espero a estar más cerca de entrega",
+  "perfil": "neutral_pragmatico",
+  "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+  "passed": false,
+  "api_error": null,
+  "reply": "Entiendo la lógica, pero te cuento algo que mucha gente no considera al principio.\n\nLas cuotas mensuales durante construcción **no son un gasto** — son parte del 30% que igual tienes que pagar antes de la entrega. Entrar más tarde no te ahorra ese 30%, solo te da menos meses para fraccionarlo, lo que significa **cuotas más altas**.\n\nPor ejemplo, en Puerto Plata E4 (entrega diciembre 2027): si entras hoy tienes unos 19 meses para pagar ese 30%. Si esperas 6 meses, te quedan 13 — misma cantidad, más apretado cada mes.\n\nAdemás, los precios suben conforme avanza la construcción. Lo que hoy sale en US$163,400 en E4, en 6 meses puede costar más.\n\nY hay otro punto real: quedan solo 19 unidades disponibles en E4 de 80 totales — 76% ya está vendido. La mejor selección de unidades se va primero.\n\n¿Qué proyecto te interesa? Con eso te calculo exactamente cómo quedan las cuotas si entras hoy versus más adelante, para que veas los números concretos.\nPara que veas el ejemplo concreto con Puerto Plata E4, unidad de 2 habitaciones a US$163,400 — entrando hoy:\n\nReserva US$2,000 para apartar. Después el 10% inicial son US$16,340. Luego cuotas de US$3,064 mensuales por 16 meses hasta diciembre 2027. Y contra entrega US$98,040 que se cubre con banco.\n\nSi esperas 6 meses, esos mismos números se distribuyen en 10 meses en vez de 16 — la cuota sube considerablemente, y el precio probablemente también.\n\n¿Te interesa algún proyecto en particular para que lo calculemos con tu presupuesto?\n\n<perfil_update>\n{\n  \"objecion_detectada\": \"prefiere entrar cerca de la entrega para evitar cuotas largas\",\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-cuotas-largas\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1768,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 163400,
+        "etapa": "E4",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: rejuego | cuotas más bajas | plan más cómodo | cash flow | cash]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

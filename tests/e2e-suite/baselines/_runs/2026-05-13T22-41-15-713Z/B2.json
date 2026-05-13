@@ -1,0 +1,34 @@
+{
+  "id": "B2",
+  "bloque": "B_perfiles",
+  "title": "Pregunta financiamiento bancario",
+  "perfil": "neutral_pragmatico",
+  "input": "Hola, me interesa PR4. ¿El banco me financia?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes. Claro que sí, PR4 en Evaristo Morales es una opción muy buena.\n\nPara el financiamiento bancario: PR4 está en construcción con entrega en agosto 2027, así que el banco entra al final para cubrir el contra entrega (el 60% del precio). Durante la construcción las cuotas mensuales van directo al fideicomiso — no al banco.\n\nLo que te recomiendo es hacer una pre-aprobación bancaria ahora mismo, aunque la entrega sea en 2027. Eso te fija la tasa, demuestra solvencia y cuando llegue la entrega todo está listo. Bancos como Popular, BHD León y Scotiabank tienen buenas líneas hipotecarias.\n\nTodo el proceso queda protegido por fideicomiso bajo Ley 189-11 — tu dinero lo administra un banco fiduciario independiente desde el primer día.\n\n¿Eres asalariado o tienes negocio propio? Con eso te digo exactamente qué documentos necesitas para arrancar.\n\n<parameter name=\"perfil_update\">\n{\n  \"proyecto_interes\": \"pr4\",\n  \"fuente_financiamiento\": \"bancario\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\",\n  \"tags_nuevos\": [\"interesado-pr4\", \"pregunta-financiamiento\"]\n}\n</parameter>",
+  "reply_length": 1169,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

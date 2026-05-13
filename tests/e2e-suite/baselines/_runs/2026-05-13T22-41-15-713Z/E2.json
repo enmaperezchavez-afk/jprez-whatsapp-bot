@@ -1,0 +1,36 @@
+{
+  "id": "E2",
+  "bloque": "E_b2b",
+  "title": "Inmobiliaria XYZ — alianza zona Naco",
+  "perfil": "b2b_ejecutivo",
+  "input": "Buenos días. Represento a Inmobiliaria XYZ. Tenemos cartera de compradores interesados en zona Naco. Cómo podemos hacer una alianza con JPREZ?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buenas días. Qué bueno que nos escriben desde Inmobiliaria XYZ.\n\nLas alianzas B2B las maneja directamente Enmanuel Pérez Chávez, el director de JPREZ. Él es quien define los términos de comisiones y estructura de trabajo con inmobiliarias aliadas.\n\nTe conecto con él para que conversen directamente. ¿Me dejas un número de contacto o correo para coordinar la llamada?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": \"Naco (zona de interés de su cartera)\",\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"B2B\", \"inmobiliaria-alianza\", \"broker\", \"cartera-compradores\", \"zona-naco\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+  "reply_length": 1038,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [buenos días, te tengo, mira]"
+      ]
+    }
+  }
+}

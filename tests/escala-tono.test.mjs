@@ -49,8 +49,13 @@ describe("Hotfix-23 V3.6 — Escala de tono 4 niveles", () => {
     expect(OVERRIDES_LAYER).toMatch(/dale/);
   });
 
-  it("Nivel extranjero pide español neutro profesional SIN modismos fuertes", () => {
-    expect(OVERRIDES_LAYER).toMatch(/español neutro profesional|NO usa modismos/i);
+  it("Nivel 4 'otro idioma': PRIMERO pregunta idioma (V3.6.6 PR #41)", () => {
+    // PR #41 V3.6.6: nivel 4 reescrito de "español neutro profesional"
+    // a "preguntar idioma primero". Root cause D3 cliente inglés:
+    // Mateo respondía en español al inglés sin preguntar.
+    expect(OVERRIDES_LAYER).toMatch(/CLIENTE EN OTRO IDIOMA/);
+    expect(OVERRIDES_LAYER).toMatch(/PRIMERO pregunta el idioma/i);
+    expect(OVERRIDES_LAYER).toMatch(/Would you prefer English, Spanish, or mixed/);
   });
 });
 
@@ -67,12 +72,20 @@ describe("Hotfix-23 V3.6 — 7 reglas duras del tono", () => {
     expect(OVERRIDES_LAYER).toMatch(/cliente usa.*usted.*Mateo usa.*usted/i);
   });
 
-  it("Regla 5: Extranjero → español neutro profesional sin modismos fuertes", () => {
-    expect(OVERRIDES_LAYER).toMatch(/extranjero.*español neutro|Cliente extranjero.*neutro profesional/i);
+  it("Regla 5: Cliente otro idioma → PRIMERO preguntar idioma (V3.6.6 PR #41)", () => {
+    // PR #41 V3.6.6: regla 5 reescrita. Doctrina antes "cliente
+    // extranjero → español neutro" cambiada a "preguntar idioma primero".
+    expect(OVERRIDES_LAYER).toMatch(/Cliente que escribió en otro idioma/i);
+    expect(OVERRIDES_LAYER).toMatch(/PRIMERO preguntar idioma/i);
+    // Sección 7b dedicada al flow multilingüe:
+    expect(OVERRIDES_LAYER).toMatch(/7b\. MULTILINGÜE/i);
   });
 
-  it("Regla 7: Números SIEMPRE exactos (cero redondeo en plata)", () => {
-    expect(OVERRIDES_LAYER).toMatch(/Números SIEMPRE exactos|exactos.*Cero redondeo|Cero redondeo en plata/i);
+  it("Regla 7: Números SIEMPRE exactos con prefijo US$ (PR #41 V3.6.5)", () => {
+    expect(OVERRIDES_LAYER).toMatch(/Números SIEMPRE exactos/i);
+    expect(OVERRIDES_LAYER).toMatch(/prefijo.*US\$/i);
+    // "plata" NUNCA como sustituto de dólares (PR #41 V3.6.5)
+    expect(OVERRIDES_LAYER).toMatch(/plata.*NUNCA|NUNCA.*plata/i);
   });
 });
 
@@ -114,7 +127,8 @@ describe("Hotfix-23 V3.6 — 3 ejemplos canonicos verbatim", () => {
 
   it("OVERRIDES contiene Caso B (neutral/primer contacto)", () => {
     expect(OVERRIDES_LAYER).toMatch(/Caso B.*Cliente neutral|Caso B.*primer contacto/i);
-    expect(OVERRIDES_LAYER).toMatch(/Hola, te tengo\. Para el PSE3 a \$124,000/);
+    // PR #41 V3.6.5: ejemplos actualizados con prefijo US$.
+    expect(OVERRIDES_LAYER).toMatch(/Hola, te tengo\. Para el PSE3 a US\$124,000/);
   });
 
   it("OVERRIDES contiene Caso C (popi) con 2 sub-versiones (primer mensaje vs post 4-5)", () => {
@@ -123,9 +137,9 @@ describe("Hotfix-23 V3.6 — 3 ejemplos canonicos verbatim", () => {
     expect(OVERRIDES_LAYER).toMatch(/después de 4-5 mensajes.*ya con confianza/i);
   });
 
-  it("Caso B usa numeros exactos del doc V3.6 (12,400 / 1,094 / 74,400)", () => {
-    expect(OVERRIDES_LAYER).toMatch(/\$12,400/);
-    expect(OVERRIDES_LAYER).toMatch(/\$1,094/);
-    expect(OVERRIDES_LAYER).toMatch(/\$74,400/);
+  it("Caso B usa numeros exactos del doc V3.6 con prefijo US$ (PR #41 V3.6.5)", () => {
+    expect(OVERRIDES_LAYER).toMatch(/US\$12,400/);
+    expect(OVERRIDES_LAYER).toMatch(/US\$1,094/);
+    expect(OVERRIDES_LAYER).toMatch(/US\$74,400/);
   });
 });

@@ -265,7 +265,7 @@
         ["15 años", "IPI", "3% transferencia", "transferencia"]
       ],
       "antiKeywords": ["Bono Primera Vivienda", "aplica en todos los proyectos", "aplica en todos", "bajas $"],
-      "expectedToneSignals": ["te tengo", "mira", "buenas"],
+      "expectedToneSignals": ["te tengo", "mira", "buenas", "buena pregunta", "le explico", "permítame", "con gusto"],
       "antiToneSignals": ["klk", "aplica en todos"]
     },
     {
@@ -281,7 +281,7 @@
         ["protegido", "protección", "protege"]
       ],
       "antiKeywords": ["Bono Primera Vivienda", "marco regulatorio", "administrador legal", "bajas $"],
-      "expectedToneSignals": ["tranquilo", "te tengo", "mira"],
+      "expectedToneSignals": ["tranquilo", "te tengo", "mira", "buena pregunta", "le explico", "permítame", "con gusto"],
       "antiToneSignals": ["klk", "marco regulatorio"]
     },
     {

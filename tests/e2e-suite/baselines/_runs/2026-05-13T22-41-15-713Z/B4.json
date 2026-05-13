@@ -1,0 +1,63 @@
+{
+  "id": "B4",
+  "bloque": "B_perfiles",
+  "title": "Segunda vivienda — alquiler o personal",
+  "perfil": "neutral_experimentado",
+  "input": "Tengo casa propia, busco apartamento adicional, puede ser para mí o alquilar",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buena pregunta de arranque. Para orientarte bien, dime:\n\n¿Tienes alguna zona en mente — Santo Domingo, Puerto Plata, o estás abierto a opciones?\n\nY también, ¿manejas un presupuesto estimado o estás explorando primero qué hay disponible?\nMientras me cuentas, te doy un panorama rápido de lo que tenemos activo:\n\nSi buscas **inversión para alquilar**, los mejores picks son PR3 en Winston Churchill (entrega agosto 2026, viene equipado, ideal Airbnb o alquiler corporativo, desde US$156,000) y Puerto Plata frente a Playa Dorada (desde US$73,000 en Etapa 3, brutal para renta vacacional).\n\nSi buscas **uso personal** con opción de alquilar después, Crux del Prado tiene apartamentos de 3 hab desde US$98,000 y PR4 en Evaristo Morales desde US$140,000 — zonas muy distintas en valor de alquiler.\n\n¿Cuánto tienes pensado destinar a esto? Eso me ayuda a recomendarte el ideal sin vuelta.",
+  "reply_length": 882,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "tool_use"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 98292,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 140000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, qué bueno, mira, hola]"
+      ]
+    }
+  }
+}

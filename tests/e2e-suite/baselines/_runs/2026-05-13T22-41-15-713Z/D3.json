@@ -1,0 +1,15 @@
+{
+  "id": "D3",
+  "bloque": "D_legales",
+  "title": "Cliente en inglés — preguntar idioma",
+  "perfil": "extranjero_ingles",
+  "input": "Hi, can foreigners buy property in Dominican Republic?",
+  "passed": false,
+  "api_error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.2: user messages must have non-empty content\"},\"request_id\":\"req_011Cb1NyTPVwz9HJo8nGuegQ\"}",
+  "reply": "",
+  "reply_length": 0,
+  "iterations": 0,
+  "stop_reasons": [],
+  "tool_calls": [],
+  "checks": null
+}

@@ -1,0 +1,34 @@
+{
+  "id": "E1",
+  "bloque": "E_b2b",
+  "title": "Asesor inmobiliario — comisiones PR4",
+  "perfil": "b2b_colega",
+  "input": "Hola, soy asesor inmobiliario. Tengo un cliente interesado en PR4. ¿Cómo manejan comisiones?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes. Para el tema de comisiones y alianzas B2B te paso directo con Enmanuel, el director — él maneja todo lo relacionado con asesores externos.\n\nTe conecto ahora mismo.\n\n[ESCALAR]\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"asesor-inmobiliario\", \"b2b\", \"alianza\", \"broker\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+  "reply_length": 821,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}
