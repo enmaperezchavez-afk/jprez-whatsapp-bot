@@ -1,0 +1,50 @@
+{
+  "id": "A3",
+  "bloque": "A_calculos",
+  "title": "PSE4 3hab US$195,300 cliente popi",
+  "perfil": "popi_suelto",
+  "input": "klk mateo dame el de 3 habitaciones de puerto plata etapa 4",
+  "passed": false,
+  "api_error": null,
+  "reply": "Tranquilo, te tengo. Para el de 3 habitaciones en Puerto Plata E4, déjame calcularte el plan ahora mismo.\nMira, el 3 hab de E4 arranca desde $195,300 — te quedan así los números con el plan estándar:\n\nPones $2,000 para apartar la unidad. El 10% inicial son $19,530. Después cuotas de $3,662 mensuales por 16 meses hasta diciembre 2027, que es cuando entregan. Y contra entrega $117,180, que normalmente se cubre con banco.\n\nAhora, si la cuota mensual te parece alta, tengo un plan especial de Feria de Mayo activo solo hasta el 31 de mayo — la cuota mensual baja bastante. ¿Quieres que te lo calcule para que compares?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"3 hab 93m² E4\",\n  \"presupuesto_mencionado\": 195300,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"popi\", \"puerto-plata-e4\", \"3hab\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 967,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 195300,
+        "etapa": "E4",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "US$195,300"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: US$19,530 | el 10% son | pones US$]",
+        "[any of: CONFOTUR | fideicomiso]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

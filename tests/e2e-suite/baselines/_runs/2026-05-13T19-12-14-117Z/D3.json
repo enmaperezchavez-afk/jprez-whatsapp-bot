@@ -1,0 +1,45 @@
+{
+  "id": "D3",
+  "bloque": "D_legales",
+  "title": "Cliente en inglés — preguntar idioma",
+  "perfil": "extranjero_ingles",
+  "input": "Hi, can foreigners buy property in Dominican Republic?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Absolutely, foreigners have the exact same property rights as Dominican citizens here — no restrictions at all.\n\nYou just need a valid passport to get started. The whole process is protected under Law 189-11 (fideicomiso), which means your money is held by an independent fiduciary bank from day one — not by the developer directly.\n\nIf you're looking at our Puerto Plata projects (E3 or E4), there's an extra benefit: CONFOTUR (Law 158-01) gives you a 15-year IPI tax exemption plus no transfer tax (that's a 3% savings on the purchase price). That benefit doesn't apply to Crux, PR3 or PR4 since those aren't tourism projects.\n\nFor financing, banks like Scotiabank and Banco Popular work with foreigners — typically up to 70-80% financing, rates starting around 8-9%.\n\nWhat country are you based in, and do you have a particular project or zone in mind?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"extranjero\", \"primer-contacto\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1432,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: idioma | language | english | spanish | español | inglés | prefer | prefieres]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

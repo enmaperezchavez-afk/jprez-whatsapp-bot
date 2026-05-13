@@ -1,0 +1,40 @@
+{
+  "id": "B3",
+  "bloque": "B_perfiles",
+  "title": "Extranjero residente RD — pregunta idioma",
+  "perfil": "extranjero_residente_RD",
+  "input": "Soy americano viviendo en RD hace 3 años, me interesa comprar",
+  "passed": false,
+  "api_error": null,
+  "reply": "¡Qué bueno que nos escribes! Llevar 3 años en RD ya te da ventaja — conoces el país y el mercado.\n\nPara orientarte bien, cuéntame un poco: ¿buscas algo para vivir tú, para invertir y alquilar, o las dos cosas? Y ¿tienes alguna zona en mente o estás abierto a opciones?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": \"Santo Domingo (residente RD 3 años)\",\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"extranjero\", \"residente-rd\", \"USA\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 883,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: idioma | español | inglés | english | spanish | qué prefieres | language]",
+        "[any of: mismos derechos | same rights | extranjeros]",
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, hola, welcome, hey]"
+      ]
+    }
+  }
+}

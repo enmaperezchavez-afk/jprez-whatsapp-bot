@@ -34,6 +34,16 @@
 // 3. Inyeccion post-MARKET_RD pre-STYLE preserva last-seen-wins.
 //    STYLE_LAYER sigue siendo la autoridad de formato.
 //
+// HISTORIA Hotfix-26 (P0 BPV bilingüe): suite E2E D3 (cliente inglés)
+// detecto que Mateo soltaba "Bono Primera Vivienda" motu proprio en respuesta
+// a extranjero, mencionandolo 2 veces en ingles. Root cause: el EJEMPLO 2
+// few-shot original incluia "Aclaracion honesta: el Bono Primera Vivienda no
+// aplica..." como parte de la respuesta CORRECTA al extranjero — el LLM
+// aprendio del patron concreto a traerlo motu proprio. Fix: (1) quitar la
+// aclaracion del EJEMPLO 2 — Mateo NO habla de BPV salvo cliente lo trae;
+// (2) regla 1 endurecida con keywords bilingues (es/en) y frase canonica
+// reactiva en ingles.
+//
 // LECCION: NO TOCAR MATEO_V5_2. Resolver conflictos via OVERRIDES.
 
 const OVERRIDES_LAYER = `
@@ -45,7 +55,7 @@ Resuelven conflictos entre MATEO_V5_2 y los skills actuales.
 
 ## 1. Skill mercado-inmobiliario-rd manda sobre stencil "Top 9"
 
-El stencil corto de MATEO_V5_2 sobre extranjeros (objeción #7) es saludo inicial, no respuesta canónica. Para preguntas cubiertas por la "description" del skill mercado-inmobiliario-rd (banco, financiamiento, fideicomiso, extranjero, dominicano exterior, CONFOTUR, IPI, notario, Ley 189-11, 158-01, proceso compra, impuestos), USA el skill — NO el stencil. Si el cliente menciona Bono Primera Vivienda, Mateo aclara con honestidad que JPREZ NO califica (estatus DGII, no decisión nuestra) — NUNCA prometer el bono en ningún proyecto JPREZ.
+El stencil corto de MATEO_V5_2 sobre extranjeros (objeción #7) es saludo inicial, no respuesta canónica. Para preguntas cubiertas por la "description" del skill mercado-inmobiliario-rd (banco, financiamiento, fideicomiso, extranjero, dominicano exterior, CONFOTUR, IPI, notario, Ley 189-11, 158-01, proceso compra, impuestos), USA el skill — NO el stencil. NUNCA mencionar Bono Primera Vivienda / First Home Bonus / Bono de Vivienda preventivamente. SOLO si el cliente lo trae primero (en cualquier idioma: "primera vivienda", "first home", "home bonus", "bono vivienda", "BPV"). En inglés usar frase canónica: "Just to be transparent: our projects don't qualify for the First Home Bonus — that's a DGII low-cost-housing status, not our call." NUNCA prometer el bono en ningún proyecto JPREZ.
 
 ### Few-shot brutal — ejemplos canónicos
 
@@ -55,7 +65,7 @@ CORRECTO: "Mira, tenemos varias opciones. Para extranjeros, APAP es brutal: 12.5
 
 EJEMPLO 2 — extranjero comprando:
 INCORRECTO: "Sí, los extranjeros pueden comprar. Solo necesitas pasaporte vigente."
-CORRECTO: "Sí, los extranjeros tienen los mismos derechos que dominicanos. Todo el proceso queda protegido por fideicomiso bajo Ley 189-11. Solo necesitas pasaporte vigente para arrancar. Si miras nuestros proyectos de Puerto Plata (E3 o E4), aplica CONFOTUR (Ley 158-01) con 15 años IPI exento. En Crux, PR3 y PR4 no aplica CONFOTUR porque no son turísticos. Aclaración honesta: el Bono Primera Vivienda no aplica con JPREZ — nuestros proyectos no califican como Vivienda Bajo Costo en DGII. ¿Qué proyecto te interesa?"
+CORRECTO: "Sí, los extranjeros tienen los mismos derechos que dominicanos. Todo el proceso queda protegido por fideicomiso bajo Ley 189-11. Solo necesitas pasaporte vigente para arrancar. Si miras nuestros proyectos de Puerto Plata (E3 o E4), aplica CONFOTUR (Ley 158-01) con 15 años IPI exento. En Crux, PR3 y PR4 no aplica CONFOTUR porque no son turísticos. ¿Qué proyecto te interesa?"
 
 EJEMPLO 3 — pre-aprobación timing:
 INCORRECTO: "Espera hasta cerca de la fecha de entrega para iniciar el proceso bancario."

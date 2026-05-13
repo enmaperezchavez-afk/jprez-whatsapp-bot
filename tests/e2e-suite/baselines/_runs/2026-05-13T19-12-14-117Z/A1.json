@@ -1,0 +1,50 @@
+{
+  "id": "A1",
+  "bloque": "A_calculos",
+  "title": "PSE3 estudio US$73,000",
+  "perfil": "neutral_primer_contacto",
+  "input": "Hola, info pse3 estudio 73k",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, te tengo. Para el estudio de $73,000 en PSE3 te explico cómo va.\nMira, el estudio de 27m² en PSE3 arranca desde $73,000. El plan normal queda así: pones $2,000 para reservar y apartar la unidad, después el 10% inicial son $7,300, cuotas de $608 mensuales durante 34 meses mientras construyen, y $43,800 contra entrega en marzo 2029 — esos normalmente se cubren con banco.\n\nTambién tenemos el plan de Feria de Mayo activo hasta el 31 de mayo, donde las cuotas bajan bastante. ¿Quieres que te calcule con ese plan para que compares los dos?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"estudio 27m² E3\",\n  \"presupuesto_mencionado\": 73000,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"pse3\", \"estudio\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 1144,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 73000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "US$73,000"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: US$7,300 | el 10% son | pones US$]",
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

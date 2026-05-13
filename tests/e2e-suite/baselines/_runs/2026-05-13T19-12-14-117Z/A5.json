@@ -1,0 +1,37 @@
+{
+  "id": "A5",
+  "bloque": "A_calculos",
+  "title": "Crux Torre 6 US$105,000 cliente formal cercano",
+  "perfil": "formal_cercano",
+  "input": "Buenos días, me interesa Crux del Prado. Tienen unidades disponibles en Torre 6?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Buenos días, claro que sí. En Torre 6 tenemos 42 de 50 unidades disponibles — bastante inventario todavía.\n\nSon todas de 100m², 3 habitaciones, 2 baños y 2 parqueos incluidos. Entrega julio 2027, con plan de pago 10/30/60.\n\nLos precios van desde US$98,292 en piso 1 hasta US$114,992 en piso 13. Te mando el brochure ahora para que veas todo el detalle.\n\n¿Tienes alguna preferencia de piso o presupuesto en mente?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"crux\",\n  \"tipologia_interes\": \"Torre 6 - 3 hab 100m²\",\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"crux-torre6\"],\n  \"documentos_solicitados\": [\"brochure_crux\"],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 1017,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: US$1,000 | reserva]",
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "id": "B4",
+  "bloque": "B_perfiles",
+  "title": "Segunda vivienda — alquiler o personal",
+  "perfil": "neutral_experimentado",
+  "input": "Tengo casa propia, busco apartamento adicional, puede ser para mí o alquilar",
+  "passed": false,
+  "api_error": null,
+  "reply": "Qué bueno que nos escribes. Mira, con ese perfil tienes varias opciones interesantes dependiendo de lo que le quieras sacar al apartamento.\n\nPara ayudarte a recomendar el ideal, cuéntame dos cosas:\n\n¿Tienes alguna zona preferida — Santo Domingo, playa, o te es indiferente? Y ¿manejas algún presupuesto estimado en mente?",
+  "reply_length": 321,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "tool_use"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 163400,
+        "etapa": "E4"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: Puerto Plata | PR4 | Evaristo | alquiler | renta]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}
