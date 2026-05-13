@@ -1,0 +1,55 @@
+{
+  "id": "C3",
+  "bloque": "C_objeciones",
+  "title": "Prefiero esperar a ver terminado",
+  "perfil": "neutral_conservador",
+  "input": "Prefiero esperar a que el proyecto esté terminado para ver antes de comprar",
+  "passed": false,
+  "api_error": null,
+  "reply": "Mira, te entiendo perfectamente — querer ver antes de comprar es lo más natural del mundo.\n\nTe cuento algo que puede cambiar la perspectiva: los apartamentos que compras en construcción los consigues desde US$98,000 en Crux del Prado o desde US$73,000 en Puerto Plata. Cuando el edificio está terminado, ese mismo apartamento ya subió de precio — y las mejores unidades (pisos altos, mejores vistas) ya están vendidas.\n\nLos que esperan a verlo terminado básicamente le pagan la plusvalía al que compró antes.\n\nDicho eso, si lo que más te importa es ver antes de comprar, en Crux del Prado sí tenemos 4 unidades listas para entrega inmediata — 3 habitaciones, 100m², desde RD$5,650,000. Las ves hoy y te mudas cuando quieras.\n\n¿Qué tipo de apartamento buscas y para qué lo usarías — para vivir, invertir o algo vacacional?\n<perfil_update>\n{\n  \"objecion_detectada\": \"quiere ver antes de comprar / esperar proyecto terminado\",\n  \"objecion_nueva\": false,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"frio\",\n  \"tags_nuevos\": [\"objecion-ver-antes-de-comprar\"],\n  \"siguiente_accion_sugerida\": \"schedule_visit\"\n}\n</perfil_update>",
+  "reply_length": 1129,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 98292,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 98292,
+        "plan": "10/20/70"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: preventa | preventa | elegir unidad | elegir la unidad]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

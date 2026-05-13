@@ -1,0 +1,46 @@
+{
+  "id": "B5",
+  "bloque": "B_perfiles",
+  "title": "Inversionista renta",
+  "perfil": "neutral_business",
+  "input": "Hola, busco apartamento puramente para inversión, quiero rentarlo. Cuál me conviene?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes! Para ayudarte a encontrar la mejor opción de inversión, déjame hacerte una pregunta clave:\n\n¿Tienes en mente un presupuesto aproximado, o estás explorando rangos?\n\nY mientras me dices eso, te cuento que para inversión/renta tenemos dos perfiles muy distintos:\n\n**Puerto Plata** — frente a Playa Dorada, ideal para renta vacacional tipo Airbnb. Zona turística en pleno boom, con puntos de entrada desde US$73,000.\n\n**PR3 (Prado Residences III)** — en Ensanche Paraíso a pasos de la Av. Winston Churchill, ideal para renta corporativa/residencial en una de las zonas más demandadas de Santo Domingo. Viene equipado (nevera, estufa, A/A, cerradura smart) y entrega en agosto 2026 — retorno de inversión casi inmediato.\n\n¿Buscas renta vacacional (turismo) o renta residencial/corporativa en la capital?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\", \"renta\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1403,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: CONFOTUR | IPI exento | 15 años]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

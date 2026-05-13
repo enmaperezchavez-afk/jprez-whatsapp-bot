@@ -1,0 +1,43 @@
+{
+  "id": "C1",
+  "bloque": "C_objeciones",
+  "title": "Está muy caro",
+  "perfil": "neutral_resistente",
+  "input": "Hola, vi sus precios pero están muy caros para mí",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes. Te entiendo, el precio es importante y quiero ayudarte a encontrar algo que te cuadre.\n\nCuéntame un poco más: ¿qué tipo de apartamento buscas — para vivir tú, para invertir, o para vacacionar? ¿Y tienes una zona en mente?\n\nCon eso te oriento a la opción más accesible que tenemos. 😊\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"precio_alto\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 872,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "id": "C2",
+  "bloque": "C_objeciones",
+  "title": "No tengo el 10% completo",
+  "perfil": "neutral_interesado",
+  "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Tranquilo, eso lo trabajamos. El proceso arranca con la reserva — no con el 10% completo.\n\nPrimero separas la unidad con US$2,000 (o US$1,000 si es Crux). Después vamos completando el 10% en cuotas mensuales durante los primeros meses, sin necesidad de tenerlo todo de entrada. El contrato firmado te llega cuando se completa ese 10%, que es la regla del fideicomiso.\n\nPara armarte algo concreto necesito saber dos cosas: ¿qué proyecto te interesa, y cuánto puedes manejar mensual?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"no tiene el 10% completo\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"liquidez-limitada-inicial\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1087,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

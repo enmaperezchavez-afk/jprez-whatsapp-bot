@@ -1,0 +1,43 @@
+{
+  "id": "D2",
+  "bloque": "D_legales",
+  "title": "¿Cómo funciona el fideicomiso?",
+  "perfil": "neutral_curioso",
+  "input": "Quiero entender bien cómo funciona eso del fideicomiso",
+  "passed": true,
+  "api_error": null,
+  "reply": "Buena pregunta, y me alegra que la hagas antes de tomar una decisión.\n\nEl fideicomiso es básicamente lo que protege tu dinero desde el día uno. Te explico cómo funciona en la práctica:\n\nCuando haces un pago, ese dinero NO va directo a JPREZ. Va a una cuenta del fideicomiso, que es una entidad legal completamente separada, supervisada por la Superintendencia de Bancos. JPREZ no puede tocarlo cuando quiera.\n\nPara que la constructora pueda sacar fondos, tiene que presentar solicitudes que la fiduciaria revisa y aprueba según el avance real de la obra. Sin avance, sin dinero. Así de simple.\n\n¿Y si por alguna razón el proyecto no avanza? Los fondos se devuelven al comprador. No se pierden en deudas del constructor ni en nada de eso. Eso es lo que garantiza la Ley 189-11 en República Dominicana.\n\nPor eso JPREZ lleva más de 23 años entregando proyectos sin problemas, porque la estructura legal protege tanto al comprador como a la constructora.\n\n¿Tienes algún proyecto en mente o estás explorando opciones todavía?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"pregunta-fideicomiso\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1588,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

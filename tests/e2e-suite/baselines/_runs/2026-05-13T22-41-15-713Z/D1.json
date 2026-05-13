@@ -1,0 +1,34 @@
+{
+  "id": "D1",
+  "bloque": "D_legales",
+  "title": "¿Aplica CONFOTUR aquí?",
+  "perfil": "neutral_sectorial",
+  "input": "Buenas, ¿los apartamentos aplican a CONFOTUR?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Buena pregunta. Depende del proyecto que te interese.\n\nCONFOTUR (Ley 158-01) aplica únicamente a nuestros apartamentos en **Prado Suites Puerto Plata** — tanto la Etapa 3 como la Etapa 4. Eso te da 15 años de IPI exento y sin el 3% de impuesto de transferencia al momento de la compra. Un ahorro bien significativo.\n\nLos otros proyectos — Crux del Prado, Prado Residences III y Prado Residences IV — no aplican a CONFOTUR porque no son proyectos turísticos.\n\n¿Estás mirando algún proyecto en específico o estás explorando opciones todavía?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"pregunta-confotur\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1105,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}
