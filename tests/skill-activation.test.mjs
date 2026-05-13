@@ -89,14 +89,13 @@ describe("Hotfix-22 V3.5 R6 — skill activation few-shots", () => {
     expect(staticBlock.indexOf("OVERRIDES CRÍTICOS")).toBeGreaterThan(-1);
   });
 
-  it("Test 6: OVERRIDES sigue bajo limite razonable (V3.6 + Hotfix-26 + PR #41 addenda V3.6.3-V3.6.6)", () => {
+  it("Test 6: OVERRIDES sigue bajo limite razonable (V3.6 + Hotfix-26 + PR #41 V3.6.3-V3.6.6)", () => {
     // R6 sumo ~700-1300 chars al original 1487. V3.6 (Hotfix-23) inyecta
-    // el Documento Maestro completo del Director: proceso comercial 5
-    // pasos + documentos por perfil + voz Mateo + 3 ejemplos canónicos.
-    // Hotfix-26 P0 sumo ~200 chars (guard BPV bilingüe + frase canónica EN).
-    // PR #41 V3.6.3-V3.6.6 suma ~1750 chars (warm-first + multilingüe +
-    // rejuego/ICDV + límites + mentions). Sanity max 15000 chars.
-    expect(OVERRIDES_LAYER.length).toBeLessThan(15000);
+    // el Documento Maestro completo del Director. Hotfix-26 P0 sumo ~200
+    // chars. PR #41 V3.6.3-V3.6.6: warm-first + multilingüe + rejuego/ICDV
+    // + límites + mentions. Cap ajustado a 17000 chars (sancionado Director
+    // por estimados originales optimistas; sigue 48% del budget cache 35K).
+    expect(OVERRIDES_LAYER.length).toBeLessThan(17000);
     // Sigue sobre el original 1487 (sanity: el refuerzo SI se aplico).
     expect(OVERRIDES_LAYER.length).toBeGreaterThan(2000);
   });

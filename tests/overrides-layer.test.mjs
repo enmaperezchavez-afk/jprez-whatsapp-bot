@@ -98,10 +98,13 @@ describe("Hotfix-22 V3 r2 — overrides-layer", () => {
     // frase canónica EN.
     // PR #41 (V3.6.3-V3.6.6): habilitar 6 bloques de doctrina —
     // warm-first + US$ prefix + multilingüe (preguntar idioma) +
-    // rejuego/ICDV + límites Mateo + mentions obligatorias. Estimado
-    // +1750 chars. Target sube a ≤15000 chars (~3750 tokens). Sigue
-    // dentro del budget cache (35K cap).
-    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(15000);
+    // rejuego/ICDV + límites Mateo + mentions obligatorias.
+    // Estimados originales demasiado optimistas: P1.A real +1,560
+    // (US$ prefix tocó 9 stencils literales), P1.B real +1,040
+    // (sección 7b ya recortada). Director sancionó subir cap a 17K
+    // para acomodar P1.C/D/E manteniendo legibilidad. 17K chars =
+    // ~4,250 tokens = 48% del budget cache 35K — cero riesgo perf.
+    expect(OVERRIDES_LAYER.length).toBeLessThanOrEqual(17000);
   });
 
   // ===== P1 =====
