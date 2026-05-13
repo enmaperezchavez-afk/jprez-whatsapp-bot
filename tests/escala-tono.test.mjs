@@ -71,8 +71,11 @@ describe("Hotfix-23 V3.6 — 7 reglas duras del tono", () => {
     expect(OVERRIDES_LAYER).toMatch(/extranjero.*español neutro|Cliente extranjero.*neutro profesional/i);
   });
 
-  it("Regla 7: Números SIEMPRE exactos (cero redondeo en plata)", () => {
-    expect(OVERRIDES_LAYER).toMatch(/Números SIEMPRE exactos|exactos.*Cero redondeo|Cero redondeo en plata/i);
+  it("Regla 7: Números SIEMPRE exactos con prefijo US$ (PR #41 V3.6.5)", () => {
+    expect(OVERRIDES_LAYER).toMatch(/Números SIEMPRE exactos/i);
+    expect(OVERRIDES_LAYER).toMatch(/prefijo.*US\$/i);
+    // "plata" NUNCA como sustituto de dólares (PR #41 V3.6.5)
+    expect(OVERRIDES_LAYER).toMatch(/plata.*NUNCA|NUNCA.*plata/i);
   });
 });
 
@@ -114,7 +117,8 @@ describe("Hotfix-23 V3.6 — 3 ejemplos canonicos verbatim", () => {
 
   it("OVERRIDES contiene Caso B (neutral/primer contacto)", () => {
     expect(OVERRIDES_LAYER).toMatch(/Caso B.*Cliente neutral|Caso B.*primer contacto/i);
-    expect(OVERRIDES_LAYER).toMatch(/Hola, te tengo\. Para el PSE3 a \$124,000/);
+    // PR #41 V3.6.5: ejemplos actualizados con prefijo US$.
+    expect(OVERRIDES_LAYER).toMatch(/Hola, te tengo\. Para el PSE3 a US\$124,000/);
   });
 
   it("OVERRIDES contiene Caso C (popi) con 2 sub-versiones (primer mensaje vs post 4-5)", () => {
@@ -123,9 +127,9 @@ describe("Hotfix-23 V3.6 — 3 ejemplos canonicos verbatim", () => {
     expect(OVERRIDES_LAYER).toMatch(/después de 4-5 mensajes.*ya con confianza/i);
   });
 
-  it("Caso B usa numeros exactos del doc V3.6 (12,400 / 1,094 / 74,400)", () => {
-    expect(OVERRIDES_LAYER).toMatch(/\$12,400/);
-    expect(OVERRIDES_LAYER).toMatch(/\$1,094/);
-    expect(OVERRIDES_LAYER).toMatch(/\$74,400/);
+  it("Caso B usa numeros exactos del doc V3.6 con prefijo US$ (PR #41 V3.6.5)", () => {
+    expect(OVERRIDES_LAYER).toMatch(/US\$12,400/);
+    expect(OVERRIDES_LAYER).toMatch(/US\$1,094/);
+    expect(OVERRIDES_LAYER).toMatch(/US\$74,400/);
   });
 });
