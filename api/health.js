@@ -33,9 +33,16 @@
 
 const { Ratelimit } = require("@upstash/ratelimit");
 const { Redis } = require("@upstash/redis");
+const { botLog } = require("../src/log");
 
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "jprez-bot";
 const AXIOM_APL_URL = "https://api.axiom.co/v1/datasets/_apl?format=tabular";
+
+// Suffix sanitizado del token para correlación en logs sin exponer el secreto.
+function tokenSuffix(token) {
+  if (!token || typeof token !== "string") return null;
+  return token.length <= 4 ? "***" : "..." + token.slice(-4);
+}
 
 // ============================================
 // RATE LIMIT (Hotfix-27 Día 4-5)
@@ -169,15 +176,22 @@ function buildQueries(startTime, endTime) {
 // ============================================
 
 module.exports = async function handler(req, res) {
+  const clientIp = getClientIp(req);
+  const userAgent = String(req.headers["user-agent"] || "unknown").slice(0, 200);
+
   // Rate limit: 10 req/min por IP. Si Upstash no configurado, skip.
   const ratelimit = getHealthRatelimit();
   if (ratelimit) {
-    const ip = getClientIp(req);
-    const { success, limit, remaining, reset } = await ratelimit.limit(ip);
+    const { success, limit, remaining, reset } = await ratelimit.limit(clientIp);
     res.setHeader("X-RateLimit-Limit", String(limit));
     res.setHeader("X-RateLimit-Remaining", String(remaining));
     res.setHeader("X-RateLimit-Reset", String(reset));
     if (!success) {
+      botLog("warn", "health_access_ratelimited", {
+        ip: clientIp,
+        userAgent,
+        limit,
+      });
       res.setHeader("Cache-Control", "no-store");
       res.status(429).json({
         error: "Too Many Requests",
@@ -205,10 +219,21 @@ module.exports = async function handler(req, res) {
     ? authHeader.slice(7)
     : null;
   if (!providedToken || providedToken !== expectedToken) {
+    botLog("warn", "health_access_denied", {
+      ip: clientIp,
+      userAgent,
+      reason: providedToken ? "invalid_token" : "no_token",
+    });
     res.setHeader("Cache-Control", "no-store");
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+
+  botLog("info", "health_access", {
+    ip: clientIp,
+    userAgent,
+    tokenSuffix: tokenSuffix(providedToken),
+  });
 
   // Axiom token
   const axiomToken = process.env.AXIOM_QUERY_TOKEN;
