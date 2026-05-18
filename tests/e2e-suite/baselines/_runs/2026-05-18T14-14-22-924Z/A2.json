@@ -1,0 +1,45 @@
+{
+  "id": "A2",
+  "bloque": "A_calculos",
+  "title": "PSE3 2hab US$138,000 cliente formal",
+  "perfil": "formal_mayor_ejecutivo",
+  "input": "Buenas tardes. Quisiera obtener información sobre el apartamento de dos habitaciones en Prado Suites Puerto Plata, etapa 3.",
+  "passed": true,
+  "api_error": null,
+  "reply": "Buenas tardes, con gusto le explico todo sobre el apartamento de 2 habitaciones en Prado Suites Puerto Plata Etapa 3.\n\nSon unidades de 67m², 2 habitaciones, con precios desde US$138,000. El complejo queda frente a Playa Dorada, una de las zonas turísticas más cotizadas del país, ideal tanto para vivir como para inversión vacacional (Airbnb).\n\nLa entrega de la Etapa 3 es en marzo 2029, y el plan de pago es 10% para apartar, 30% en cuotas mensuales durante la construcción, y 60% contra entrega — todo protegido por fideicomiso bajo Ley 189-11 desde el primer día.\n\nDéjame calcularle el plan con los números exactos para que vea cómo queda mes a mes.\nAquí le van los números para el apartamento de 2 hab a US$138,000 en PSE3:\n\nPara apartar pone US$13,800 (el 10% inicial). Después cuotas mensuales de US$1,150 durante 36 meses hasta la entrega en marzo 2029. Y contra entrega son US$82,800, que normalmente se cubre con financiamiento bancario.\n\nAdemás, como es un proyecto turístico frente a Playa Dorada, aplica CONFOTUR (Ley 158-01): queda exento del 3% de impuesto de transferencia y 15 años sin IPI — un ahorro significativo a largo plazo.\n\n¿Le interesa ver alguna unidad específica disponible, o prefiere que le explique también el plan de pago alternativo que tenemos activo este mes?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"2hab-67m2-E3\",\n  \"presupuesto_mencionado\": 138000,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"pse3\", \"2hab\", \"turístico\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 1901,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

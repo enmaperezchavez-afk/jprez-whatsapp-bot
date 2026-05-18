@@ -1,0 +1,62 @@
+{
+  "id": "C2",
+  "bloque": "C_objeciones",
+  "title": "No tengo el 10% completo",
+  "perfil": "neutral_interesado",
+  "input": "Me interesa pero no tengo el 10% completo, ¿hay algún plan?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Tranquilo, eso tiene solución. En JPREZ el proceso arranca con la reserva — no con el 10% completo.\n\nLo que haces primero es reservar la unidad con US$2,000 (o US$1,000 si es Crux), y eso bloquea el apartamento para ti. El 10% se puede fraccionar en cuotas mensuales durante los primeros meses, así no tienes que bajarlo todo de un golpe.\n\nLo único que establece el contrato: JPREZ te entrega el contrato firmado cuando se complete ese 10%. Mientras tanto, la unidad está apartada a tu nombre y el dinero protegido por fideicomiso bajo Ley 189-11 desde el primer día.\n\nPara armarte un plan que te cuadre, dime: ¿qué proyecto te interesa y cuánto puedes manejar mensual?\nCuéntame qué proyecto te llama la atención y con cuánto puedes arrancar, y te armo el plan exacto. Aquí estoy.",
+  "reply_length": 780,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "tool_use"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 163400,
+        "etapa": "E4",
+        "plan": "10/30/60"
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "crux",
+        "precio_usd": 99246,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

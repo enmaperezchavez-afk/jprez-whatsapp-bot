@@ -1,0 +1,46 @@
+{
+  "id": "B5",
+  "bloque": "B_perfiles",
+  "title": "Inversionista renta",
+  "perfil": "neutral_business",
+  "input": "Hola, busco apartamento puramente para inversión, quiero rentarlo. Cuál me conviene?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes. Para orientarte bien, ayúdame con un par de cosas:\n\n¿Tienes en mente una zona específica — playa, capital, norte de la ciudad? ¿Y manejas algún presupuesto estimado?\n\nCon eso te recomiendo el que más te conviene para renta. 😊\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"inversionista\", \"renta\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 831,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: CONFOTUR | IPI exento | 15 años]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

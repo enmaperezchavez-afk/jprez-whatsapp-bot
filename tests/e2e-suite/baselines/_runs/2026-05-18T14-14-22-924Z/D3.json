@@ -1,0 +1,36 @@
+{
+  "id": "D3",
+  "bloque": "D_legales",
+  "title": "Cliente en inglés — preguntar idioma",
+  "perfil": "extranjero_ingles",
+  "input": "Hi, can foreigners buy property in Dominican Republic?",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hi! Would you prefer English, Spanish, or mixed? Happy to help in whichever feels easier for you.",
+  "reply_length": 97,
+  "iterations": 1,
+  "stop_reasons": [
+    "tool_use"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: yes | sí | foreigners | extranjeros | same rights | mismos derechos]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

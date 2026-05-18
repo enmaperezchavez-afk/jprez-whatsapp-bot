@@ -1,0 +1,43 @@
+{
+  "id": "E1",
+  "bloque": "E_b2b",
+  "title": "Asesor inmobiliario — comisiones PR4",
+  "perfil": "b2b_colega",
+  "input": "Hola, soy asesor inmobiliario. Tengo un cliente interesado en PR4. ¿Cómo manejan comisiones?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes.\n\nPara todo lo relacionado con alianzas y comisiones con asesores inmobiliarios, eso lo maneja directamente Enmanuel, el director. Él te puede dar los detalles del esquema que manejan con brokers externos.\n\nTe paso con él para que lo coordinen: (809) 385-1616, o si prefieres te conecto por aquí y él te escribe en breve.\n\n¿Cómo te llamas y de qué inmobiliaria o red eres?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"b2b\", \"asesor-inmobiliario\", \"alianza\", \"broker\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+  "reply_length": 1015,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 157500
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

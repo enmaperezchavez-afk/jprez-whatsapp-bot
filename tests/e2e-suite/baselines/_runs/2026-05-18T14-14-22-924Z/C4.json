@@ -1,0 +1,36 @@
+{
+  "id": "C4",
+  "bloque": "C_objeciones",
+  "title": "Espero a estar más cerca de entrega",
+  "perfil": "neutral_pragmatico",
+  "input": "Mejor cuando estén más cerca de la entrega para no pagar cuotas tanto tiempo",
+  "passed": false,
+  "api_error": null,
+  "reply": "Entiendo la lógica, pero te cuento algo que cambia el cálculo.\n\nEn Puerto Plata E4 quedan solo 19 unidades disponibles de 80 — ya van en 76% vendido. Si esperas a que esté más cerca de la entrega, lo más probable es que no quede nada que escoger, o que el precio haya subido.\n\nY hay otro punto que vale la pena ver: las cuotas mensuales durante construcción son el 30% del precio total distribuido en los meses que faltan. Si entras ahora con 19 meses hasta diciembre 2027, esas cuotas son moderadas. Si entraras en 6 meses, tendrías los mismos dólares que pagar pero en menos tiempo — la cuota mensual sería más alta, no más baja.\n\n¿Qué proyecto y tipología tienes en mente? Con eso te calculo los números exactos para que veas cómo quedan las cuotas hoy versus esperar.\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": \"quiere esperar a estar más cerca de entrega para evitar cuotas largas\",\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"objecion-timing\", \"esperar-entrega\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1440,
+  "iterations": 1,
+  "stop_reasons": [
+    "end_turn"
+  ],
+  "tool_calls": [],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: rejuego | cuotas más bajas | plan más cómodo | cash flow | cash]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

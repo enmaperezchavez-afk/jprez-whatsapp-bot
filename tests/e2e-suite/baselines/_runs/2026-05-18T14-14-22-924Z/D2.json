@@ -1,0 +1,43 @@
+{
+  "id": "D2",
+  "bloque": "D_legales",
+  "title": "¿Cómo funciona el fideicomiso?",
+  "perfil": "neutral_curioso",
+  "input": "Quiero entender bien cómo funciona eso del fideicomiso",
+  "passed": true,
+  "api_error": null,
+  "reply": "Buena pregunta, eso es clave para que te sientas tranquilo con tu inversión. Te explico simple:\n\nCuando pagas, tu dinero NO va directo a JPREZ. Va a una cuenta del fideicomiso — una entidad legal separada, supervisada por la Superintendencia de Bancos bajo la Ley 189-11.\n\nJPREZ no puede tocar ese dinero cuando quiera. Para cada desembolso tiene que presentar una solicitud que la fiduciaria revisa y aprueba según el avance real de la obra.\n\nY lo más importante: si por alguna razón el proyecto no avanzara, el dinero se te devuelve a ti. No se pierde en deudas del constructor, porque ese patrimonio está separado legalmente.\n\nEs básicamente un árbitro independiente entre tú y la constructora que protege tu inversión desde el primer peso que pones.\n\n¿Estás viendo algún proyecto específico o todavía explorando opciones?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": null,\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"explorando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"pregunta-fideicomiso\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 1392,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

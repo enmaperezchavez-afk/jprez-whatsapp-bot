@@ -1,0 +1,49 @@
+{
+  "id": "A3",
+  "bloque": "A_calculos",
+  "title": "PSE4 3hab US$195,300 cliente popi",
+  "perfil": "popi_suelto",
+  "input": "klk mateo dame el de 3 habitaciones de puerto plata etapa 4",
+  "passed": false,
+  "api_error": null,
+  "reply": "Bueno, te tengo. Para el de 3 habitaciones en Puerto Plata E4, déjame calcular el plan ahora mismo.\nTranquilo, aquí va. Para el 3 habitaciones en E4 de Puerto Plata, el precio de entrada es $195,300.\n\nPones $2,000 para reservar y la unidad queda bloqueada. Después completas el 10% inicial que son $19,530, y con eso se firma el contrato. Las cuotas mensuales te quedan en $3,662 por 16 meses hasta la entrega en diciembre 2027. Y el contra entrega son $117,180, que normalmente se cubre con banco.\n\nTodo el proceso queda protegido por fideicomiso bajo Ley 189-11 — tu dinero administrado por un banco fiduciario independiente desde el primer día.\n\nEse es el plan estándar. También tengo un plan de Feria de Mayo activo hasta el 31 de mayo donde la cuota mensual baja bastante — ¿quieres que te lo calcule para comparar?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"3 hab 93m² E4\",\n  \"presupuesto_mencionado\": 195300,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"puerto-plata-e4\", \"3-habitaciones\"],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1171,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 195300,
+        "etapa": "E4",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "US$195,300"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: US$19,530 | el 10% son | pones US$]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "E2",
+  "bloque": "E_b2b",
+  "title": "Inmobiliaria XYZ — alianza zona Naco",
+  "perfil": "b2b_ejecutivo",
+  "input": "Buenos días. Represento a Inmobiliaria XYZ. Tenemos cartera de compradores interesados en zona Naco. Cómo podemos hacer una alianza con JPREZ?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Buenos días. Qué bueno que nos contactan — siempre es interesante explorar alianzas con asesores que traen cartera real.\n\nPara este tipo de conversación, lo ideal es conectarlos directamente con Enmanuel Pérez Chávez, el director de JPREZ. Él maneja personalmente las alianzas B2B y puede sentarse con ustedes a estructurar algo que tenga sentido para ambas partes.\n\n¿Me dejan un contacto (nombre, teléfono o correo) para que Enmanuel los llame directamente?\nMientras Enmanuel los contacta, les comparto que el proyecto más cercano a la zona Naco-Evaristo Morales que tenemos activo es **Prado Residences IV**, en Calle José Brea Peña, Evaristo Morales — que es exactamente el perfil de comprador de esa zona. Tenemos 13 unidades disponibles, desde US$140,000 hasta US$315,500, con tipologías desde loft de 52m² hasta apartamentos de 130m². Entrega agosto 2027.\n\nSi quieren ir avanzando con su cartera mientras coordinamos la alianza, podemos arrancar. ¿Cuántos compradores tienen activos y qué perfil buscan — para vivienda, inversión, o ambos?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": \"Naco\",\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"B2B\", \"alianza\", \"broker\", \"inmobiliaria\", \"cartera-compradores\", \"zona-naco\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"escalate_enmanuel\"\n}\n</perfil_update>",
+  "reply_length": 1689,
+  "iterations": 3,
+  "stop_reasons": [
+    "tool_use",
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 157500
+      }
+    },
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 157500
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

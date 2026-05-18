@@ -1,0 +1,50 @@
+{
+  "id": "A4",
+  "bloque": "A_calculos",
+  "title": "PR4 Tipo D loft US$140,000",
+  "perfil": "neutral_directo",
+  "input": "Cuanto sale el loft de pr4?",
+  "passed": false,
+  "api_error": null,
+  "reply": "El loft (Tipo D) de PR4 arranca desde US$157,500 — son 63m², 1 habitación, 1.5 baños y 1 parqueo en Evaristo Morales.\n\nEl plan te queda así: pones US$15,750 para apartar el 10%, después cuotas de US$3,150 mensuales durante 15 meses, y US$94,500 contra entrega en agosto 2027.\n\nHay 3 disponibles en distintos pisos (4to, 6to y 8vo), con precios entre US$157,500 y US$163,500. ¿Tienes preferencia de piso o quieres que te calcule alguno específico?\n\n<perfil_update>\n{\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": \"loft tipo D 63m2\",\n  \"presupuesto_mencionado\": 157500,\n  \"moneda_presupuesto\": \"USD\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 735,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 157500,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": false,
+      "missing": [
+        "US$140,000"
+      ]
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: fideicomiso | Ley 189-11]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": false,
+      "reasons": [
+        "No expected tone signal found: [te tengo, mira, hey, hola]"
+      ]
+    }
+  }
+}
