@@ -109,6 +109,20 @@ function getAnthropic() {
   });
 }
 
+// Hotfix-27 anti-loop: firma estable de un tool_use para detectar
+// re-invocaciones duplicadas dentro de la misma llamada a Anthropic.
+// Ordenar las keys del input asegura que { a:1, b:2 } y { b:2, a:1 }
+// generen la misma firma — la API no garantiza orden de propiedades.
+function toolSignature(name, input) {
+  const sortedInput = input && typeof input === "object" && !Array.isArray(input)
+    ? Object.keys(input).sort().reduce((acc, k) => {
+        acc[k] = input[k];
+        return acc;
+      }, {})
+    : input;
+  return name + ":" + JSON.stringify(sortedInput);
+}
+
 // callClaudeWithTools: encapsula el tool-use loop contra Anthropic.
 // Mecanica del cliente (HTTP + loop) vive aca. Logica de dominio
 // (que hace cada herramienta) vive en webhook.js via toolHandlers.
@@ -124,6 +138,16 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
   let workingMessages = [...messages];
   let response;
   let iteration = 0;
+
+  // Hotfix-27 anti-loop (Path B): trackea firmas tool_use ya invocadas
+  // EN ESTA llamada. Si el LLM pide la misma firma en una iteración
+  // posterior, devolvemos un tool_result sintético "duplicate suppressed"
+  // en vez de re-ejecutar el handler. Esto rompe loops del estilo
+  // "Hola!!" → 3× calcular_plan_pago con la misma input observados en
+  // Axiom (11 may). El LLM aún paga tokens de razonamiento pero el
+  // handler no se ejecuta y la conversación pivota a texto.
+  // Defensa INTRA-TURNO solamente. Cross-turno raramente reproduce.
+  const invokedSignatures = new Set();
   while (iteration < MAX_TOOL_ITERATIONS) {
     // Hotfix-22 V3 r1: el SDK Anthropic ya retye 429/5xx automaticamente
     // con header-aware backoff (maxRetries config'd al instanciar el
@@ -233,6 +257,34 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
     const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
     workingMessages.push({ role: "assistant", content: response.content });
     const toolResults = toolUseBlocks.map((block) => {
+      const signature = toolSignature(block.name, block.input);
+      // Hotfix-27 anti-loop: si esta firma ya se invocó en esta llamada,
+      // suprimimos la ejecución del handler y devolvemos un tool_result
+      // sintético. El LLM debe usar el resultado de la invocación previa
+      // (que sigue en workingMessages) en lugar de pedir lo mismo otra vez.
+      if (invokedSignatures.has(signature)) {
+        const syntheticResult = {
+          suppressed: true,
+          reason: "duplicate_tool_call",
+          hint: "Ya invocaste " + block.name + " con esta input arriba. " +
+                "Usa el resultado previo y responde al cliente con ese contexto " +
+                "en lugar de re-invocar la herramienta.",
+        };
+        botLog("warn", "duplicate_tool_call_suppressed", {
+          phone,
+          tool: block.name,
+          input: block.input,
+          iteration,
+          signature: signature.slice(0, 200),
+        });
+        return {
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: JSON.stringify(syntheticResult),
+        };
+      }
+      invokedSignatures.add(signature);
+
       const handler = toolHandlers && toolHandlers[block.name];
       const result = handler
         ? handler(block.input)
@@ -251,4 +303,4 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
   return response;
 }
 
-module.exports = { getAnthropic, callClaudeWithTools };
+module.exports = { getAnthropic, callClaudeWithTools, toolSignature };
