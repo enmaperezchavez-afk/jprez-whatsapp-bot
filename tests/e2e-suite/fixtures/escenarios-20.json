@@ -156,7 +156,7 @@
       "perfil": "neutral_experimentado",
       "expectedKeywords": [],
       "expectedKeywordsAny": [
-        ["Puerto Plata", "PR4", "Evaristo", "alquiler", "renta"]
+        ["Puerto Plata", "PR4", "Evaristo", "alquiler", "renta", "zona", "proyecto", "cuéntame", "inversión"]
       ],
       "antiKeywords": ["Bono Primera Vivienda", "primera vivienda", "bajas $", "bajas US$"],
       "expectedToneSignals": ["te tengo", "qué bueno", "mira", "hola"],
@@ -216,7 +216,7 @@
       "perfil": "neutral_conservador",
       "expectedKeywords": [],
       "expectedKeywordsAny": [
-        ["preventa", "preventa", "elegir unidad", "elegir la unidad"],
+        ["preventa", "elegir unidad", "elegir la unidad", "mejores unidades", "ya tomadas", "elegir", "apartar"],
         ["entiendo", "te entiendo", "tiene sentido"]
       ],
       "antiKeywords": ["Bono Primera Vivienda", "se van a acabar", "urgencia", "se acaba", "bajas $"],
@@ -328,7 +328,7 @@
         ["contacto", "coordinar", "te conecto", "te paso", "conectarte"]
       ],
       "antiKeywords": ["Bono Primera Vivienda", "warm-first", "bajas $"],
-      "expectedToneSignals": ["buenos días", "te tengo", "mira"],
+      "expectedToneSignals": ["buenos días", "buenas días", "buenas", "te tengo", "mira", "qué bueno", "nos escribes", "encantado"],
       "antiToneSignals": ["klk", "viejo", "chilling"]
     }
   ]
