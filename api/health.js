@@ -203,8 +203,12 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // Auth shared secret
+  // Auth shared secret + soporte token rotation.
+  // Acepta HEALTH_DASHBOARD_TOKEN (current) o HEALTH_DASHBOARD_TOKEN_PREV
+  // (previous) durante ventana de rotación. Si PREV no definido, solo
+  // current es válido.
   const expectedToken = process.env.HEALTH_DASHBOARD_TOKEN;
+  const expectedTokenPrev = process.env.HEALTH_DASHBOARD_TOKEN_PREV;
   if (!expectedToken) {
     res.setHeader("Cache-Control", "no-store");
     res.status(503).json({
@@ -218,7 +222,13 @@ module.exports = async function handler(req, res) {
   const providedToken = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7)
     : null;
-  if (!providedToken || providedToken !== expectedToken) {
+  let tokenSource = null;
+  if (providedToken && providedToken === expectedToken) {
+    tokenSource = "current";
+  } else if (providedToken && expectedTokenPrev && providedToken === expectedTokenPrev) {
+    tokenSource = "prev";
+  }
+  if (!tokenSource) {
     botLog("warn", "health_access_denied", {
       ip: clientIp,
       userAgent,
@@ -233,6 +243,7 @@ module.exports = async function handler(req, res) {
     ip: clientIp,
     userAgent,
     tokenSuffix: tokenSuffix(providedToken),
+    tokenSource,
   });
 
   // Axiom token
