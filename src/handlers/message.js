@@ -330,6 +330,33 @@ function buildProfileContext(profile) {
     "\n\nUsa estos datos para NO preguntar de nuevo lo que ya sabes y personalizar la oferta.";
 }
 
+// Hotfix-28 Path B: pickRawReply — decide el rawReply cuando el LLM
+// no generó text blocks (tool_use loop sin pivot a texto). Cold start
+// recibe saludo contextual warm-first; clientes con historial y staff/
+// supervisor reciben el fallback genérico anterior. Helper pura para
+// que sea testeable sin mockear todo el handler.
+const COLD_START_SYNTHETIC_REPLY = "¡Hola! Soy Mateo de Constructora JPREZ. Cuéntame, ¿cómo te llamas y qué proyecto te interesa?";
+const GENERIC_HOLDING_REPLY = "Dejame un momento, te respondo en seguida.";
+
+function pickRawReply({ rawReplyJoined, customerProfile, isStaff, isSupervisor }) {
+  if (
+    rawReplyJoined === "" &&
+    !isStaff &&
+    !isSupervisor &&
+    customerProfile &&
+    customerProfile.is_new === true
+  ) {
+    return {
+      reply: COLD_START_SYNTHETIC_REPLY,
+      coldStartSyntheticUsed: true,
+    };
+  }
+  return {
+    reply: rawReplyJoined || GENERIC_HOLDING_REPLY,
+    coldStartSyntheticUsed: false,
+  };
+}
+
 function buildClientContext(meta) {
   if (!meta) return "";
   const parts = [];
@@ -657,36 +684,23 @@ async function processMessage(body) {
     const textBlocks = response.content.filter((b) => b.type === "text");
     const rawReplyJoined = textBlocks.map((b) => b.text).join("\n").trim();
 
-    // Hotfix-28 Path B: si el LLM agotó MAX_TOOL_ITERATIONS sin generar
-    // texto (textBlocks vacío) Y es cold start (cliente nuevo, primera
-    // conversación), reemplazamos el fallback genérico por un saludo
-    // contextual que cumple la doctrina V3.6 warm-first.
-    //
-    // Bug Director 18 may 14:51Z: cliente nuevo + "soy extranjero puedo
-    // comprar?" → tool_use loop (LLM intentó calcular sin precio) →
-    // textBlocks vacío → "Dejame un momento" → segunda iteración del
-    // handler (Meta retry o cliente repitió) max_tokens → safety net
-    // "Dame un segundo, se me complicó algo".
-    //
-    // El Path A (OVERRIDES §12 cold-start) reduce la probabilidad de
-    // que esto suceda. Este Path B es la red de seguridad si el LLM
-    // ignora la regla.
-    let rawReply;
-    if (
-      rawReplyJoined === "" &&
-      !isStaff &&
-      !isSupervisor &&
-      customerProfile &&
-      customerProfile.is_new
-    ) {
-      rawReply = "¡Hola! Soy Mateo de Constructora JPREZ. Cuéntame, ¿cómo te llamas y qué proyecto te interesa?";
+    // Hotfix-28 Path B: cold-start guard. Si el LLM agotó iteraciones sin
+    // generar texto Y es cliente nuevo, devolvemos un saludo contextual
+    // en vez del fallback genérico. Reproduce el bug Director 18 may
+    // 14:51Z: cold start + "soy extranjero puedo comprar?" → tool_use
+    // loop sin texto → "Dejame un momento" → safety net genérico.
+    const { reply: rawReply, coldStartSyntheticUsed } = pickRawReply({
+      rawReplyJoined,
+      customerProfile,
+      isStaff,
+      isSupervisor,
+    });
+    if (coldStartSyntheticUsed) {
       botLog("warn", "cold_start_synthetic_reply", {
         phone: senderPhone,
         stop_reason: response.stop_reason,
         tool_use_blocks: response.content.filter((b) => b.type === "tool_use").length,
       });
-    } else {
-      rawReply = rawReplyJoined || "Dejame un momento, te respondo en seguida.";
     }
     console.log("Respuesta del bot: " + rawReply);
 
@@ -1343,4 +1357,12 @@ async function processMessage(body) {
   }
 }
 
-module.exports = { processMessage, DOC_TYPE_NAMES, calcularPlanPago, buildClientContext };
+module.exports = {
+  processMessage,
+  DOC_TYPE_NAMES,
+  calcularPlanPago,
+  buildClientContext,
+  pickRawReply,
+  COLD_START_SYNTHETIC_REPLY,
+  GENERIC_HOLDING_REPLY,
+};
