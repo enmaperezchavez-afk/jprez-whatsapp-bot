@@ -1,0 +1,44 @@
+{
+  "id": "B2",
+  "bloque": "B_perfiles",
+  "title": "Pregunta financiamiento bancario",
+  "perfil": "neutral_pragmatico",
+  "input": "Hola, me interesa PR4. ¿El banco me financia?",
+  "passed": true,
+  "api_error": null,
+  "reply": "Hola, qué bueno que nos escribes. Con gusto te explico.\n\nSí, PR4 tiene financiamiento bancario disponible. Como la entrega es agosto 2027, el banco entra al final para cubrir el contra entrega (60% del precio). Lo que te recomiendo hacer ahora es una pre-aprobación bancaria — eso te fija la tasa y te da poder negociador cuando llegue ese momento.\n\nBancos como Popular, BHD León, Scotiabank y Banreservas tienen buenas líneas hipotecarias. Financian entre el 70% y 90% según tu perfil. Todo el proceso queda protegido por fideicomiso bajo Ley 189-11 — tu dinero lo administra un banco fiduciario independiente desde el primer día.\n\nPara orientarte mejor, ¿eres asalariado o tienes negocio propio?\nY para que tengas un número de referencia: en PR4 los precios arrancan desde US$140,000 (tipo F, 52m²) hasta US$315,500 (tipo A, 130m²). Por ejemplo, un loft de 63m² desde US$157,500 te quedaría con cuotas de US$3,150 mensuales durante los 15 meses de construcción, y US$94,500 contra entrega que cubres con banco.\n\n¿Tienes algo ahorrado para el inicial o estás explorando primero las opciones?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"pr4\",\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": \"banco\",\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"pregunta-financiamiento\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 1679,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr4",
+        "precio_usd": 157500,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

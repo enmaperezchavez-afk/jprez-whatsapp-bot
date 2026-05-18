@@ -1,0 +1,48 @@
+{
+  "id": "C5",
+  "bloque": "C_objeciones",
+  "title": "No me gusta la fecha de entrega PSE3",
+  "perfil": "neutral_timing",
+  "input": "PSE3 entrega en marzo 2029, es mucho tiempo de espera",
+  "passed": false,
+  "api_error": null,
+  "reply": "Mira, te entiendo — 35 meses puede parecer largo. Pero hay una manera de verlo diferente.\n\nEse tiempo es exactamente lo que hace que la inversión tenga tanto sentido. Entras hoy a precio de preventa, y cuando entreguen en marzo 2029 el valor ya subió. Puerto Plata está en pleno boom turístico — Playa Dorada es una de las zonas con mayor demanda de Airbnb vacacional en el Caribe.\n\nY mientras esperas, no estás sentado — estás pagando cuotas mensuales cómodas. Si quieres te calculo exactamente cuánto sería al mes según el tipo de unidad que te interese.\n\n¿Qué buscas — estudio, 1 hab, 2 hab o penthouse?\n<perfil_update>\n{\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": null,\n  \"objecion_detectada\": \"tiempo de espera largo\",\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"siguiente_accion_sugerida\": \"calculate_plan\"\n}\n</perfil_update>",
+  "reply_length": 869,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 138000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: alternativas | opciones]",
+        "[any of: PSE4 | PR4 | Torre 6 | Crux | Etapas 1 | listas | diciembre 2027 | julio 2027 | agosto 2027]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

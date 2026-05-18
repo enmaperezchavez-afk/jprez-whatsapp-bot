@@ -31,8 +31,46 @@
 // QUERY PARAM:
 //   ?hours=N — ventana temporal (default 24, max 168 = 1 semana)
 
+const { Ratelimit } = require("@upstash/ratelimit");
+const { Redis } = require("@upstash/redis");
+const { botLog } = require("../src/log");
+
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "jprez-bot";
 const AXIOM_APL_URL = "https://api.axiom.co/v1/datasets/_apl?format=tabular";
+
+// Suffix sanitizado del token para correlación en logs sin exponer el secreto.
+function tokenSuffix(token) {
+  if (!token || typeof token !== "string") return null;
+  return token.length <= 4 ? "***" : "..." + token.slice(-4);
+}
+
+// ============================================
+// RATE LIMIT (Hotfix-27 Día 4-5)
+// ============================================
+// 10 req/min por IP via Upstash sliding window.
+// Si UPSTASH_* env vars ausentes → degradación graceful (skip silencioso).
+// Reusa la instancia Redis ya configurada en el proyecto.
+let healthRatelimit;
+function getHealthRatelimit() {
+  if (healthRatelimit !== undefined) return healthRatelimit;
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    healthRatelimit = null;
+    return null;
+  }
+  healthRatelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, "1 m"),
+    prefix: "health-dashboard",
+    analytics: false,
+  });
+  return healthRatelimit;
+}
+
+function getClientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) return String(xff).split(",")[0].trim();
+  return req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown";
+}
 
 // ============================================
 // PRECIOS HARDCODED — Claude Sonnet 4.6 (12 mayo 2026)
@@ -138,8 +176,39 @@ function buildQueries(startTime, endTime) {
 // ============================================
 
 module.exports = async function handler(req, res) {
-  // Auth shared secret
+  const clientIp = getClientIp(req);
+  const userAgent = String(req.headers["user-agent"] || "unknown").slice(0, 200);
+
+  // Rate limit: 10 req/min por IP. Si Upstash no configurado, skip.
+  const ratelimit = getHealthRatelimit();
+  if (ratelimit) {
+    const { success, limit, remaining, reset } = await ratelimit.limit(clientIp);
+    res.setHeader("X-RateLimit-Limit", String(limit));
+    res.setHeader("X-RateLimit-Remaining", String(remaining));
+    res.setHeader("X-RateLimit-Reset", String(reset));
+    if (!success) {
+      botLog("warn", "health_access_ratelimited", {
+        ip: clientIp,
+        userAgent,
+        limit,
+      });
+      res.setHeader("Cache-Control", "no-store");
+      res.status(429).json({
+        error: "Too Many Requests",
+        limit,
+        remaining,
+        resetAt: new Date(reset).toISOString(),
+      });
+      return;
+    }
+  }
+
+  // Auth shared secret + soporte token rotation.
+  // Acepta HEALTH_DASHBOARD_TOKEN (current) o HEALTH_DASHBOARD_TOKEN_PREV
+  // (previous) durante ventana de rotación. Si PREV no definido, solo
+  // current es válido.
   const expectedToken = process.env.HEALTH_DASHBOARD_TOKEN;
+  const expectedTokenPrev = process.env.HEALTH_DASHBOARD_TOKEN_PREV;
   if (!expectedToken) {
     res.setHeader("Cache-Control", "no-store");
     res.status(503).json({
@@ -153,11 +222,29 @@ module.exports = async function handler(req, res) {
   const providedToken = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7)
     : null;
-  if (!providedToken || providedToken !== expectedToken) {
+  let tokenSource = null;
+  if (providedToken && providedToken === expectedToken) {
+    tokenSource = "current";
+  } else if (providedToken && expectedTokenPrev && providedToken === expectedTokenPrev) {
+    tokenSource = "prev";
+  }
+  if (!tokenSource) {
+    botLog("warn", "health_access_denied", {
+      ip: clientIp,
+      userAgent,
+      reason: providedToken ? "invalid_token" : "no_token",
+    });
     res.setHeader("Cache-Control", "no-store");
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+
+  botLog("info", "health_access", {
+    ip: clientIp,
+    userAgent,
+    tokenSuffix: tokenSuffix(providedToken),
+    tokenSource,
+  });
 
   // Axiom token
   const axiomToken = process.env.AXIOM_QUERY_TOKEN;

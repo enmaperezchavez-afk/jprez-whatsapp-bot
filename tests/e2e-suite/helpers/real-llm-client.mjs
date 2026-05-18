@@ -126,9 +126,23 @@ export async function askMateo(input) {
     // Si stop_reason !== tool_use, terminamos
     if (response.stop_reason !== "tool_use") break;
 
-    // Hay tool_use — ejecutar mock + continuar
-    const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
-    messages.push({ role: "assistant", content: response.content });
+    // Hay tool_use — ejecutar mock + continuar.
+    // Defensa D3 (Día 4): filtrar a blocks válidos para que Anthropic
+    // acepte el assistant message en replay. Si no quedan tool_use
+    // ejecutables, break — pushear un user vacío rompe con
+    // "user messages must have non-empty content".
+    const toolUseBlocks = response.content.filter(
+      (b) => b.type === "tool_use" && b.id && b.name,
+    );
+    if (toolUseBlocks.length === 0) break;
+
+    const validAssistantBlocks = response.content.filter(
+      (b) =>
+        (b.type === "text" && b.text) ||
+        (b.type === "tool_use" && b.id && b.name),
+    );
+    if (validAssistantBlocks.length === 0) break;
+    messages.push({ role: "assistant", content: validAssistantBlocks });
 
     const toolResults = [];
     for (const tu of toolUseBlocks) {

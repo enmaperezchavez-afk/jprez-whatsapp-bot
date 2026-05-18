@@ -1,0 +1,47 @@
+{
+  "id": "A1",
+  "bloque": "A_calculos",
+  "title": "PSE3 estudio US$73,000",
+  "perfil": "neutral_primer_contacto",
+  "input": "Hola, info pse3 estudio 73k",
+  "passed": false,
+  "api_error": null,
+  "reply": "Hola, te tengo. El Estudio de 27m² en PSE3 a US$73,000 te queda así:\n\nPones US$1,000 para reservar y bloquear la unidad. Después arrancas cuotas de US$608 mensuales por 34 meses hasta la entrega en marzo 2029. Y contra entrega son US$43,800 que cubres con banco.\n\nTodo protegido por fideicomiso Ley 189-11 desde el primer día.\n\nTambién tenemos un plan de Feria de Mayo activo hasta el 31 de mayo donde la cuota mensual baja. ¿Quieres que te calcule ese también para que compares?\n\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": \"puertoPlata\",\n  \"tipologia_interes\": \"estudio 27m² E3\",\n  \"presupuesto_mencionado\": 73000,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"caliente\",\n  \"tags_nuevos\": [\"pse3\", \"estudio\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"send_brochure\"\n}\n</perfil_update>",
+  "reply_length": 1079,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "puertoPlata",
+        "precio_usd": 73000,
+        "etapa": "E3",
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": false,
+      "missing": [
+        "[any of: US$7,300 | el 10% son | pones US$]"
+      ]
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}

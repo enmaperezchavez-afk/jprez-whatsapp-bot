@@ -1,0 +1,44 @@
+{
+  "id": "B4",
+  "bloque": "B_perfiles",
+  "title": "Segunda vivienda — alquiler o personal",
+  "perfil": "neutral_experimentado",
+  "input": "Tengo casa propia, busco apartamento adicional, puede ser para mí o alquilar",
+  "passed": true,
+  "api_error": null,
+  "reply": "Qué bueno que nos escribes. Con gusto te ayudo a encontrar la mejor opción.\n\nAntes de mostrarte lo que tenemos, cuéntame un poco más:\n\n¿Tienes alguna zona preferida — Santo Domingo, Puerto Plata, o estás abierto a opciones? Y aproximadamente, ¿qué presupuesto manejas?\n<perfil_update>\n{\n  \"nombre\": null,\n  \"proyecto_interes\": null,\n  \"tipologia_interes\": null,\n  \"presupuesto_mencionado\": null,\n  \"moneda_presupuesto\": \"USD\",\n  \"fecha_mudanza_objetivo\": null,\n  \"fuente_financiamiento\": null,\n  \"ubicacion_cliente\": null,\n  \"objecion_detectada\": null,\n  \"objecion_nueva\": false,\n  \"objecion_nueva_texto\": null,\n  \"intencion_compra\": \"calificando\",\n  \"score_lead\": \"tibio\",\n  \"tags_nuevos\": [\"segunda-vivienda\", \"inversionista-potencial\", \"ya-tiene-casa-propia\"],\n  \"documentos_solicitados\": [],\n  \"competencia_mencionada\": [],\n  \"siguiente_accion_sugerida\": \"none\"\n}\n</perfil_update>",
+  "reply_length": 884,
+  "iterations": 2,
+  "stop_reasons": [
+    "tool_use",
+    "end_turn"
+  ],
+  "tool_calls": [
+    {
+      "name": "calcular_plan_pago",
+      "input": {
+        "proyecto": "pr3",
+        "precio_usd": 156000,
+        "plan": "10/30/60"
+      }
+    }
+  ],
+  "checks": {
+    "keywords_required": {
+      "passed": true,
+      "missing": []
+    },
+    "keywords_any": {
+      "passed": true,
+      "missing": []
+    },
+    "anti_keywords": {
+      "passed": true,
+      "found": []
+    },
+    "tone": {
+      "passed": true,
+      "reasons": []
+    }
+  }
+}
