@@ -31,8 +31,39 @@
 // QUERY PARAM:
 //   ?hours=N — ventana temporal (default 24, max 168 = 1 semana)
 
+const { Ratelimit } = require("@upstash/ratelimit");
+const { Redis } = require("@upstash/redis");
+
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "jprez-bot";
 const AXIOM_APL_URL = "https://api.axiom.co/v1/datasets/_apl?format=tabular";
+
+// ============================================
+// RATE LIMIT (Hotfix-27 Día 4-5)
+// ============================================
+// 10 req/min por IP via Upstash sliding window.
+// Si UPSTASH_* env vars ausentes → degradación graceful (skip silencioso).
+// Reusa la instancia Redis ya configurada en el proyecto.
+let healthRatelimit;
+function getHealthRatelimit() {
+  if (healthRatelimit !== undefined) return healthRatelimit;
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    healthRatelimit = null;
+    return null;
+  }
+  healthRatelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, "1 m"),
+    prefix: "health-dashboard",
+    analytics: false,
+  });
+  return healthRatelimit;
+}
+
+function getClientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) return String(xff).split(",")[0].trim();
+  return req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown";
+}
 
 // ============================================
 // PRECIOS HARDCODED — Claude Sonnet 4.6 (12 mayo 2026)
@@ -138,6 +169,26 @@ function buildQueries(startTime, endTime) {
 // ============================================
 
 module.exports = async function handler(req, res) {
+  // Rate limit: 10 req/min por IP. Si Upstash no configurado, skip.
+  const ratelimit = getHealthRatelimit();
+  if (ratelimit) {
+    const ip = getClientIp(req);
+    const { success, limit, remaining, reset } = await ratelimit.limit(ip);
+    res.setHeader("X-RateLimit-Limit", String(limit));
+    res.setHeader("X-RateLimit-Remaining", String(remaining));
+    res.setHeader("X-RateLimit-Reset", String(reset));
+    if (!success) {
+      res.setHeader("Cache-Control", "no-store");
+      res.status(429).json({
+        error: "Too Many Requests",
+        limit,
+        remaining,
+        resetAt: new Date(reset).toISOString(),
+      });
+      return;
+    }
+  }
+
   // Auth shared secret
   const expectedToken = process.env.HEALTH_DASHBOARD_TOKEN;
   if (!expectedToken) {
