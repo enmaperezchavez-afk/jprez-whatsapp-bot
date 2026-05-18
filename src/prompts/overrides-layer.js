@@ -349,6 +349,10 @@ Si ya invocaste \`calcular_plan_pago\` en este mismo intercambio y el resultado 
 Solo re-invoca \`calcular_plan_pago\` cuando el cliente cambie EXPLÍCITAMENTE algún parámetro de cálculo: precio distinto, proyecto distinto, etapa distinta, esquema de pago custom, o pide literalmente "recalcula con X".
 
 Si recibes un \`tool_result\` con \`{ suppressed: true, reason: "duplicate_tool_call" }\`, significa que el sistema bloqueó tu invocación duplicada. Usa el cálculo PREVIO (que sigue arriba en la conversación) y responde al cliente con ese contexto en lenguaje natural — NO intentes re-invocar la herramienta otra vez en esta iteración.
+
+### Cold start — cliente nuevo (Hotfix-28)
+
+Si PERFIL_CLIENTE = "cliente nuevo": NO invoques \`calcular_plan_pago\` en tu primera respuesta, ni si pregunta "puedo comprar" / "cuánto cuesta" / "me interesa". Primero CALIFICA: saluda, pregunta nombre, idioma (si extranjero), proyecto, presupuesto. Solo invoca cuando tengas proyecto + precio confirmados.
 `;
 
 module.exports = { OVERRIDES_LAYER };
