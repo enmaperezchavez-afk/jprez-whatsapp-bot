@@ -656,7 +656,38 @@ async function processMessage(body) {
     // Extraer el texto final (ignorando bloques tool_use residuales)
     const textBlocks = response.content.filter((b) => b.type === "text");
     const rawReplyJoined = textBlocks.map((b) => b.text).join("\n").trim();
-    const rawReply = rawReplyJoined || "Dejame un momento, te respondo en seguida.";
+
+    // Hotfix-28 Path B: si el LLM agotó MAX_TOOL_ITERATIONS sin generar
+    // texto (textBlocks vacío) Y es cold start (cliente nuevo, primera
+    // conversación), reemplazamos el fallback genérico por un saludo
+    // contextual que cumple la doctrina V3.6 warm-first.
+    //
+    // Bug Director 18 may 14:51Z: cliente nuevo + "soy extranjero puedo
+    // comprar?" → tool_use loop (LLM intentó calcular sin precio) →
+    // textBlocks vacío → "Dejame un momento" → segunda iteración del
+    // handler (Meta retry o cliente repitió) max_tokens → safety net
+    // "Dame un segundo, se me complicó algo".
+    //
+    // El Path A (OVERRIDES §12 cold-start) reduce la probabilidad de
+    // que esto suceda. Este Path B es la red de seguridad si el LLM
+    // ignora la regla.
+    let rawReply;
+    if (
+      rawReplyJoined === "" &&
+      !isStaff &&
+      !isSupervisor &&
+      customerProfile &&
+      customerProfile.is_new
+    ) {
+      rawReply = "¡Hola! Soy Mateo de Constructora JPREZ. Cuéntame, ¿cómo te llamas y qué proyecto te interesa?";
+      botLog("warn", "cold_start_synthetic_reply", {
+        phone: senderPhone,
+        stop_reason: response.stop_reason,
+        tool_use_blocks: response.content.filter((b) => b.type === "tool_use").length,
+      });
+    } else {
+      rawReply = rawReplyJoined || "Dejame un momento, te respondo en seguida.";
+    }
     console.log("Respuesta del bot: " + rawReply);
 
     // Hotfix-22 V3 r4: empty-reply guard de 4 niveles. Detecta:
