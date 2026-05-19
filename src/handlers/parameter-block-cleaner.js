@@ -97,4 +97,62 @@ function stripParameterBlocks(text) {
   };
 }
 
-module.exports = { stripParameterBlocks };
+// Hotfix-29 Bug 2 P0 (19 may 2026): stripInternalBlocks.
+//
+// PROBLEMA RAÍZ: stripParameterBlocks solo strip bloques TRUNCADOS
+// (sin closing tag). El LLM ahora emite bloques CERRADOS:
+//   <parameter name="perfil_update">{...JSON...}</parameter>
+//
+// Esos bloques no son truncados pero contienen datos internos
+// (perfil del cliente, score_lead, tags) que NUNCA deben llegar
+// al cliente final. extractProfileUpdate solo busca <perfil_update>,
+// no <parameter name="perfil_update">.
+//
+// stripInternalBlocks se ejecuta DESPUÉS de stripParameterBlocks como
+// defensa final: elimina cualquier bloque XML interno (cerrado o no)
+// de los tags listados.
+//
+// Cambio de regla vs Hotfix-24 R4-c5:
+//   Antes: "bloques cerrados pasan intactos (el LLM puede haberlos
+//   emitido y cerrado, no es bug)". → cambió porque ahora son leak
+//   visible al cliente.
+//
+// CONTRATO:
+//   stripInternalBlocks(text) → { text, stripped, strippedChars }
+
+const INTERNAL_BLOCK_PATTERNS = [
+  // Multilínea, no-greedy. Captura desde el opening tag (con atributos
+  // opcionales) hasta el closing tag correspondiente. Si no hay closing,
+  // este regex NO match — esos casos los cubre stripParameterBlocks.
+  /<parameter\b[^>]*>[\s\S]*?<\/parameter>/gi,
+  /<invoke\b[^>]*>[\s\S]*?<\/invoke>/gi,
+  /<function_calls\b[^>]*>[\s\S]*?<\/function_calls>/gi,
+  // <perfil_update> también, defensa en profundidad. extractProfileUpdate
+  // YA lo strip pero si pasa algo raro (encoding, whitespace), esto cubre.
+  /<perfil_update\b[^>]*>[\s\S]*?<\/perfil_update>/gi,
+];
+
+function stripInternalBlocks(text) {
+  if (typeof text !== "string" || text.length === 0) {
+    return { text: text || "", stripped: false, strippedChars: 0 };
+  }
+
+  let result = text;
+  for (const pattern of INTERNAL_BLOCK_PATTERNS) {
+    result = result.replace(pattern, "");
+  }
+
+  // Colapsar saltos múltiples que quedan tras el strip
+  result = result.replace(/\n{3,}/g, "\n\n").trim();
+
+  if (result === text) {
+    return { text, stripped: false, strippedChars: 0 };
+  }
+  return {
+    text: result,
+    stripped: true,
+    strippedChars: text.length - result.length,
+  };
+}
+
+module.exports = { stripParameterBlocks, stripInternalBlocks };

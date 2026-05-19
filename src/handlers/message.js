@@ -52,7 +52,7 @@ const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
 const { extractProfileUpdate, validateProfileUpdate } = require("../profile/extractor");
 const { cleanFormat } = require("./format-postprocess");
-const { stripParameterBlocks } = require("./parameter-block-cleaner");
+const { stripParameterBlocks, stripInternalBlocks } = require("./parameter-block-cleaner");
 const adminTesting = require("../admin-testing-mode");
 const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 
@@ -871,6 +871,24 @@ async function processMessage(body) {
         stop_reason: stopReason,
       });
       botReply = parameterStripResult.text;
+      truncatedRecoveryApplied = true;
+    }
+
+    // Hotfix-29 Bug 2 P0 (19 may 2026): strip bloques internos CERRADOS
+    // que leakeaban al cliente. El LLM empezó a emitir
+    // <parameter name="perfil_update">{JSON}</parameter> bien cerrado
+    // que stripParameterBlocks NO removía (solo cubría truncados) y
+    // extractProfileUpdate NO match (busca <perfil_update> directo).
+    // Defensa final antes del send: elimina <parameter>, <invoke>,
+    // <function_calls>, <perfil_update> cerrados.
+    const internalBlocksResult = stripInternalBlocks(botReply);
+    if (internalBlocksResult.stripped) {
+      botLog("warn", "internal_blocks_leaked_stripped", {
+        phone: senderPhone,
+        strippedChars: internalBlocksResult.strippedChars,
+        beforeStripLength: botReply.length,
+      });
+      botReply = internalBlocksResult.text;
       truncatedRecoveryApplied = true;
     }
 
