@@ -547,6 +547,45 @@ async function processMessage(body) {
       console.log("PERSONAL INTERNO detectado: " + isStaff.name + " (" + isStaff.role + ")");
     }
 
+    // Bloque 1 Fase 3.5: comandos admin de inventario (solo supervisor).
+    // /reservar /vender /liberar /precio /inventario — escritura/lectura
+    // directa al Sheet vía sheets-writer + loader.
+    // Cliente que mande estos comandos = cae al flow normal del LLM
+    // (ignorado silenciosamente, NO revelar que el comando existe).
+    if (isSupervisor) {
+      const { parseAdminCommand, executeAdminCommand } = require("../inventory/admin-commands");
+      const parsedCmd = parseAdminCommand(userMessage);
+      if (parsedCmd) {
+        try {
+          const { getRedis } = require("../store/redis");
+          const redis = await getRedis();
+          const cmdResult = await executeAdminCommand(parsedCmd, {
+            supervisorPhone: senderPhone,
+            redis,
+          });
+          if (cmdResult.reply) {
+            await sendWhatsAppMessage(senderPhone, cmdResult.reply);
+            botLog("info", "admin_command_handled", {
+              supervisor: senderPhone,
+              command: parsedCmd.command,
+              project: parsedCmd.project,
+              unit: parsedCmd.unit,
+              didWrite: cmdResult.didWrite,
+            });
+            return;
+          }
+        } catch (e) {
+          botLog("error", "admin_command_error", {
+            supervisor: senderPhone,
+            command: parsedCmd.command,
+            error: e.message,
+          });
+          await sendWhatsAppMessage(senderPhone, "Error procesando comando: " + e.message);
+          return;
+        }
+      }
+    }
+
     // Cargar metadata del cliente (para contexto dinamico + gestion de escalamiento)
     const clientMeta = !isStaff ? await getClientMeta(storageKey) : null;
 
