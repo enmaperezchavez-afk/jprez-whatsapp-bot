@@ -91,14 +91,27 @@ describe("Fix 1 (hotfix-5) — Identidad expandida con CASOS E/F/G", () => {
   });
 });
 
+// Bloque 1 Fase 4: el inventario ya no se carga al cold start via
+// readFileSync — viene del loader async (Sheets → Redis cache →
+// fallback al archivo .md). Para validar contenido del inventario en
+// el prompt debemos invocar la versión async, que internamente cae al
+// archivo .md cuando Sheets no está configurado (caso de tests sin
+// env vars).
+const { buildSystemPromptBlocksAsync } = require("../src/prompts");
+
+async function getPromptWithInventory() {
+  const { staticBlock, dynamicHeader } = await buildSystemPromptBlocksAsync();
+  return dynamicHeader + "\n" + staticBlock;
+}
+
 describe("Fix 2a (hotfix-5) — Inventario detallado de listos Crux en el prompt", () => {
-  it("incluye encabezado de seccion 'Unidades Listas para Entrega Inmediata'", () => {
-    const prompt = buildSystemPrompt();
+  it("incluye encabezado de seccion 'Unidades Listas para Entrega Inmediata'", async () => {
+    const prompt = await getPromptWithInventory();
     expect(prompt).toContain("CRUX DEL PRADO — Unidades Listas para Entrega Inmediata");
   });
 
-  it("incluye las 4 unidades listas con codigos y precios exactos", () => {
-    const prompt = buildSystemPrompt();
+  it("incluye las 4 unidades listas con codigos y precios exactos", async () => {
+    const prompt = await getPromptWithInventory();
     // Etapa 1
     expect(prompt).toContain("T3-2B");
     expect(prompt).toContain("RD$5,775,000");
@@ -111,8 +124,8 @@ describe("Fix 2a (hotfix-5) — Inventario detallado de listos Crux en el prompt
     expect(prompt).toContain("RD$5,700,000");
   });
 
-  it("incluye ventajas comerciales y comparacion listos vs Torre 6", () => {
-    const prompt = buildSystemPrompt();
+  it("incluye ventajas comerciales y comparacion listos vs Torre 6", async () => {
+    const prompt = await getPromptWithInventory();
     expect(prompt).toContain("Entrega inmediata");
     expect(prompt).toContain("Pago en DOP");
     expect(prompt).toContain("sin riesgo cambiario");
@@ -120,8 +133,8 @@ describe("Fix 2a (hotfix-5) — Inventario detallado de listos Crux en el prompt
     expect(prompt).toContain("entrega julio 2027");
   });
 
-  it("aclara que solo Crux tiene listos — otros proyectos en construccion", () => {
-    const prompt = buildSystemPrompt();
+  it("aclara que solo Crux tiene listos — otros proyectos en construccion", async () => {
+    const prompt = await getPromptWithInventory();
     expect(prompt).toContain("Solo Crux del Prado tiene unidades listas");
     expect(prompt).toContain("Prado Residences III: agosto 2026");
     expect(prompt).toContain("Prado Residences IV: agosto 2027");

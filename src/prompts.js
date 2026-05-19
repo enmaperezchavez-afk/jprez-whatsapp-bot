@@ -54,21 +54,29 @@ const { STYLE_LAYER } = require("./prompts/style-layer");
 // serverless (ver vercel.json -> config.includeFiles).
 
 let SKILL_CONTENT = "";
+// Bloque 1 Fase 4: INVENTORY_CONTENT ya NO se carga vía readFileSync al
+// cold start. La fuente primaria es Google Sheets vía
+// `src/inventory/loader.loadInventory()` (invocado desde
+// buildSystemPromptBlocksAsync). El archivo .md sigue en
+// `.claude/skills/.../inventario-precios.md` como red de seguridad — el
+// loader internamente lo lee con readFallbackInventory() cuando Sheets
+// no está configurado o falla. Es decir: este módulo NO toca el archivo
+// directamente. INVENTORY_CONTENT in-memory se preserva como string vacío
+// (la versión SYNC buildSystemPromptBlocks construye el staticBlock con
+// inventario vacío, y los tests que lo usan validan estructura, no
+// contenido específico del inventario).
 let INVENTORY_CONTENT = "";
 try {
   const skillPath = path.join(__dirname, "..", ".claude", "skills", "vendedor-whatsapp-jprez", "SKILL.md");
-  const inventoryPath = path.join(__dirname, "..", ".claude", "skills", "vendedor-whatsapp-jprez", "references", "inventario-precios.md");
   SKILL_CONTENT = fs.readFileSync(skillPath, "utf8");
-  INVENTORY_CONTENT = fs.readFileSync(inventoryPath, "utf8");
   botLog("info", "prompt_skill_loaded", {
     skillChars: SKILL_CONTENT.length,
-    inventoryChars: INVENTORY_CONTENT.length,
+    inventorySource: "loader_only",
   });
 } catch (e) {
   botLog("error", "prompt_skill_load_failed", { error: e.message });
   // Fallback degradado: prompt minimo con instruccion de escalar todo.
   SKILL_CONTENT = "ERROR: skill no cargo. Se breve, no inventes, y escala todo a Enmanuel al 8299943102.";
-  INVENTORY_CONTENT = "";
 }
 
 // Hotfix-22a: skill secundario para calculo de plan de pago + ajuste
