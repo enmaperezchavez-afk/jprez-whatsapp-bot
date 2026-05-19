@@ -805,37 +805,48 @@ Array de strings cortos. Ejemplos: ["diaspora", "USA-NY", "primera-vivienda", "i
 // Hotfix-22 V2 a3: STYLE_LAYER al FINAL (despues de los skills) como
 // autoridad de formato. last-seen-wins: la regla de prosa con numeros
 // exactos es la ultima palabra que el LLM procesa antes de generar.
-const STATIC_BLOCK = [
-  SKILL_CONTENT,
-  "",
-  "---",
-  "",
-  "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
-  "",
-  INVENTORY_CONTENT,
-  "",
-  "---",
-  "",
-  MATEO_PROMPT_V5_2,
-  GLOSSARY_LAYER,
-  COMMERCIAL_LAYER,
-  // Hotfix-22a: skill calculadora-plan-pago. Carga independiente; si el
-  // archivo no esta bundleado en Vercel, queda string vacio y el join
-  // produce un trailing newline inocuo.
-  CALCULATOR_SKILL_CONTENT,
-  // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
-  // Mismo contrato: fallback string vacio + trailing newline inocuo.
-  MARKET_RD_SKILL_CONTENT,
-  // Hotfix-22 V3 r2: OVERRIDES_LAYER entre MARKET_RD y STYLE para
-  // resolver conflictos entre MATEO_V5_2 (stencils historicos) y los
-  // skills/layers actuales. Bug #30: stencil corto sobre extranjeros
-  // bypassea skill mercado-inmobiliario-rd; conflicto de formato
-  // (MATEO_V5_2 permite asteriscos, STYLE dice cero). NO entra en
-  // hash MATEO_V5_2 (verificado handlers/message.js:573).
-  OVERRIDES_LAYER,
-  // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
-  STYLE_LAYER,
-].join("\n");
+// Bloque 1 Fase 3: STATIC_BLOCK ahora se construye por request con el
+// inventario fresh provisto por el loader. La versión sync existente
+// usa INVENTORY_CONTENT cargado al cold start (fallback) para no romper
+// los 22+ tests que llaman buildSystemPromptBlocks(). El handler usa
+// buildSystemPromptBlocksAsync() que lee el inventario vía loader cada
+// request (loader internamente cachea en Redis 5min, así el costo real
+// es 1 GET Redis trivial salvo refresh).
+function buildStaticBlock(inventoryContent) {
+  return [
+    SKILL_CONTENT,
+    "",
+    "---",
+    "",
+    "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
+    "",
+    inventoryContent,
+    "",
+    "---",
+    "",
+    MATEO_PROMPT_V5_2,
+    GLOSSARY_LAYER,
+    COMMERCIAL_LAYER,
+    // Hotfix-22a: skill calculadora-plan-pago. Carga independiente; si el
+    // archivo no esta bundleado en Vercel, queda string vacio y el join
+    // produce un trailing newline inocuo.
+    CALCULATOR_SKILL_CONTENT,
+    // Hotfix-22 c2: skill mercado-inmobiliario-rd despues del calculador.
+    // Mismo contrato: fallback string vacio + trailing newline inocuo.
+    MARKET_RD_SKILL_CONTENT,
+    // Hotfix-22 V3 r2: OVERRIDES_LAYER entre MARKET_RD y STYLE para
+    // resolver conflictos entre MATEO_V5_2 (stencils historicos) y los
+    // skills/layers actuales. Bug #30: stencil corto sobre extranjeros
+    // bypassea skill mercado-inmobiliario-rd; conflicto de formato
+    // (MATEO_V5_2 permite asteriscos, STYLE dice cero). NO entra en
+    // hash MATEO_V5_2 (verificado handlers/message.js:573).
+    OVERRIDES_LAYER,
+    // Hotfix-22 V2 a3: STYLE_LAYER al FINAL como autoridad de formato.
+    STYLE_LAYER,
+  ].join("\n");
+}
+
+const STATIC_BLOCK = buildStaticBlock(INVENTORY_CONTENT);
 
 // Hotfix-22 V2 b4 + c1 + c2: validacion de orden ejecutada al cold start,
 // no por request. Si un refactor futuro reordena los layers, el guard
@@ -892,6 +903,51 @@ function buildSystemPrompt() {
   const { staticBlock, dynamicHeader } = buildSystemPromptBlocks();
   // Reproducir orden original: fechaHeader + "\n" + staticBlock.
   return dynamicHeader + "\n" + staticBlock;
+}
+
+// Bloque 1 Fase 3: versión async que carga el inventario via loader
+// (Redis cache → Sheets → fallback hardcoded). El handler usa esta
+// función. Si el loader falla por completo, cae a INVENTORY_CONTENT
+// cargado al cold start (que viene del archivo .md en repo).
+async function buildSystemPromptBlocksAsync() {
+  // Lazy import para evitar ciclos al cargar el módulo y para que tests
+  // que NO usan inventario dinámico no paguen el costo de cargar el loader.
+  const { loadInventory } = require("./inventory/loader");
+  const { getRedis } = require("./store/redis");
+
+  let inventoryMarkdown = INVENTORY_CONTENT;
+  try {
+    const redis = await getRedis();
+    const inv = await loadInventory({ redis });
+    if (inv && typeof inv.markdown === "string" && inv.markdown.length > 0) {
+      inventoryMarkdown = inv.markdown;
+    } else {
+      botLog("warn", "inventory_loader_empty_markdown_using_fallback", {
+        source: inv && inv.source,
+      });
+    }
+  } catch (e) {
+    botLog("warn", "inventory_loader_threw_using_fallback", { error: e.message });
+  }
+
+  const staticBlock = buildStaticBlock(inventoryMarkdown);
+
+  // dynamicHeader idéntico al de buildSystemPromptBlocks() para que el
+  // contrato de retorno sea consistente.
+  const now = new Date();
+  const iso = now.toISOString().slice(0, 10);
+  const legible = now.toLocaleDateString("es-DO", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+    timeZone: "America/Santo_Domingo",
+  });
+  const hora = now.toLocaleTimeString("es-DO", {
+    hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "America/Santo_Domingo",
+  });
+  const fechaHeader = "Hoy es: " + iso + " (" + legible + ")\nHora actual: " + hora + " (Santo Domingo)";
+  const dynamicHeader = fechaHeader + "\n";
+
+  return { staticBlock, dynamicHeader };
 }
 
 // ============================================
@@ -968,4 +1024,11 @@ PROYECTOS ACTIVOS:
 
 REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
 
-module.exports = { buildSystemPrompt, buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 };
+module.exports = {
+  buildSystemPrompt,
+  buildSystemPromptBlocks,
+  buildSystemPromptBlocksAsync,
+  buildStaticBlock,
+  SUPERVISOR_PROMPT,
+  MATEO_PROMPT_V5_2,
+};
