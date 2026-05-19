@@ -69,14 +69,47 @@ async function fetchAllTabs() {
   return result;
 }
 
-// rowsToObjects: dado [headers, ...rows], retorna [{col1: val1, ...}, ...]
+// Hotfix-29 Bug 1 P1 (19 may 2026): detección dinámica de fila de headers.
+//
+// PROBLEMA RAÍZ: el Sheet del Director NO siempre tiene los headers en
+// la fila 1. Usa filas previas para títulos, notas, instrucciones, fila
+// vacía como separador, etc. Asumir tabRows[0] daba 0 unidades parseadas.
+//
+// FIX: buscar la primera fila que contenga la celda "unidad_id"
+// (case-insensitive, trimmed). En tab META la celda canónica es
+// "proyecto_id". Si no se encuentra ninguna, retornamos [] (defensa).
+//
+// HEADER_SIGNAL_CELLS: celdas que identifican una fila de headers en
+// cualquier tab. Si la fila contiene UNA de estas, es la fila de headers.
+const HEADER_SIGNAL_CELLS = new Set(["unidad_id", "proyecto_id"]);
+
+function findHeaderRowIndex(tabRows) {
+  if (!Array.isArray(tabRows)) return -1;
+  for (let r = 0; r < tabRows.length; r++) {
+    const row = tabRows[r];
+    if (!Array.isArray(row)) continue;
+    for (const cell of row) {
+      const norm = String(cell || "").trim().toLowerCase();
+      if (HEADER_SIGNAL_CELLS.has(norm)) return r;
+    }
+  }
+  return -1;
+}
+
+// rowsToObjects: dado [...filas previas opcionales, headers, ...rows],
+// detecta la fila de headers dinámicamente (busca "unidad_id" o
+// "proyecto_id") y retorna [{col1: val1, ...}, ...].
 // Headers que falten o estén vacíos se ignoran. Filas completamente
-// vacías se omiten.
+// vacías se omiten. Si no encuentra fila de headers, retorna [].
 function rowsToObjects(tabRows) {
   if (!tabRows || tabRows.length < 2) return [];
-  const headers = tabRows[0].map((h) => String(h || "").trim());
+
+  const headerRowIdx = findHeaderRowIndex(tabRows);
+  if (headerRowIdx === -1) return [];
+
+  const headers = tabRows[headerRowIdx].map((h) => String(h || "").trim());
   const objects = [];
-  for (let r = 1; r < tabRows.length; r++) {
+  for (let r = headerRowIdx + 1; r < tabRows.length; r++) {
     const row = tabRows[r];
     if (!row || row.every((c) => c == null || String(c).trim() === "")) continue;
     const obj = {};
@@ -100,4 +133,5 @@ module.exports = {
   getSheetsClient,
   fetchAllTabs,
   rowsToObjects,
+  findHeaderRowIndex,
 };
