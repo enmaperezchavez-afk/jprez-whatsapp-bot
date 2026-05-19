@@ -46,7 +46,7 @@ const {
 } = require("../notify");
 const { detectDocumentRequest, detectDocumentType, detectLeadSignals, detectPuertoPlataStage, detectCruxStage } = require("../detect");
 const { shouldSendDoc } = require("../dispatch/document-policy");
-const { buildSystemPromptBlocks, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
+const { buildSystemPromptBlocks, buildSystemPromptBlocksAsync, SUPERVISOR_PROMPT, MATEO_PROMPT_V5_2 } = require("../prompts");
 const { validateSystemPromptSize } = require("../validators/token-budget");
 const { STAFF_PHONES } = require("../staff");
 const { getCustomerProfile, updateCustomerProfile } = require("../profile/storage");
@@ -547,6 +547,45 @@ async function processMessage(body) {
       console.log("PERSONAL INTERNO detectado: " + isStaff.name + " (" + isStaff.role + ")");
     }
 
+    // Bloque 1 Fase 3.5: comandos admin de inventario (solo supervisor).
+    // /reservar /vender /liberar /precio /inventario — escritura/lectura
+    // directa al Sheet vía sheets-writer + loader.
+    // Cliente que mande estos comandos = cae al flow normal del LLM
+    // (ignorado silenciosamente, NO revelar que el comando existe).
+    if (isSupervisor) {
+      const { parseAdminCommand, executeAdminCommand } = require("../inventory/admin-commands");
+      const parsedCmd = parseAdminCommand(userMessage);
+      if (parsedCmd) {
+        try {
+          const { getRedis } = require("../store/redis");
+          const redis = await getRedis();
+          const cmdResult = await executeAdminCommand(parsedCmd, {
+            supervisorPhone: senderPhone,
+            redis,
+          });
+          if (cmdResult.reply) {
+            await sendWhatsAppMessage(senderPhone, cmdResult.reply);
+            botLog("info", "admin_command_handled", {
+              supervisor: senderPhone,
+              command: parsedCmd.command,
+              project: parsedCmd.project,
+              unit: parsedCmd.unit,
+              didWrite: cmdResult.didWrite,
+            });
+            return;
+          }
+        } catch (e) {
+          botLog("error", "admin_command_error", {
+            supervisor: senderPhone,
+            command: parsedCmd.command,
+            error: e.message,
+          });
+          await sendWhatsAppMessage(senderPhone, "Error procesando comando: " + e.message);
+          return;
+        }
+      }
+    }
+
     // Cargar metadata del cliente (para contexto dinamico + gestion de escalamiento)
     const clientMeta = !isStaff ? await getClientMeta(storageKey) : null;
 
@@ -627,7 +666,10 @@ async function processMessage(body) {
     if (isSupervisor) {
       systemBlocks = [{ type: "text", text: SUPERVISOR_PROMPT }];
     } else {
-      const { staticBlock, dynamicHeader } = buildSystemPromptBlocks();
+      // Bloque 1 Fase 3: usar versión async que carga inventario via loader
+      // (Redis cache → Sheets → fallback hardcoded). Fallback al INVENTORY_CONTENT
+      // del cold start si todo lo demás falla — el bot nunca queda sin inventario.
+      const { staticBlock, dynamicHeader } = await buildSystemPromptBlocksAsync();
       systemBlocks = [
         { type: "text", text: staticBlock, cache_control: { type: "ephemeral" } },
         { type: "text", text: dynamicHeader + clientContext + profileContext + holdingContext },

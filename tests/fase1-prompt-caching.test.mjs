@@ -119,11 +119,12 @@ describe("FASE 1 c1 — buildSystemPromptBlocks() structure", () => {
 describe("FASE 1 c1 — handler systemBlocks construction (source)", () => {
   it("Test 5: cliente flow construye systemBlocks 2-bloques con cache_control ephemeral", () => {
     // Verifica que el handler:
-    //   1) llama buildSystemPromptBlocks() (no buildSystemPrompt() viejo)
+    //   1) llama buildSystemPromptBlocks() o buildSystemPromptBlocksAsync()
+    //      (versión async añadida en Bloque 1 Fase 3 para inventario dinámico)
     //   2) construye un array de 2 elementos
     //   3) el primer bloque tiene cache_control: { type: "ephemeral" }
     //   4) pasa systemBlocks al callClaudeWithTools
-    expect(HANDLER_SRC).toContain("buildSystemPromptBlocks()");
+    expect(HANDLER_SRC).toMatch(/buildSystemPromptBlocks(Async)?\(\)/);
     expect(HANDLER_SRC).toContain('cache_control: { type: "ephemeral" }');
     expect(HANDLER_SRC).toMatch(/system:\s*systemBlocks/);
     // Estructura: 2 elementos, staticBlock primero (con cache), dynamicHeader+contextos despues.
