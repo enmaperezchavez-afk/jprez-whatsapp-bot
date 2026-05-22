@@ -29,6 +29,13 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/inventory.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ".claude/skills/**/*.md"
+      }
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -57,6 +64,10 @@
     {
       "src": "/api/health",
       "dest": "/api/health.js"
+    },
+    {
+      "src": "/api/inventory",
+      "dest": "/api/inventory.js"
     },
     {
       "src": "/dashboard",
