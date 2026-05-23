@@ -168,6 +168,23 @@ const PUERTO_PLATA_DELIVERY = {
   E4: "2027-09-01",
 };
 
+// Hotfix-30 Fix 1: infiere la etapa de Puerto Plata (E3/E4) del texto del
+// cliente cuando el LLM invoca calcular_plan_pago sin etapa explícita.
+// PSE3 / "etapa 3" / E3 → E3 ; PSE4 / "etapa 4" / E4 → E4.
+// Si menciona ambas o ninguna → null (el handler pedirá aclaración con texto).
+// Pura + exportada para test.
+function inferEtapaFromContext(text) {
+  if (typeof text !== "string" || text.length === 0) return null;
+  const t = text.toLowerCase();
+  const isE3 = /\be3\b/.test(t) || /pse\s*3/.test(t) || /pse-?3/.test(t) ||
+    /etapa\s*3\b/.test(t) || /etapa\s*iii\b/.test(t);
+  const isE4 = /\be4\b/.test(t) || /pse\s*4/.test(t) || /pse-?4/.test(t) ||
+    /etapa\s*4\b/.test(t) || /etapa\s*iv\b/.test(t);
+  if (isE3 && !isE4) return "E3";
+  if (isE4 && !isE3) return "E4";
+  return null;
+}
+
 function calcularPlanPago(proyecto, precioUsd, etapa, customInicialPct, customCompletivoPct, customEntregaPct) {
   const standardPlan = PAYMENT_PLANS[proyecto];
   if (!standardPlan) {
@@ -196,7 +213,18 @@ function calcularPlanPago(proyecto, precioUsd, etapa, customInicialPct, customCo
   let delivery;
   if (proyecto === "puertoPlata") {
     if (!etapa || !PUERTO_PLATA_DELIVERY[etapa]) {
-      return { error: "Para Puerto Plata debes especificar la etapa: 'E3' o 'E4'. Cada etapa tiene fecha de entrega distinta." };
+      // Hotfix-30 Fix 1: NO devolver error duro. El error "debes especificar
+      // la etapa" derailaba el turno — el LLM frecuentemente emitía solo un
+      // bloque <perfil_update> sin texto al cliente tras recibirlo, y el
+      // empty-reply guard disparaba "se me complicó algo" (P0 reproducido
+      // 22 may, query "estudios disponibles en pse3"). En su lugar devolvemos
+      // una señal SOFT: el LLM debe pedir al cliente que aclare la etapa con
+      // texto, sin tratar esto como fallo. inferEtapaFromContext ya intenta
+      // resolverla del mensaje ANTES de llegar acá.
+      return {
+        needs_etapa: true,
+        ask_client: "Puerto Plata tiene dos etapas con fechas y planes distintos: Etapa 3 (entrega marzo 2029) y Etapa 4 (entrega septiembre 2027). Pregúntale al cliente cuál le interesa ANTES de dar números, con un texto natural. NO es un error.",
+      };
     }
     delivery = PUERTO_PLATA_DELIVERY[etapa];
   } else {
@@ -254,7 +282,7 @@ const TOOLS = [
         etapa: {
           type: "string",
           enum: ["E3", "E4"],
-          description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. OBLIGATORIO cuando proyecto = 'puertoPlata'. Ignorado en otros proyectos.",
+          description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. Si el cliente menciona PSE3/'etapa 3' usa E3; si menciona PSE4/'etapa 4' usa E4. Si NO sabes la etapa para Puerto Plata, NO llames esta herramienta: primero preguntale al cliente con texto cual etapa le interesa (Etapa 3 o Etapa 4). Ignorado en otros proyectos.",
         },
         inicial_pct: {
           type: "number",
@@ -711,14 +739,24 @@ async function processMessage(body) {
       tools: TOOLS,
       phone: senderPhone,
       toolHandlers: {
-        calcular_plan_pago: (input) => calcularPlanPago(
-          input.proyecto,
-          input.precio_usd,
-          input.etapa,
-          input.inicial_pct,
-          input.completivo_pct,
-          input.entrega_pct
-        ),
+        calcular_plan_pago: (input) => {
+          // Hotfix-30 Fix 1: si es Puerto Plata sin etapa explícita, intenta
+          // inferirla del mensaje del cliente (PSE3→E3, PSE4→E4) antes de
+          // calcular. Si no se puede inferir, calcularPlanPago devuelve la
+          // señal soft needs_etapa (no error) y el LLM pide aclaración.
+          let etapa = input.etapa;
+          if (input.proyecto === "puertoPlata" && !etapa) {
+            etapa = inferEtapaFromContext(userMessage);
+          }
+          return calcularPlanPago(
+            input.proyecto,
+            input.precio_usd,
+            etapa,
+            input.inicial_pct,
+            input.completivo_pct,
+            input.entrega_pct
+          );
+        },
       },
     });
 
@@ -907,9 +945,54 @@ async function processMessage(body) {
         rawReplyPreview: rawReply.slice(0, 200),
         stop_reason: stopReason,
         truncated_recovery_applied: truncatedRecoveryApplied,
+        tool_invocation_count: response.toolInvocationCount || 0,
         format_stripped_to_empty: formatResult.counts.bullets + formatResult.counts.bolds + formatResult.counts.italics + formatResult.counts.emojis > 0,
       });
-      botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
+
+      // Hotfix-30 Fix 2: si el reply quedó vacío PERO hubo tool calls este
+      // turno, el modelo casi siempre emitió solo metadata (<perfil_update>)
+      // tras un tool_result y no produjo texto al cliente — root cause del
+      // P0 "se me complicó algo" reproducido 22 may (calcular_plan_pago →
+      // error etapa → turno final sin texto). En vez del genérico,
+      // reintentamos UNA vez SIN tools: el modelo es forzado a responder con
+      // texto usando el inventario que YA está en el prompt. Extiende
+      // Hotfix-28 al caso "reply = solo metadata sin texto".
+      let recovered = false;
+      if ((response.toolInvocationCount || 0) > 0) {
+        try {
+          const retryResp = await callClaudeWithTools({
+            system: systemBlocks,
+            messages: messageHistory,
+            tools: [],
+            phone: senderPhone,
+            toolHandlers: {},
+          });
+          let retryText = retryResp.content
+            .filter((b) => b.type === "text")
+            .map((b) => b.text)
+            .join("\n")
+            .trim();
+          retryText = stripParameterBlocks(retryText).text;
+          retryText = stripInternalBlocks(retryText).text;
+          if (retryText && retryText.trim().length > 0) {
+            botReply = retryText.trim();
+            recovered = true;
+            botLog("info", "empty_reply_tool_retry_recovered", {
+              phone: senderPhone,
+              recoveredLength: botReply.length,
+            });
+          }
+        } catch (e) {
+          botLog("warn", "empty_reply_tool_retry_failed", {
+            phone: senderPhone,
+            error: e.message,
+          });
+        }
+      }
+
+      if (!recovered) {
+        botReply = "Dame un segundo, se me complicó algo. ¿Me repites tu mensaje en un momentito?";
+      }
     }
 
     await addMessage(storageKey, "assistant", botReply, currentPromptHash);
@@ -1421,6 +1504,7 @@ module.exports = {
   processMessage,
   DOC_TYPE_NAMES,
   calcularPlanPago,
+  inferEtapaFromContext,
   buildClientContext,
   pickRawReply,
   COLD_START_SYNTHETIC_REPLY,

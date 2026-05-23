@@ -300,6 +300,13 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
     iteration++;
   }
 
+  // Hotfix-30 Fix 2: exponer cuántas firmas de tool fueron invocadas en este
+  // turno. El handler lo usa para distinguir "reply vacío tras tool call"
+  // (recuperable con un retry sin tools usando el inventario del prompt) de
+  // "reply vacío sin tools" (fallback genérico). invokedSignatures solo
+  // contiene tools EJECUTADAS (las duplicadas suprimidas no se agregan), así
+  // que >0 significa "hubo al menos una ejecución de herramienta este turno".
+  response.toolInvocationCount = invokedSignatures.size;
   return response;
 }
 

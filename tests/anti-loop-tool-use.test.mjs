@@ -301,3 +301,84 @@ describe("Hotfix-27 — anti-loop tool_use (Path B defensa intra-turno)", () => 
     expect(suppressedLogs[0].data.input.precio_usd).toBe(100000);
   });
 });
+
+describe("Hotfix-30 Fix 2 — response.toolInvocationCount", () => {
+  beforeEach(() => {
+    botLogCalls.length = 0;
+    createCalls.length = 0;
+    scriptedResponses = [];
+  });
+
+  it("Test 6: sin tool calls (respuesta directa) → toolInvocationCount = 0", async () => {
+    scriptedResponses = [
+      {
+        stop_reason: "end_turn",
+        content: [textBlock("Hola, soy Mateo. ¿En qué te ayudo?")],
+        usage: { input_tokens: 50, output_tokens: 20 },
+      },
+    ];
+    const resp = await callClaudeWithTools({
+      system: "test",
+      messages: [{ role: "user", content: "hola" }],
+      tools: [],
+      phone: "555",
+      toolHandlers: {},
+    });
+    expect(resp.toolInvocationCount).toBe(0);
+  });
+
+  it("Test 7: una tool ejecutada → toolInvocationCount = 1 (señal para retry-sin-tools)", async () => {
+    const input = { proyecto: "puertoPlata", precio_usd: 73000 };
+    scriptedResponses = [
+      {
+        stop_reason: "tool_use",
+        content: [toolUseBlock("tu_1", "calcular_plan_pago", input)],
+        usage: { input_tokens: 100, output_tokens: 50 },
+      },
+      // Turno final: solo metadata, sin texto (reproduce el P0)
+      {
+        stop_reason: "end_turn",
+        content: [textBlock("<perfil_update>{\"score_lead\":\"caliente\"}</perfil_update>")],
+        usage: { input_tokens: 110, output_tokens: 30 },
+      },
+    ];
+    const resp = await callClaudeWithTools({
+      system: "test",
+      messages: [{ role: "user", content: "estudios en pse3" }],
+      tools: [],
+      phone: "666",
+      toolHandlers: { calcular_plan_pago: () => ({ needs_etapa: true }) },
+    });
+    expect(resp.toolInvocationCount).toBe(1);
+  });
+
+  it("Test 8: duplicada suprimida NO incrementa el conteo (cuenta ejecuciones únicas)", async () => {
+    const input = { proyecto: "pr3", precio_usd: 100000 };
+    scriptedResponses = [
+      {
+        stop_reason: "tool_use",
+        content: [toolUseBlock("tu_1", "calcular_plan_pago", input)],
+        usage: { input_tokens: 100, output_tokens: 50 },
+      },
+      {
+        stop_reason: "tool_use",
+        content: [toolUseBlock("tu_2", "calcular_plan_pago", input)], // DUP
+        usage: { input_tokens: 110, output_tokens: 50 },
+      },
+      {
+        stop_reason: "end_turn",
+        content: [textBlock("listo")],
+        usage: { input_tokens: 120, output_tokens: 10 },
+      },
+    ];
+    const resp = await callClaudeWithTools({
+      system: "test",
+      messages: [{ role: "user", content: "calcula pr3" }],
+      tools: [],
+      phone: "888",
+      toolHandlers: { calcular_plan_pago: () => ({ ok: true }) },
+    });
+    // 1 ejecución única (la DUP fue suprimida, no se agrega a invokedSignatures).
+    expect(resp.toolInvocationCount).toBe(1);
+  });
+});
