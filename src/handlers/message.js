@@ -35,7 +35,9 @@ const {
   sendWhatsAppImage,
   transcribeWhatsAppAudio,
 } = require("../whatsapp");
-const { toProxyUrl, toImageProxyUrl } = require("../proxy");
+const { toProxyUrl, toImageProxyUrl, priceListUrl, brochureProxyUrl } = require("../proxy");
+const { sendDocument } = require("../whatsapp-media");
+const { VALID_PROJECTS: PRICE_LIST_PROJECTS, PROJECT_META: PRICE_LIST_META } = require("../documents/price-list-generator");
 const {
   ENMANUEL_PHONE,
   notifyEnmanuel,
@@ -260,6 +262,22 @@ function calcularPlanPago(proyecto, precioUsd, etapa, customInicialPct, customCo
   };
 }
 
+// Bloque 2: mapeo proyecto → Drive ID del brochure estático (provisto por
+// Director). Crux comparte un solo brochure para Torre 6 y Listos.
+const BROCHURE_DRIVE_IDS = {
+  pr3: "1-_Hfq5kJ5Z-qmK4noK75x69aoilgFUZr",
+  pr4: "1Inj5vdhvRCVnHfAsorEdDeawFaQ1U0KJ",
+  pse3: "1vbTbWInLe15Wn-w73Ak_WXuF8B0_sNl6",
+  pse4: "1POq7pUxkVlqR7X_yVjSwB6qDUWazaNzi",
+  crux_t6: "1Cvl6RA93inroHe7ixbO6tVyrRWNZo68B",
+  crux_listos: "1Cvl6RA93inroHe7ixbO6tVyrRWNZo68B",
+};
+
+// Bloque 2: nombre de display por proyecto para filenames de WhatsApp.
+function projectDisplayName(proyecto) {
+  return (PRICE_LIST_META[proyecto] && PRICE_LIST_META[proyecto].name) || proyecto;
+}
+
 const TOOLS = [
   {
     name: "calcular_plan_pago",
@@ -300,7 +318,71 @@ const TOOLS = [
       required: ["proyecto", "precio_usd"],
     },
   },
+  {
+    name: "enviar_documento",
+    description:
+      "Envía un documento al cliente por WhatsApp: el listado de precios actualizado (PDF generado al vuelo desde el inventario en vivo) o el brochure del proyecto. " +
+      "Úsalo cuando el cliente pida 'el listado de precios', 'el brochure', 'la info del proyecto', 'mándame los precios', o similar. " +
+      "Di al cliente 'te lo mando ahora mismo' y USA esta herramienta — NO prometas enviar algo sin invocarla. " +
+      "Para Puerto Plata distingue etapa: pse3 (Etapa 3) vs pse4 (Etapa 4). Para Crux: crux_t6 (Torre 6 en construcción) vs crux_listos (entrega inmediata).",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: {
+          type: "string",
+          enum: ["listado_precios", "brochure"],
+          description: "listado_precios = PDF de precios actualizado generado desde el inventario en vivo. brochure = folleto comercial estático del proyecto.",
+        },
+        proyecto: {
+          type: "string",
+          enum: ["pr3", "pr4", "pse3", "pse4", "crux_t6", "crux_listos"],
+          description: "Proyecto: pr3=Prado Residences III, pr4=Prado Residences IV, pse3=Prado Suites Puerto Plata Etapa 3, pse4=Prado Suites Puerto Plata Etapa 4, crux_t6=Crux del Prado Torre 6, crux_listos=Crux del Prado listos para entrega.",
+        },
+      },
+      required: ["tipo", "proyecto"],
+    },
+  },
 ];
+
+// Bloque 2: handler del tool enviar_documento. Genera/resuelve la URL del
+// documento y lo manda por WhatsApp. Retorna un objeto que el LLM usa para
+// confirmar al cliente. NUNCA lanza — captura errores y los reporta como
+// { sent: false } para que Mateo sea honesto ("no me llegó, lo coordino").
+async function enviarDocumento({ tipo, proyecto, phone, storageKey }) {
+  if (!PRICE_LIST_PROJECTS.includes(proyecto)) {
+    return { sent: false, error: "proyecto_invalido", message: "Proyecto no reconocido: " + proyecto };
+  }
+  const displayName = projectDisplayName(proyecto);
+
+  try {
+    if (tipo === "listado_precios") {
+      const url = priceListUrl(proyecto);
+      const filename = "JPREZ - Listado de Precios - " + displayName + ".pdf";
+      await sendDocument(phone, url, filename, "Listado de precios actualizado de " + displayName + ".");
+      if (storageKey) await markDocSent(storageKey, proyecto + ".listado_precios");
+      botLog("info", "documento_enviado", { phone, tipo, proyecto });
+      return { sent: true, message: "Listado de precios enviado al cliente." };
+    }
+
+    if (tipo === "brochure") {
+      const driveId = BROCHURE_DRIVE_IDS[proyecto];
+      if (!driveId) {
+        return { sent: false, error: "brochure_no_disponible", message: "No tengo brochure configurado para " + displayName + "." };
+      }
+      const url = brochureProxyUrl(driveId);
+      const filename = "JPREZ - Brochure - " + displayName + ".pdf";
+      await sendDocument(phone, url, filename, "Brochure de " + displayName + ".");
+      if (storageKey) await markDocSent(storageKey, proyecto + ".brochure");
+      botLog("info", "documento_enviado", { phone, tipo, proyecto });
+      return { sent: true, message: "Brochure enviado al cliente." };
+    }
+
+    return { sent: false, error: "tipo_invalido", message: "Tipo de documento no reconocido: " + tipo };
+  } catch (e) {
+    botLog("error", "documento_envio_fallo", { phone, tipo, proyecto, error: e.message });
+    return { sent: false, error: "envio_fallo", message: "No se pudo enviar el documento ahora mismo." };
+  }
+}
 
 // ============================================
 // CONTEXTO DINAMICO DEL CLIENTE + ESCALAMIENTO
@@ -757,6 +839,15 @@ async function processMessage(body) {
             input.entrega_pct
           );
         },
+        // Bloque 2: Mateo envía brochure / listado de precios al cliente.
+        // Es la vía ÚNICA de envío de estos documentos (el dispatcher regex
+        // legacy quedó desactivado para brochure/precios).
+        enviar_documento: (input) => enviarDocumento({
+          tipo: input.tipo,
+          proyecto: input.proyecto,
+          phone: senderPhone,
+          storageKey,
+        }),
       },
     });
 
@@ -1123,10 +1214,18 @@ async function processMessage(body) {
     // ============================================
     // ENVIO AUTOMATICO DE PDFs (solo para clientes)
     // ============================================
+    //
+    // Bloque 2: este dispatcher regex (detecta intent en el reply + envía
+    // brochure/precios/imágenes) quedó DESACTIVADO. La vía única de envío de
+    // brochure y listado de precios es ahora el tool enviar_documento, que
+    // Mateo invoca explícitamente — una sola fuente de verdad, sin doble-envío.
+    // Kill-switch reversible: poner LEGACY_REGEX_DOC_DISPATCH=true reactiva el
+    // camino viejo (no recomendado; coexistiría con el tool → doble-envío).
+    const LEGACY_REGEX_DOC_DISPATCH = false;
 
     // PDFs se envian a todos (clientes y staff)
     {
-      const project = detectDocumentRequest(botReply, userMessage);
+      const project = LEGACY_REGEX_DOC_DISPATCH ? detectDocumentRequest(botReply, userMessage) : null;
 
       if (project === "all") {
         let allSentCount = 0;
@@ -1507,6 +1606,8 @@ module.exports = {
   inferEtapaFromContext,
   buildClientContext,
   pickRawReply,
+  enviarDocumento,
+  BROCHURE_DRIVE_IDS,
   COLD_START_SYNTHETIC_REPLY,
   GENERIC_HOLDING_REPLY,
 };

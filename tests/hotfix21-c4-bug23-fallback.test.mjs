@@ -210,9 +210,9 @@ describe("Hotfix-21 c4 — Bug #23 fallback (SIN env var PDF_CRUX_PRECIOS_T6)", 
     );
     expect(escalationFallback).toBeUndefined();
 
-    // Logs: bloqueos confirmados.
-    const findLog = (name) => consoleLogCalls.find((args) => args[0] === name);
-    expect(findLog("pdf_skip_already_sent")).toBeDefined();
-    expect(findLog("img_skip_already_sent")).toBeDefined();
+    // BLOQUE 2: el dispatcher regex está DESACTIVADO, así que ya no emite
+    // pdf_skip_already_sent / img_skip_already_sent. El invariante que
+    // importa se mantiene y es más fuerte: 0 documentos auto-enviados
+    // (verificado arriba) — la entrega es ahora vía el tool enviar_documento.
   }, 20000);
 });

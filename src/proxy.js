@@ -46,4 +46,17 @@ function toImageProxyUrl(url) {
   return url;
 }
 
-module.exports = { extractDriveId, toProxyUrl, toImageProxyUrl };
+// Bloque 2: URL pública del PDF de precios generado on-the-fly.
+// Apunta al endpoint /api/price-list que renderiza el PDF en vivo desde el
+// Sheet. WhatsApp descarga esta URL como documento.
+function priceListUrl(proyecto) {
+  return VERCEL_DOMAIN + "/api/price-list?proyecto=" + encodeURIComponent(proyecto);
+}
+
+// Bloque 2: URL del proxy de PDF a partir de un Drive ID directo (brochures).
+function brochureProxyUrl(driveId) {
+  if (!driveId) return null;
+  return VERCEL_DOMAIN + "/api/pdf?id=" + driveId;
+}
+
+module.exports = { extractDriveId, toProxyUrl, toImageProxyUrl, priceListUrl, brochureProxyUrl, VERCEL_DOMAIN };

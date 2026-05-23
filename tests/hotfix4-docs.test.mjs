@@ -1,20 +1,19 @@
-// Tests pipeline envio de documentos — hotfix-4 Día 3:
-// - FIX 1: JPG de Crux despues del PDF de precios (ampliacion del guard que
-//   antes solo enviaba imagenes como teaser del brochure)
-// - FIX 3a: slot "planos" eliminado de Crux (env var quedo apuntando a
-//   archivo con precios, no planos)
+// Tests pipeline envio de documentos — hotfix-4 Día 3 (ACTUALIZADO Bloque 2).
 //
-// Patron heredado de tests/hotfix2-defense.test.mjs (skill jprez-security-patterns
-// §4.1): require.cache patching para @upstash/redis, @upstash/ratelimit,
-// @anthropic-ai/sdk + fetchMock global. Permite ejecutar processMessage end-to-end
-// y capturar las llamadas a Graph API (Document e Image endpoints) para validar
-// que el pipeline envia los archivos correctos en el orden correcto.
+// BLOQUE 2 (cambio de arquitectura): el dispatcher regex post-LLM
+// (detectDocumentRequest) que auto-enviaba brochure/precios/imágenes a partir
+// del TEXTO del reply quedó DESACTIVADO (LEGACY_REGEX_DOC_DISPATCH=false).
+// La vía única de envío de documentos es ahora el tool enviar_documento, que
+// Mateo invoca explícitamente (cobertura en tests/enviar-documento-tool.test.mjs).
 //
-// HOTFIX-21 C3 NOTA: los mensajes Crux incluyen el marker "listos" para
-// que detectCruxStage retorne "Listos" y el dispatcher mande precios
-// general / brochure como antes. Pre-Hotfix-21 cualquier mencion de Crux
-// pasaba; ahora la regla de ambiguedad (analoga a Puerto Plata E3/E4)
-// requiere un marker de etapa o el dispatcher pide clarificacion.
+// Estos tests originalmente validaban el auto-envío regex (FIX 1 imágenes
+// teaser, FIX 3a mapeo planos→brochure). Ahora se conservan como GUARDA DE
+// REGRESIÓN: un reply de texto que "promete" documentos NO debe disparar
+// ningún envío automático (eso evita el doble-envío con el tool). Si alguien
+// reactiva el flag, estos tests fallan y obligan a revisar la decisión.
+//
+// Patron heredado de tests/hotfix2-defense.test.mjs: require.cache patching
+// para @upstash/redis, @upstash/ratelimit, @anthropic-ai/sdk + fetchMock global.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createRequire } from "module";
@@ -174,14 +173,14 @@ function imagesSentTo(phone) {
 
 // ===== Tests =====
 
-describe("FIX 1 (hotfix-4) — JPG de Crux despues del PDF de precios", () => {
+describe("Bloque 2 — dispatcher regex DESACTIVADO (auto-envío de docs OFF)", () => {
   beforeEach(() => {
     redisState.clear();
     fetchMock.mockClear();
     claudeMockResponse = null;
   });
 
-  it("cliente pide solo precios de Crux con IMG_CRUX -> PDF primero, luego imagenes", async () => {
+  it("reply de texto que promete precios de Crux → 0 docs, 0 imágenes auto-enviadas", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -192,17 +191,12 @@ describe("FIX 1 (hotfix-4) — JPG de Crux despues del PDF de precios", () => {
     const PHONE = "18091111001";
     await processMessage(buildBody(PHONE, "quiero precios de crux listos"));
 
-    const docs = documentsSentTo(PHONE);
-    const imgs = imagesSentTo(PHONE);
-
-    // 1 PDF: precios de Crux
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Precios y Disponibilidad");
-    // 2 imagenes despues del PDF (IMG_CRUX tiene 2 URLs separadas por coma)
-    expect(imgs.length).toBe(2);
+    // El auto-envío regex está OFF: la entrega ahora es vía tool enviar_documento.
+    expect(documentsSentTo(PHONE).length).toBe(0);
+    expect(imagesSentTo(PHONE).length).toBe(0);
   }, 20000);
 
-  it("cliente pide brochure + precios de Crux -> imagenes solo como teaser, NO se repiten", async () => {
+  it("reply que promete brochure + precios → 0 docs auto-enviados (sin doble-envío)", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -213,16 +207,11 @@ describe("FIX 1 (hotfix-4) — JPG de Crux despues del PDF de precios", () => {
     const PHONE = "18091111002";
     await processMessage(buildBody(PHONE, "mandame info de crux listos"));
 
-    const docs = documentsSentTo(PHONE);
-    const imgs = imagesSentTo(PHONE);
-
-    // 2 PDFs: brochure + precios de Crux
-    expect(docs.length).toBe(2);
-    // Imagenes se envian SOLO UNA VEZ (teaser del brochure), NO se duplican despues de precios
-    expect(imgs.length).toBe(2);
+    expect(documentsSentTo(PHONE).length).toBe(0);
+    expect(imagesSentTo(PHONE).length).toBe(0);
   }, 20000);
 
-  it("cliente pide precios de PR3 (sin IMG_PR3) -> solo PDF, 0 imagenes, no falla", async () => {
+  it("reply que promete precios de PR3 → 0 docs auto-enviados", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -233,78 +222,25 @@ describe("FIX 1 (hotfix-4) — JPG de Crux despues del PDF de precios", () => {
     const PHONE = "18091111003";
     await processMessage(buildBody(PHONE, "precios de pr3"));
 
-    const docs = documentsSentTo(PHONE);
-    const imgs = imagesSentTo(PHONE);
-
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Precios y Disponibilidad");
-    expect(imgs.length).toBe(0);
+    expect(documentsSentTo(PHONE).length).toBe(0);
+    expect(imagesSentTo(PHONE).length).toBe(0);
   }, 20000);
-});
 
-describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
-  beforeEach(() => {
-    redisState.clear();
-    fetchMock.mockClear();
-    claudeMockResponse = null;
-  });
-
-  it("cliente pide planos de Crux -> recibe brochure (Hotfix-19B mapping)", async () => {
+  it("reply que promete planos/brochure de Crux → 0 docs auto-enviados", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
-        text: "Te mando los planos de Crux del Prado.",
+        text: "Te mando los planos y el brochure de Crux del Prado.",
       }],
       stop_reason: "end_turn",
     };
     const PHONE = "18091111004";
     await processMessage(buildBody(PHONE, "planos de crux listos"));
 
-    const docs = documentsSentTo(PHONE);
-
-    // Hotfix-19B: detectDocumentType mapea "planos" → ["brochure"] porque el
-    // brochure ya contiene plantas tipo internamente. Pre-Hotfix-19B este test
-    // afirmaba 0 docs (slot planos retirado en hotfix-4); ahora cliente recibe
-    // brochure de Crux. Caso ideal: cliente queria ver el apartamento por
-    // dentro y el brochure es la respuesta correcta.
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Brochure");
-    expect(docs[0].document.filename).toContain("Crux");
+    expect(documentsSentTo(PHONE).length).toBe(0);
   }, 20000);
 
-  it("cliente pide brochure de Crux -> sigue funcionando", async () => {
-    claudeMockResponse = {
-      content: [{
-        type: "text",
-        text: "Te mando el brochure de Crux del Prado.",
-      }],
-      stop_reason: "end_turn",
-    };
-    const PHONE = "18091111005";
-    await processMessage(buildBody(PHONE, "brochure crux listos"));
-
-    const docs = documentsSentTo(PHONE);
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Brochure");
-  }, 20000);
-
-  it("cliente pide precios de Crux -> sigue funcionando post-FIX 3a", async () => {
-    claudeMockResponse = {
-      content: [{
-        type: "text",
-        text: "Te mando el listado de precios de Crux del Prado.",
-      }],
-      stop_reason: "end_turn",
-    };
-    const PHONE = "18091111006";
-    await processMessage(buildBody(PHONE, "precios crux listos"));
-
-    const docs = documentsSentTo(PHONE);
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Precios y Disponibilidad");
-  }, 20000);
-
-  it("cliente pide planos de PR3 -> recibe brochure (Hotfix-19B mapping)", async () => {
+  it("reply que promete planos de PR3 → 0 docs auto-enviados", async () => {
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -315,12 +251,6 @@ describe("FIX 3a (hotfix-4) — Slot planos eliminado de Crux", () => {
     const PHONE = "18091111007";
     await processMessage(buildBody(PHONE, "planos pr3"));
 
-    const docs = documentsSentTo(PHONE);
-    // Hotfix-19B: "planos" → brochure. PDF_PR3_PLANOS quedo huerfano en env
-    // (env var existe pero codigo ya no la consume). El cliente recibe el
-    // brochure de PR3 que internamente trae las plantas tipo de cada apto.
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Brochure");
-    expect(docs[0].document.filename).toContain("Prado Residences III");
+    expect(documentsSentTo(PHONE).length).toBe(0);
   }, 20000);
 });
