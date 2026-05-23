@@ -163,7 +163,13 @@ function seedClientMeta(phone, sentDocs) {
 
 // ===== Tests =====
 
-describe("Hotfix-21 c4 — Bug #23 e2e (CON env var PDF_CRUX_PRECIOS_T6)", () => {
+// BLOQUE 2: el dispatcher regex que enviaba brochure/precios/T6/imágenes a
+// partir del texto del reply quedó DESACTIVADO. La entrega es ahora vía el
+// tool enviar_documento. Estos tests, antes guardas de Bug #23 (dedup +
+// routing T6), ahora garantizan que NINGÚN documento se auto-envía desde el
+// texto del reply — eliminando de raíz el doble-envío que el tool podría
+// causar si el regex siguiera activo.
+describe("Bloque 2 — Bug #23 obsoleto: regex dispatch OFF → 0 auto-envíos", () => {
   let consoleSpy;
   beforeEach(() => {
     redisState.clear();
@@ -175,18 +181,13 @@ describe("Hotfix-21 c4 — Bug #23 e2e (CON env var PDF_CRUX_PRECIOS_T6)", () =>
     });
   });
 
-  it("Test 1: Bug #23 reproducido — cliente con sentDocs poblado dice 'en planos' → bloqueo brochure/images + envio preciosT6", async () => {
+  it("Test 1: 'en planos' con sentDocs poblado → 0 docs y 0 imágenes auto-enviadas", async () => {
     const PHONE = "18091112301";
-    // Pre-popular: cliente YA recibio brochure + images de Crux.
     seedClientMeta(PHONE, {
       "crux.brochure": "2026-05-05T18:00:00Z",
       "crux.images": "2026-05-05T18:01:00Z",
     });
 
-    // Mateo responde con frase gatillo Torre 6 + precios.
-    // detectDocumentRequest exige una de: "te lo envio", "te lo mando",
-    // "te envio", "aqui te mando", "te lo paso", "te mando el/la/los",
-    // "te envio el/la/los". Por eso "te mando el listado".
     claudeMockResponse = {
       content: [{
         type: "text",
@@ -197,34 +198,12 @@ describe("Hotfix-21 c4 — Bug #23 e2e (CON env var PDF_CRUX_PRECIOS_T6)", () =>
 
     await processMessage(buildBody(PHONE, "en planos"));
 
-    const docs = documentsSentTo(PHONE);
-    const imgs = imagesSentTo(PHONE);
-
-    // CORE ASSERT: NO se reenvio el brochure ni las imagenes que ya tenia.
-    const brochureRedundant = docs.find((d) =>
-      d.document.filename.includes("Brochure") && !d.document.filename.includes("Torre 6")
-    );
-    expect(brochureRedundant).toBeUndefined();
-    expect(imgs.length).toBe(0);
-
-    // CORE ASSERT: SI llego el archivo Torre 6 (preciosT6, archivo NUEVO).
-    expect(docs.length).toBe(1);
-    expect(docs[0].document.filename).toContain("Precios Torre 6");
-    expect(docs[0].document.filename).toContain("Crux del Prado");
-
-    // Logs Axiom emitidos (console.log del botLog).
-    const findLog = (name) => consoleLogCalls.find((args) => args[0] === name);
-    expect(findLog("pdf_skip_already_sent")).toBeDefined();
-    expect(findLog("img_skip_already_sent")).toBeDefined();
-    expect(findLog("pdf_sent")).toBeDefined();
-    // El log pdf_sent del envio T6 (puede haber otros pdf_sent en el batch).
-    const t6SendLog = consoleLogCalls.find((args) =>
-      args[0] === "pdf_sent" && typeof args[1] === "string" && args[1].includes("preciosT6")
-    );
-    expect(t6SendLog).toBeDefined();
+    // Regex dispatch OFF → nada se auto-envía (ni duplicados ni T6).
+    expect(documentsSentTo(PHONE).length).toBe(0);
+    expect(imagesSentTo(PHONE).length).toBe(0);
   }, 20000);
 
-  it("Test 2: override explicit-retransmit ('manda otra vez') → SI reenvia brochure", async () => {
+  it("Test 2: 'manda otra vez' → tampoco auto-envía (retransmit ahora vía tool)", async () => {
     const PHONE = "18091112302";
     seedClientMeta(PHONE, {
       "crux.brochure": "2026-05-05T18:00:00Z",
@@ -238,18 +217,10 @@ describe("Hotfix-21 c4 — Bug #23 e2e (CON env var PDF_CRUX_PRECIOS_T6)", () =>
       stop_reason: "end_turn",
     };
 
-    // Cliente pide explicit retransmit. detectIntentRetransmit retorna true.
     await processMessage(buildBody(PHONE, "no me llego el brochure de torre 6, mandalo otra vez"));
 
-    const docs = documentsSentTo(PHONE);
-
-    // El brochure SI se manda (override autorizado por frase explicit).
-    expect(docs.length).toBeGreaterThanOrEqual(1);
-    const brochureRetx = docs.find((d) => d.document.filename.includes("Brochure"));
-    expect(brochureRetx).toBeDefined();
-
-    // Log de retransmit explicit emitido.
-    const findLog = (name) => consoleLogCalls.find((args) => args[0] === name);
-    expect(findLog("pdf_send_explicit_retransmit")).toBeDefined();
+    // Sin auto-envío regex: el reenvío explícito lo maneja Mateo invocando
+    // de nuevo el tool enviar_documento (no este camino).
+    expect(documentsSentTo(PHONE).length).toBe(0);
   }, 20000);
 });

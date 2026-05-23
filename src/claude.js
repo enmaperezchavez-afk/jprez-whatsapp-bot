@@ -256,7 +256,11 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
 
     const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
     workingMessages.push({ role: "assistant", content: response.content });
-    const toolResults = toolUseBlocks.map((block) => {
+    // Bloque 2: los handlers pueden ser async (ej. enviar_documento hace I/O
+    // a WhatsApp). await Promise.all preserva el orden de toolResults y es
+    // backward-compatible con handlers síncronos (await sobre un valor no-
+    // promesa lo devuelve tal cual).
+    const toolResults = await Promise.all(toolUseBlocks.map(async (block) => {
       const signature = toolSignature(block.name, block.input);
       // Hotfix-27 anti-loop: si esta firma ya se invocó en esta llamada,
       // suprimimos la ejecución del handler y devolvemos un tool_result
@@ -287,7 +291,7 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
 
       const handler = toolHandlers && toolHandlers[block.name];
       const result = handler
-        ? handler(block.input)
+        ? await handler(block.input)
         : { error: "Herramienta desconocida: " + block.name };
       botLog("info", "Tool use", { phone, tool: block.name, input: block.input, result });
       return {
@@ -295,7 +299,7 @@ async function callClaudeWithTools({ system, messages, tools, phone, toolHandler
         tool_use_id: block.id,
         content: JSON.stringify(result),
       };
-    });
+    }));
     workingMessages.push({ role: "user", content: toolResults });
     iteration++;
   }
