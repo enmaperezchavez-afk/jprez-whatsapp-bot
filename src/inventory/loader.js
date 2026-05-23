@@ -78,6 +78,12 @@ async function fetchFromSheets() {
   return {
     markdown,
     totals,
+    // Bloque 2: exponer el inventario estructurado + meta para que el
+    // generador de PDF de precios (src/documents/price-list-generator.js)
+    // arme tablas por unidad sin re-parsear el markdown. Es JSON-serializable
+    // así que viaja intacto por la cache Redis.
+    proyectos: inventory.proyectos,
+    meta: inventory.meta,
     skipped_count: inventory.skipped.length,
     source: "sheet",
     updated_at: new Date().toISOString(),
