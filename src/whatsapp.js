@@ -35,10 +35,15 @@ async function sendWhatsAppMessage(to, text) {
   return response.json();
 }
 
-async function sendWhatsAppDocument(to, documentUrl, filename) {
+async function sendWhatsAppDocument(to, documentUrl, filename, caption) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_TOKEN;
   const url = "https://graph.facebook.com/v21.0/" + phoneNumberId + "/messages";
+
+  // Bloque 2: caption opcional. WhatsApp Cloud API soporta caption en
+  // documentos (texto que acompaña el archivo). Solo lo incluimos si viene.
+  const documentPayload = { link: documentUrl, filename: filename };
+  if (caption) documentPayload.caption = caption;
 
   const response = await fetch(url, {
     method: "POST",
@@ -50,10 +55,7 @@ async function sendWhatsAppDocument(to, documentUrl, filename) {
       messaging_product: "whatsapp",
       to: to,
       type: "document",
-      document: {
-        link: documentUrl,
-        filename: filename,
-      },
+      document: documentPayload,
     }),
   });
 
