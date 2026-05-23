@@ -1,38 +1,73 @@
-// src/documents/price-list-generator.js — Bloque 2 Componente 1.
+// src/documents/price-list-generator.js — Bloque 2 Componente 1 (rediseño).
 //
-// Genera un PDF profesional con el listado de precios de un proyecto JPREZ,
-// SIEMPRE actualizado porque lee la data en vivo del inventario (Sheet via
-// loader, que internamente cachea 5 min en Redis). Solo muestra unidades
-// DISPONIBLES con su precio actual.
+// Genera un PDF de listado de precios que REPLICA el diseño de los modelos
+// del Director (carpeta Drive JPREZ_MODELO_PDF_PRECIOS). Lee la data EN VIVO
+// del inventario (loader → Sheet) y muestra TODAS las unidades (disponibles,
+// reservadas, vendidas, bloqueadas) con sus precios — el Director quiere ver
+// el inventario completo, no solo lo disponible.
+//
+// Diseño replicado:
+//   - Header: nombre proyecto + "LISTADO DE PRECIOS" + fecha de entrega.
+//   - Cuadro RESUMEN: Disponibles | Reservados | Vendidos | Bloqueados |
+//     Total | % Ventas, con colores por categoría.
+//   - Tabla con columnas por proyecto (varía: PR3/PR4 vs PSE vs Crux T6).
+//   - Filas coloreadas por estado (verde/amarillo/rojo/gris).
+//   - Planes de pago (separación/completivo/saldo o inicial) calculados desde
+//     el precio y el esquema del proyecto.
+//   - Agrupado por piso/edificio con separador visual.
+//   - Precios formato US$ 138,000.00 (comas + 2 decimales).
+//   - Footer: "Actualizado al [fecha]" · paginación "N de M" · ubicación.
 //
 // CONTRATO:
 //   generatePriceListPdf(proyectoId, { redis, forceRefresh }) → Promise<Buffer>
-//     - proyectoId: pr3 | pr4 | pse3 | pse4 | crux_t6 | crux_listos
-//     - Lanza Error("invalid_project") si el id no es válido.
-//     - Lanza Error("inventory_unavailable") si el loader no trae data
-//       estructurada (p.ej. cayó al fallback hardcoded sin proyectos).
+//     - Error("invalid_project") si el id no es válido.
+//     - Error("inventory_unavailable") si el loader no trae data estructurada.
 //
-// DISEÑO: PDFKit puro (sin binarios nativos, estable en Vercel serverless).
-// Tabla dibujada manualmente con salto de página automático.
+// PDFKit puro (sin binarios nativos, estable en Vercel serverless). Landscape
+// A4 por la cantidad de columnas.
 
 const PDFDocument = require("pdfkit");
 const { loadInventory } = require("../inventory/loader");
-const { fmtUsd, fmtDop } = require("../inventory/markdown-formatter");
 
 // Branding
-const BRAND_NAVY = "#1a2b4a";
-const BRAND_GOLD = "#c9a227";
+const NAVY = "#1a2b4a";
+const GOLD = "#c9a227";
 const GREY = "#666666";
-const LIGHT = "#eef1f6";
+const BORDER = "#cfd6e0";
+
+// Colores de fila por estado
+const STATUS_COLORS = {
+  disponible: "#d8f3dc", // verde claro
+  reservado: "#fff3bf",  // amarillo
+  vendido: "#ffd6d6",    // rojo claro
+  bloqueado: "#dee2e6",  // gris
+};
+const STATUS_LABEL = {
+  disponible: "Disponible",
+  reservado: "Reservado",
+  vendido: "Vendido",
+  bloqueado: "Bloqueado",
+};
+
 const VENTAS_WHATSAPP = "829-994-3102";
 
+// Esquemas de pago por proyecto (fracciones del precio).
+const SCHEMES = {
+  pr3: null,
+  pr4: { inicial: 0.40 },
+  pse3: { sep: 0.10, comp: 0.30, saldo: 0.60 },
+  pse4: { sep: 0.10, comp: 0.30, saldo: 0.60 },
+  crux_t6: { sep: 0.10, comp: 0.20, saldo: 0.70 },
+  crux_listos: null,
+};
+
 const PROJECT_META = {
-  pr3: { name: "Prado Residences III", currency: "USD", priceField: "precio_usd" },
-  pr4: { name: "Prado Residences IV", currency: "USD", priceField: "precio_usd" },
-  pse3: { name: "Prado Suites Puerto Plata — Etapa 3", currency: "USD", priceField: "precio_usd" },
-  pse4: { name: "Prado Suites Puerto Plata — Etapa 4", currency: "USD", priceField: "precio_usd" },
-  crux_t6: { name: "Crux del Prado — Torre 6", currency: "USD", priceField: "precio_usd" },
-  crux_listos: { name: "Crux del Prado — Listos para Entrega Inmediata", currency: "DOP", priceField: "precio_dop" },
+  pr3: { name: "Prado Residences III", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES III", location: "SANTO DOMINGO" },
+  pr4: { name: "Prado Residences IV", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES IV", location: "SANTO DOMINGO" },
+  pse3: { name: "Prado Suites Puerto Plata — Etapa 3", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 3", location: "PUERTO - PLATA" },
+  pse4: { name: "Prado Suites Puerto Plata — Etapa 4", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 4", location: "PUERTO - PLATA" },
+  crux_t6: { name: "Crux del Prado — Torre 6", currency: "USD", priceField: "precio_usd", title: "CRUX DEL PRADO — TORRE 6", location: "SANTIAGO" },
+  crux_listos: { name: "Crux del Prado — Listos para Entrega", currency: "DOP", priceField: "precio_dop", title: "CRUX DEL PRADO — LISTOS PARA ENTREGA", location: "SANTIAGO" },
 };
 
 const VALID_PROJECTS = Object.keys(PROJECT_META);
@@ -44,191 +79,290 @@ function fmtFechaEs(date) {
   });
 }
 
-// Compone el detalle por unidad a partir de los campos presentes (varían
-// por proyecto: pr4 trae hab/baños, pse trae edificio/nivel, crux piso/torre).
-function unitDetail(u) {
-  const bits = [];
-  if (u.tipo) bits.push(String(u.tipo));
-  if (u.edificio != null) bits.push("Edif " + u.edificio);
-  if (u.nivel) bits.push("Nivel " + u.nivel);
-  if (u.piso != null) bits.push("Piso " + u.piso + (u.letra || ""));
-  if (u.torre) bits.push("Torre " + u.torre);
-  if (u.etapa != null) bits.push("Etapa " + u.etapa);
-  if (u.hab != null) bits.push(u.hab + " hab");
-  if (u.bano != null) bits.push(u.bano + " baños");
-  if (u.parqueos != null) bits.push(u.parqueos + " parq");
-  if (u.vista) bits.push("vista " + u.vista);
-  if (u.orientacion) bits.push(String(u.orientacion));
-  return bits.join(", ");
+function money(n, currency) {
+  if (n == null || !Number.isFinite(Number(n))) return "—";
+  const symbol = currency === "DOP" ? "RD$" : "US$";
+  return symbol + " " + Number(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
 }
 
-function fmtPrice(u, cfg) {
-  const v = u[cfg.priceField];
-  if (v == null) return "—";
-  return cfg.currency === "DOP" ? fmtDop(v) : fmtUsd(v);
+function val(x, suffix) {
+  if (x == null || x === "") return "—";
+  return suffix ? String(x) + suffix : String(x);
 }
 
-// generatePriceListPdf: entry point. Retorna Buffer del PDF.
+// Número de piso a partir del unidad_id tipo "4D", "11G" (PR3/PR4).
+function floorFromUnidad(unidadId) {
+  const m = String(unidadId || "").match(/^(\d+)/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+// ===== Definición de columnas por proyecto =====
+// Cada columna: { label, w (peso relativo), align, get(u, ctx) }
+function columnsFor(proyectoId) {
+  const cur = PROJECT_META[proyectoId].currency;
+  const scheme = SCHEMES[proyectoId];
+  const priceOf = (u) => u[PROJECT_META[proyectoId].priceField];
+
+  const colPrecio = { label: "Precio " + (cur === "DOP" ? "RD$" : "US$"), w: 1.5, align: "right", get: (u) => money(priceOf(u), cur) };
+  const colEstatus = { label: "Estatus", w: 0.9, align: "left", get: (u) => STATUS_LABEL[u.estado] || u.estado };
+  const colArea = { label: "Área", w: 0.55, align: "right", get: (u) => val(u.m2, " m²") };
+  const colHab = { label: "Hab.", w: 0.6, align: "center", get: (u) => val(u.hab) };
+  const colBano = { label: "Baños", w: 0.6, align: "center", get: (u) => val(u.bano) };
+  const colParq = { label: "Parq.", w: 0.55, align: "center", get: (u) => val(u.parqueos) };
+
+  if (proyectoId === "pr3") {
+    return [
+      { label: "Unidad", w: 0.7, align: "left", get: (u) => u.unidad_id || "—" },
+      colArea,
+      { label: "Vista", w: 0.9, align: "left", get: (u) => val(u.vista || u.orientacion) },
+      colPrecio,
+      colHab, colBano, colParq, colEstatus,
+    ];
+  }
+  if (proyectoId === "pr4") {
+    return [
+      { label: "Unidad", w: 0.7, align: "left", get: (u) => u.unidad_id || "—" },
+      colArea,
+      { label: "Vista", w: 0.9, align: "left", get: (u) => val(u.vista || u.orientacion) },
+      colPrecio,
+      { label: "Inicial 40%", w: 1.3, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.inicial : null, cur) },
+      colHab, colBano, colParq, colEstatus,
+    ];
+  }
+  if (proyectoId === "pse3" || proyectoId === "pse4") {
+    return [
+      { label: "Edificio", w: 0.7, align: "center", get: (u) => val(u.edificio) },
+      { label: "Apartamento", w: 0.9, align: "left", get: (u) => u.unidad_id || "—" },
+      colPrecio,
+      { label: "Separación 10%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
+      { label: "Completivo 30%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.comp : null, cur) },
+      { label: "Saldo 60%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
+      colArea, colHab, colBano, colEstatus,
+    ];
+  }
+  if (proyectoId === "crux_t6") {
+    return [
+      { label: "Apartamento", w: 0.8, align: "left", get: (u) => u.unidad_id || "—" },
+      colPrecio,
+      { label: "Separación 10%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
+      { label: "Completivo 20%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.comp : null, cur) },
+      { label: "Saldo 70%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
+      colArea, colHab, colBano, colParq,
+      { label: "Tipo Parqueo", w: 1.6, align: "left", get: (u) => val(u.parqueo_tipo) },
+      colEstatus,
+    ];
+  }
+  // crux_listos (entrega inmediata, RD$, sin esquema de cuotas)
+  return [
+    { label: "Apartamento", w: 0.9, align: "left", get: (u) => u.unidad_id || "—" },
+    colPrecio,
+    colArea, colHab, colBano,
+    { label: "Torre", w: 0.6, align: "center", get: (u) => val(u.torre) },
+    { label: "Etapa", w: 0.6, align: "center", get: (u) => val(u.etapa) },
+    { label: "Tipo Parqueo", w: 1.4, align: "left", get: (u) => val(u.parqueo_tipo) },
+    colEstatus,
+  ];
+}
+
+// Agrupa unidades en secciones (piso/edificio) y devuelve [{label, units}].
+function groupUnits(proyectoId, units) {
+  const groups = new Map();
+  const keyFn = (u) => {
+    if (proyectoId === "pse3" || proyectoId === "pse4") return u.edificio != null ? "Edificio " + u.edificio : "Edificio —";
+    if (proyectoId === "crux_t6") return u.piso != null ? "Piso " + u.piso : "Piso —";
+    if (proyectoId === "crux_listos") return u.etapa != null ? "Etapa " + u.etapa : "Etapa —";
+    return "Piso " + floorFromUnidad(u.unidad_id); // pr3/pr4
+  };
+  const ordFn = (u) => {
+    if (proyectoId === "pse3" || proyectoId === "pse4") return u.edificio || 0;
+    if (proyectoId === "crux_t6") return u.piso || 0;
+    if (proyectoId === "crux_listos") return u.etapa || 0;
+    return floorFromUnidad(u.unidad_id);
+  };
+  for (const u of units) {
+    const k = keyFn(u);
+    if (!groups.has(k)) groups.set(k, { label: k, ord: ordFn(u), units: [] });
+    groups.get(k).units.push(u);
+  }
+  const arr = [...groups.values()].sort((a, b) => a.ord - b.ord);
+  for (const g of arr) g.units.sort((a, b) => String(a.unidad_id).localeCompare(String(b.unidad_id), "en", { numeric: true }));
+  return arr;
+}
+
+function statusCounts(units) {
+  const c = { disponible: 0, reservado: 0, vendido: 0, bloqueado: 0 };
+  for (const u of units) if (c[u.estado] != null) c[u.estado]++;
+  return c;
+}
+
+// ===== Entry point =====
 async function generatePriceListPdf(proyectoId, options = {}) {
-  const cfg = PROJECT_META[proyectoId];
-  if (!cfg) {
+  if (!PROJECT_META[proyectoId]) {
     const err = new Error("invalid_project");
     err.code = "invalid_project";
     throw err;
   }
-
   const inv = await loadInventory({ redis: options.redis, forceRefresh: options.forceRefresh });
   const proyectos = inv && inv.proyectos;
   if (!proyectos || !Array.isArray(proyectos[proyectoId])) {
-    // El loader cayó al fallback hardcoded (sin data estructurada) o Sheets
-    // no está disponible. No inventamos precios — el caller decide qué decir.
     const err = new Error("inventory_unavailable");
     err.code = "inventory_unavailable";
     throw err;
   }
 
-  const allUnits = proyectos[proyectoId];
-  const disponibles = allUnits.filter((u) => u.estado === "disponible");
+  const units = proyectos[proyectoId];
   const meta = (inv.meta || []).find((m) => m.proyecto_id === proyectoId) || null;
-  const totalUnidades = meta && meta.total_unidades != null ? meta.total_unidades : allUnits.length;
-  const displayName = (meta && meta.nombre_display) || cfg.name;
-
-  return renderPdf({ cfg, displayName, meta, disponibles, totalUnidades });
+  return renderPdf({ proyectoId, units, meta });
 }
 
-function renderPdf({ cfg, displayName, meta, disponibles, totalUnidades }) {
+function renderPdf({ proyectoId, units, meta }) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: "A4", margin: 40 });
+      const cfg = PROJECT_META[proyectoId];
+      const columns = columnsFor(proyectoId);
+      const groups = groupUnits(proyectoId, units);
+      const counts = statusCounts(units);
+      const total = units.length;
+      const pctVentas = total > 0 ? Math.round(((total - counts.disponible) / total) * 100) : 0;
+      const entrega = (meta && meta.entrega_fecha) || "";
+      const ubicacion = (meta && meta.ubicacion) || cfg.location;
+      const displayTitle = cfg.title;
+
+      // Construir lista plana de items (group-header + filas) para paginar.
+      const items = [];
+      for (const g of groups) {
+        items.push({ type: "group", label: g.label });
+        for (const u of g.units) items.push({ type: "row", unit: u });
+      }
+
+      const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 30 });
       const chunks = [];
       doc.on("data", (c) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      const pageWidth = doc.page.width;
-      const left = doc.page.margins.left;
-      const right = pageWidth - doc.page.margins.right;
-      const contentWidth = right - left;
+      const M = doc.page.margins.left;
+      const pageW = doc.page.width;
+      const pageH = doc.page.height;
+      const contentW = pageW - M * 2;
 
-      // ===== Header con branding =====
-      doc.rect(0, 0, pageWidth, 90).fill(BRAND_NAVY);
-      doc.fillColor(BRAND_GOLD).fontSize(26).font("Helvetica-Bold")
-        .text("JPREZ", left, 26);
-      doc.fillColor("#ffffff").fontSize(10).font("Helvetica")
-        .text("Constructora JPREZ", left, 56);
-      doc.fillColor("#ffffff").fontSize(15).font("Helvetica-Bold")
-        .text("Listado de Precios", left, 26, { width: contentWidth, align: "right" });
-      doc.fillColor("#dbe2ee").fontSize(11).font("Helvetica")
-        .text(displayName, left, 50, { width: contentWidth, align: "right" });
+      // Alturas de layout
+      const HEADER_H = 56;
+      const RESUMEN_H = 46;
+      const COLHDR_H = 20;
+      const ROW_H = 15;
+      const FOOTER_H = 22;
+      const tableTop = M + HEADER_H + 8 + RESUMEN_H + 8 + COLHDR_H;
+      const tableBottom = pageH - M - FOOTER_H;
+      const rowsPerPage = Math.max(1, Math.floor((tableBottom - tableTop) / ROW_H));
+      const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage));
 
-      doc.y = 110;
-      doc.fillColor(GREY).fontSize(9).font("Helvetica")
-        .text("Actualizado al " + fmtFechaEs(new Date()), left, 104);
-
-      // ===== Línea meta (entrega / ubicación) =====
-      let cursorY = 124;
-      if (meta) {
-        const metaBits = [];
-        if (meta.ubicacion) metaBits.push("Ubicación: " + meta.ubicacion);
-        if (meta.entrega_fecha) metaBits.push("Entrega: " + meta.entrega_fecha);
-        if (metaBits.length) {
-          doc.fillColor(BRAND_NAVY).fontSize(10).font("Helvetica")
-            .text(metaBits.join("    ·    "), left, cursorY, { width: contentWidth });
-          cursorY = doc.y + 8;
-        }
-      }
-
-      // ===== Tabla =====
-      // Columnas: Unidad | Detalle | m² | Precio
-      const cols = [
-        { key: "unidad", label: "Unidad", w: 0.16 },
-        { key: "detalle", label: "Detalle", w: 0.46 },
-        { key: "m2", label: "m²", w: 0.12 },
-        { key: "precio", label: "Precio (" + cfg.currency + ")", w: 0.26 },
-      ];
+      // Posiciones de columna
+      const totalW = columns.reduce((s, c) => s + c.w, 0);
       const colX = [];
-      let acc = left;
-      for (const c of cols) { colX.push(acc); acc += c.w * contentWidth; }
+      let acc = M;
+      for (const c of columns) { colX.push(acc); acc += (c.w / totalW) * contentW; }
+      const colWidth = (i) => (columns[i].w / totalW) * contentW;
 
-      const rowH = 22;
-      const bottomLimit = doc.page.height - doc.page.margins.bottom - 60;
-
-      function drawHeaderRow(y) {
-        doc.rect(left, y, contentWidth, rowH).fill(BRAND_NAVY);
-        doc.fillColor("#ffffff").fontSize(9.5).font("Helvetica-Bold");
-        cols.forEach((c, i) => {
-          doc.text(c.label, colX[i] + 4, y + 6, { width: c.w * contentWidth - 8, ellipsis: true });
-        });
-        return y + rowH;
+      function drawHeader() {
+        doc.rect(0, 0, pageW, M + HEADER_H).fill(NAVY);
+        doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(9).text("JPREZ", M, M - 2);
+        doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15)
+          .text(displayTitle, M, M + 10, { width: contentW * 0.7 });
+        doc.fillColor("#dbe2ee").font("Helvetica").fontSize(9)
+          .text("LISTADO DE PRECIOS" + (entrega ? "   ·   Entrega: " + entrega : ""), M, M + 32, { width: contentW * 0.7 });
+        doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
+          .text(ubicacion, M, M + 14, { width: contentW, align: "right" });
       }
 
-      cursorY = drawHeaderRow(cursorY);
+      function drawResumen(y) {
+        const cells = [
+          { label: "Disponibles", value: counts.disponible, color: STATUS_COLORS.disponible },
+          { label: "Reservados", value: counts.reservado, color: STATUS_COLORS.reservado },
+          { label: "Vendidos", value: counts.vendido, color: STATUS_COLORS.vendido },
+          { label: "Bloqueados", value: counts.bloqueado, color: STATUS_COLORS.bloqueado },
+          { label: "Total", value: total, color: "#e9edf3" },
+          { label: "% Ventas", value: pctVentas + "%", color: "#f3e9c9" },
+        ];
+        const cw = contentW / cells.length;
+        cells.forEach((cell, i) => {
+          const x = M + i * cw;
+          doc.rect(x, y, cw - 4, RESUMEN_H).fill(cell.color);
+          doc.rect(x, y, cw - 4, RESUMEN_H).lineWidth(0.5).stroke(BORDER);
+          doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(16)
+            .text(String(cell.value), x, y + 8, { width: cw - 4, align: "center" });
+          doc.fillColor(GREY).font("Helvetica").fontSize(8)
+            .text(cell.label, x, y + 30, { width: cw - 4, align: "center" });
+        });
+      }
 
-      if (disponibles.length === 0) {
-        doc.fillColor(GREY).fontSize(11).font("Helvetica")
-          .text("No hay unidades disponibles en este momento. Escríbenos para opciones en otros proyectos.",
-            left, cursorY + 10, { width: contentWidth });
-        cursorY = doc.y + 10;
-      } else {
-        doc.font("Helvetica").fontSize(9.5);
-        disponibles.forEach((u, idx) => {
-          if (cursorY + rowH > bottomLimit) {
-            doc.addPage();
-            cursorY = doc.page.margins.top;
-            cursorY = drawHeaderRow(cursorY);
-            doc.font("Helvetica").fontSize(9.5);
-          }
-          if (idx % 2 === 0) {
-            doc.rect(left, cursorY, contentWidth, rowH).fill(LIGHT);
-          }
-          const row = {
-            unidad: u.unidad_id || "—",
-            detalle: unitDetail(u) || "—",
-            m2: u.m2 != null ? u.m2 + " m²" : "—",
-            precio: fmtPrice(u, cfg),
-          };
-          doc.fillColor("#222222");
-          cols.forEach((c, i) => {
-            const bold = c.key === "precio";
-            doc.font(bold ? "Helvetica-Bold" : "Helvetica");
-            doc.text(String(row[c.key]), colX[i] + 4, cursorY + 6, {
-              width: c.w * contentWidth - 8, ellipsis: true,
-            });
+      function drawColHeader(y) {
+        doc.rect(M, y, contentW, COLHDR_H).fill(NAVY);
+        doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7.5);
+        columns.forEach((c, i) => {
+          doc.text(c.label, colX[i] + 3, y + 6, { width: colWidth(i) - 6, align: c.align, ellipsis: true });
+        });
+      }
+
+      function drawFooter(pageNum) {
+        const y = pageH - M - FOOTER_H;
+        doc.rect(M, y, contentW, 0.5).fill(BORDER);
+        doc.fillColor(GREY).font("Helvetica").fontSize(8)
+          .text("Actualizado al " + fmtFechaEs(new Date()), M, y + 5, { width: contentW * 0.4, align: "left" });
+        doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8)
+          .text(ubicacion + "   ·   WhatsApp ventas: " + VENTAS_WHATSAPP, M, y + 5, { width: contentW * 0.3, align: "center" });
+        doc.fillColor(GREY).font("Helvetica").fontSize(8)
+          .text(pageNum + " de " + totalPages, M, y + 5, { width: contentW, align: "right" });
+      }
+
+      function drawPageFurniture(pageNum) {
+        drawHeader();
+        drawResumen(M + HEADER_H + 8);
+        drawColHeader(M + HEADER_H + 8 + RESUMEN_H + 8);
+        drawFooter(pageNum);
+      }
+
+      // Render paginado
+      let pageNum = 1;
+      drawPageFurniture(pageNum);
+      let y = tableTop;
+      let placed = 0;
+
+      const drawRow = (item) => {
+        if (item.type === "group") {
+          doc.rect(M, y, contentW, ROW_H).fill("#eef1f6");
+          doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8)
+            .text(item.label, M + 4, y + 3.5, { width: contentW - 8 });
+        } else {
+          const u = item.unit;
+          const bg = STATUS_COLORS[u.estado] || "#ffffff";
+          doc.rect(M, y, contentW, ROW_H).fill(bg);
+          doc.fillColor("#222222").font("Helvetica").fontSize(7);
+          columns.forEach((c, i) => {
+            doc.text(String(c.get(u)), colX[i] + 3, y + 3.5, { width: colWidth(i) - 6, align: c.align, ellipsis: true });
           });
-          cursorY += rowH;
-        });
+        }
+        y += ROW_H;
+      };
+
+      for (const item of items) {
+        if (placed >= rowsPerPage) {
+          doc.addPage();
+          pageNum += 1;
+          drawPageFurniture(pageNum);
+          y = tableTop;
+          placed = 0;
+        }
+        drawRow(item);
+        placed += 1;
       }
 
-      // ===== Resumen =====
-      cursorY += 12;
-      doc.fillColor(BRAND_GOLD).rect(left, cursorY, contentWidth, 1).fill(BRAND_GOLD);
-      cursorY += 8;
-      doc.fillColor(BRAND_NAVY).fontSize(11).font("Helvetica-Bold")
-        .text(disponibles.length + " disponibles de " + totalUnidades + " unidades.", left, cursorY);
-      cursorY = doc.y + 6;
-
-      // ===== Plan de pago =====
-      if (meta && (meta.plan_normal || meta.plan_feria)) {
-        doc.fillColor("#333333").fontSize(10).font("Helvetica");
-        if (meta.plan_normal) {
-          doc.text("Plan de pago: " + meta.plan_normal, left, cursorY, { width: contentWidth });
-          cursorY = doc.y + 2;
-        }
-        if (meta.plan_feria) {
-          doc.fillColor(BRAND_GOLD).font("Helvetica-Bold")
-            .text("Plan Feria de Mayo 2026: " + meta.plan_feria, left, cursorY, { width: contentWidth });
-          cursorY = doc.y + 2;
-        }
+      if (items.length === 0) {
+        doc.fillColor(GREY).font("Helvetica").fontSize(11)
+          .text("Sin unidades cargadas para este proyecto.", M, tableTop + 10, { width: contentW });
       }
-
-      // ===== Footer =====
-      const footerY = doc.page.height - doc.page.margins.bottom - 28;
-      doc.fillColor(GREY).rect(left, footerY, contentWidth, 1).fill("#cccccc");
-      doc.fillColor(BRAND_NAVY).fontSize(10).font("Helvetica-Bold")
-        .text("WhatsApp ventas: " + VENTAS_WHATSAPP, left, footerY + 8, { width: contentWidth, align: "center" });
-      doc.fillColor(GREY).fontSize(8).font("Helvetica")
-        .text("Precios sujetos a cambio sin previo aviso · Documento generado automáticamente",
-          left, footerY + 22, { width: contentWidth, align: "center" });
 
       doc.end();
     } catch (e) {
@@ -241,7 +375,11 @@ module.exports = {
   generatePriceListPdf,
   VALID_PROJECTS,
   PROJECT_META,
-  // exportados para test granular
-  unitDetail,
-  fmtFechaEs,
+  // exportados para test
+  columnsFor,
+  groupUnits,
+  statusCounts,
+  money,
+  floorFromUnidad,
+  SCHEMES,
 };

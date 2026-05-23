@@ -115,9 +115,11 @@ describe("Bloque 1 — parser inventario", () => {
       tipo: "D",
       precio_usd: 157500,
       m2: 63,
-      hab: 1,
+      // Bloque 2: hab/parqueos ahora se preservan como STRING ("1+ESTAR", "2L"
+      // en el inventario real no son enteros). bano sigue numérico.
+      hab: "1",
       bano: 1.5,
-      parqueos: 1,
+      parqueos: "1",
       orientacion: "Sur",
       estado: "disponible",
     });
