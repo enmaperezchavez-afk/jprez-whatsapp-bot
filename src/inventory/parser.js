@@ -83,40 +83,61 @@ function makeUnitParser(tabName, priceField, fields) {
 const parsePR3 = makeUnitParser("pr3", "precio_usd", [
   ["m2", toInt],
   ["vista", (v) => (v ? String(v).trim() : null)],
+  // Bloque 2 hotfix diseño: columnas del modelo PDF (hab/baños/parqueos).
+  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["bano", toNumber],
+  ["parqueos", (v) => (v ? String(v).trim() : null)],
 ]);
 
 const parsePR4 = makeUnitParser("pr4", "precio_usd", [
   ["tipo", (v) => (v ? String(v).trim().toUpperCase() : null)],
   ["m2", toInt],
-  ["hab", toInt],
+  // hab/parqueos como STRING: el modelo trae "1+ESTAR", "2L" (no enteros).
+  ["hab", (v) => (v ? String(v).trim() : null)],
   ["bano", toNumber],
-  ["parqueos", toInt],
+  ["parqueos", (v) => (v ? String(v).trim() : null)],
   ["orientacion", (v) => (v ? String(v).trim() : null)],
+  // vista alias (el modelo PR4 rotula la orientación como "Vista").
+  ["vista", (v) => (v ? String(v).trim() : null)],
 ]);
 
 const parsePSE3 = makeUnitParser("pse3", "precio_usd", [
   ["edificio", toInt],
   ["nivel", (v) => (v ? String(v).trim() : null)],
   ["tipo", (v) => (v ? String(v).trim() : null)],
-  ["m2", toInt],
+  ["m2", toNumber],
+  // Bloque 2 hotfix diseño: hab/baños del modelo PDF.
+  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["bano", toNumber],
 ]);
 
 const parsePSE4 = makeUnitParser("pse4", "precio_usd", [
   ["edificio", toInt],
   ["tipo", (v) => (v ? String(v).trim() : null)],
-  ["m2", toInt],
-  ["hab", toInt],
+  ["m2", toNumber],
+  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["bano", toNumber],
 ]);
 
 const parseCruxT6 = makeUnitParser("crux_t6", "precio_usd", [
   ["piso", toInt],
   ["letra", (v) => (v ? String(v).trim().toUpperCase() : null)],
+  // Bloque 2 hotfix diseño: columnas del modelo PDF Torre 6.
+  ["m2", toNumber],
+  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["bano", toNumber],
+  ["parqueos", (v) => (v ? String(v).trim() : null)],
+  ["parqueo_tipo", (v) => (v ? String(v).trim() : null)],
+  ["tipo", (v) => (v ? String(v).trim() : null)],
 ]);
 
 const parseCruxListos = makeUnitParser("crux_listos", "precio_dop", [
   ["torre", (v) => (v ? String(v).trim().toUpperCase() : null)],
   ["etapa", toInt],
   ["parqueo_tipo", (v) => (v ? String(v).trim() : null)],
+  ["m2", toNumber],
+  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["bano", toNumber],
 ]);
 
 // parseInventory: entry point. Recibe el objeto de tabs (output de
