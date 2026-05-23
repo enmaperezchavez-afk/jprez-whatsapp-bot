@@ -72,6 +72,30 @@ const PROJECT_META = {
 
 const VALID_PROJECTS = Object.keys(PROJECT_META);
 
+// Fix 1 (hotfix-51): Crux T6 y Crux Listos tienen valores fijos para TODAS
+// las unidades. El Sheet no trae estas columnas, así que las completamos en
+// código cuando vienen vacías (no inventamos datos para otros proyectos).
+const CRUX_DEFAULTS = { m2: 100, hab: "3", bano: 2, parqueos: "2" };
+
+// Fix 3 (hotfix-51): inicio de construcción por proyecto cuando el META tab
+// no lo trae. Proyectos ya entregados/en entrega se omiten (null).
+const CONSTRUCCION_DEFAULT = {
+  pse3: "Enero 2028",
+  pse4: "En construcción",
+  crux_t6: "En construcción",
+};
+
+function applyDefaults(proyectoId, units) {
+  if (proyectoId !== "crux_t6" && proyectoId !== "crux_listos") return units;
+  return units.map((u) => {
+    const out = { ...u };
+    for (const [k, v] of Object.entries(CRUX_DEFAULTS)) {
+      if (out[k] == null || out[k] === "") out[k] = v;
+    }
+    return out;
+  });
+}
+
 function fmtFechaEs(date) {
   return date.toLocaleDateString("es-DO", {
     day: "numeric", month: "long", year: "numeric",
@@ -100,7 +124,9 @@ function floorFromUnidad(unidadId) {
 
 // ===== Definición de columnas por proyecto =====
 // Cada columna: { label, w (peso relativo), align, get(u, ctx) }
-function columnsFor(proyectoId) {
+// opts.hasEncargos (Fix 5): si el Sheet trae "numero_encargos", se inserta la
+// columna; si no, no se fuerza.
+function columnsFor(proyectoId, opts = {}) {
   const cur = PROJECT_META[proyectoId].currency;
   const scheme = SCHEMES[proyectoId];
   const priceOf = (u) => u[PROJECT_META[proyectoId].priceField];
@@ -111,18 +137,19 @@ function columnsFor(proyectoId) {
   const colHab = { label: "Hab.", w: 0.6, align: "center", get: (u) => val(u.hab) };
   const colBano = { label: "Baños", w: 0.6, align: "center", get: (u) => val(u.bano) };
   const colParq = { label: "Parq.", w: 0.55, align: "center", get: (u) => val(u.parqueos) };
+  const colEncargo = { label: "No. Encargo", w: 1.1, align: "left", get: (u) => val(u.numero_encargos) };
 
+  let cols;
   if (proyectoId === "pr3") {
-    return [
+    cols = [
       { label: "Unidad", w: 0.7, align: "left", get: (u) => u.unidad_id || "—" },
       colArea,
       { label: "Vista", w: 0.9, align: "left", get: (u) => val(u.vista || u.orientacion) },
       colPrecio,
       colHab, colBano, colParq, colEstatus,
     ];
-  }
-  if (proyectoId === "pr4") {
-    return [
+  } else if (proyectoId === "pr4") {
+    cols = [
       { label: "Unidad", w: 0.7, align: "left", get: (u) => u.unidad_id || "—" },
       colArea,
       { label: "Vista", w: 0.9, align: "left", get: (u) => val(u.vista || u.orientacion) },
@@ -130,9 +157,8 @@ function columnsFor(proyectoId) {
       { label: "Inicial 40%", w: 1.3, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.inicial : null, cur) },
       colHab, colBano, colParq, colEstatus,
     ];
-  }
-  if (proyectoId === "pse3" || proyectoId === "pse4") {
-    return [
+  } else if (proyectoId === "pse3" || proyectoId === "pse4") {
+    cols = [
       { label: "Edificio", w: 0.7, align: "center", get: (u) => val(u.edificio) },
       { label: "Apartamento", w: 0.9, align: "left", get: (u) => u.unidad_id || "—" },
       colPrecio,
@@ -141,9 +167,8 @@ function columnsFor(proyectoId) {
       { label: "Saldo 60%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
       colArea, colHab, colBano, colEstatus,
     ];
-  }
-  if (proyectoId === "crux_t6") {
-    return [
+  } else if (proyectoId === "crux_t6") {
+    cols = [
       { label: "Apartamento", w: 0.8, align: "left", get: (u) => u.unidad_id || "—" },
       colPrecio,
       { label: "Separación 10%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
@@ -153,17 +178,26 @@ function columnsFor(proyectoId) {
       { label: "Tipo Parqueo", w: 1.6, align: "left", get: (u) => val(u.parqueo_tipo) },
       colEstatus,
     ];
+  } else {
+    // crux_listos (entrega inmediata, RD$, sin esquema de cuotas)
+    cols = [
+      { label: "Apartamento", w: 0.9, align: "left", get: (u) => u.unidad_id || "—" },
+      colPrecio,
+      colArea, colHab, colBano,
+      { label: "Torre", w: 0.6, align: "center", get: (u) => val(u.torre) },
+      { label: "Etapa", w: 0.6, align: "center", get: (u) => val(u.etapa) },
+      { label: "Tipo Parqueo", w: 1.4, align: "left", get: (u) => val(u.parqueo_tipo) },
+      colEstatus,
+    ];
   }
-  // crux_listos (entrega inmediata, RD$, sin esquema de cuotas)
-  return [
-    { label: "Apartamento", w: 0.9, align: "left", get: (u) => u.unidad_id || "—" },
-    colPrecio,
-    colArea, colHab, colBano,
-    { label: "Torre", w: 0.6, align: "center", get: (u) => val(u.torre) },
-    { label: "Etapa", w: 0.6, align: "center", get: (u) => val(u.etapa) },
-    { label: "Tipo Parqueo", w: 1.4, align: "left", get: (u) => val(u.parqueo_tipo) },
-    colEstatus,
-  ];
+
+  // Fix 5: insertar "No. Encargo" tras la primera columna identificadora
+  // (Apartamento/Unidad) cuando el Sheet trae el dato, en PSE y Crux T6.
+  if (opts.hasEncargos && ["pse3", "pse4", "crux_t6"].includes(proyectoId)) {
+    const insertAt = proyectoId === "pse3" || proyectoId === "pse4" ? 2 : 1;
+    cols.splice(insertAt, 0, colEncargo);
+  }
+  return cols;
 }
 
 // Agrupa unidades en secciones (piso/edificio) y devuelve [{label, units}].
@@ -197,6 +231,30 @@ function statusCounts(units) {
   return c;
 }
 
+// Fix 2 (hotfix-51): conteos por grupo (edificio/piso) + fila TOTAL, para la
+// tabla resumen que va entre el cuadro de colores y la tabla principal.
+function groupSummary(proyectoId, units) {
+  const groups = groupUnits(proyectoId, units);
+  const rows = groups.map((g) => {
+    const c = statusCounts(g.units);
+    const t = g.units.length;
+    return {
+      label: g.label, vendido: c.vendido, bloqueado: c.bloqueado,
+      reservado: c.reservado, disponible: c.disponible, total: t,
+      pct: t > 0 ? Math.round(((t - c.disponible) / t) * 100) : 0,
+    };
+  });
+  const tc = statusCounts(units);
+  const tt = units.length;
+  rows.push({
+    label: "TOTAL", vendido: tc.vendido, bloqueado: tc.bloqueado,
+    reservado: tc.reservado, disponible: tc.disponible, total: tt,
+    pct: tt > 0 ? Math.round(((tt - tc.disponible) / tt) * 100) : 0,
+    isTotal: true,
+  });
+  return rows;
+}
+
 // ===== Entry point =====
 async function generatePriceListPdf(proyectoId, options = {}) {
   if (!PROJECT_META[proyectoId]) {
@@ -212,7 +270,8 @@ async function generatePriceListPdf(proyectoId, options = {}) {
     throw err;
   }
 
-  const units = proyectos[proyectoId];
+  // Fix 1: completar defaults fijos de Crux antes de renderizar.
+  const units = applyDefaults(proyectoId, proyectos[proyectoId]);
   const meta = (inv.meta || []).find((m) => m.proyecto_id === proyectoId) || null;
   return renderPdf({ proyectoId, units, meta });
 }
@@ -221,14 +280,18 @@ function renderPdf({ proyectoId, units, meta }) {
   return new Promise((resolve, reject) => {
     try {
       const cfg = PROJECT_META[proyectoId];
-      const columns = columnsFor(proyectoId);
+      const hasEncargos = units.some((u) => u.numero_encargos);
+      const columns = columnsFor(proyectoId, { hasEncargos });
       const groups = groupUnits(proyectoId, units);
       const counts = statusCounts(units);
       const total = units.length;
       const pctVentas = total > 0 ? Math.round(((total - counts.disponible) / total) * 100) : 0;
       const entrega = (meta && meta.entrega_fecha) || "";
+      const inicio = (meta && meta.inicio_construccion) || CONSTRUCCION_DEFAULT[proyectoId] || "";
       const ubicacion = (meta && meta.ubicacion) || cfg.location;
       const displayTitle = cfg.title;
+      const gsRows = groupSummary(proyectoId, units);
+      const showGroupSummary = gsRows.length > 1; // al menos 1 grupo + total
 
       // Construir lista plana de items (group-header + filas) para paginar.
       const items = [];
@@ -249,15 +312,27 @@ function renderPdf({ proyectoId, units, meta }) {
       const contentW = pageW - M * 2;
 
       // Alturas de layout
-      const HEADER_H = 56;
+      const HEADER_H = 60;
       const RESUMEN_H = 46;
       const COLHDR_H = 20;
       const ROW_H = 15;
       const FOOTER_H = 22;
-      const tableTop = M + HEADER_H + 8 + RESUMEN_H + 8 + COLHDR_H;
+      const GS_ROW_H = 13;
+      // Altura del bloque resumen-por-grupo (Fix 2): título + header + filas.
+      const groupSummaryH = showGroupSummary ? (14 + (gsRows.length + 1) * GS_ROW_H) : 0;
+
+      const baseFurnitureBottom = M + HEADER_H + 8 + RESUMEN_H + 8;
       const tableBottom = pageH - M - FOOTER_H;
-      const rowsPerPage = Math.max(1, Math.floor((tableBottom - tableTop) / ROW_H));
-      const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage));
+      // Page 1 incluye el bloque resumen-por-grupo; las demás no.
+      const colHdrY1 = baseFurnitureBottom + (showGroupSummary ? groupSummaryH + 8 : 0);
+      const tableTop1 = colHdrY1 + COLHDR_H;
+      const colHdrYN = baseFurnitureBottom;
+      const tableTopN = colHdrYN + COLHDR_H;
+      const rowsPerPage1 = Math.max(1, Math.floor((tableBottom - tableTop1) / ROW_H));
+      const rowsPerPageN = Math.max(1, Math.floor((tableBottom - tableTopN) / ROW_H));
+      let totalPages = 1;
+      const remAfter1 = items.length - rowsPerPage1;
+      if (remAfter1 > 0) totalPages += Math.ceil(remAfter1 / rowsPerPageN);
 
       // Posiciones de columna
       const totalW = columns.reduce((s, c) => s + c.w, 0);
@@ -268,13 +343,17 @@ function renderPdf({ proyectoId, units, meta }) {
 
       function drawHeader() {
         doc.rect(0, 0, pageW, M + HEADER_H).fill(NAVY);
-        doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(9).text("JPREZ", M, M - 2);
+        doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(9).text("JPREZ", M, M - 4);
         doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15)
-          .text(displayTitle, M, M + 10, { width: contentW * 0.7 });
-        doc.fillColor("#dbe2ee").font("Helvetica").fontSize(9)
-          .text("LISTADO DE PRECIOS" + (entrega ? "   ·   Entrega: " + entrega : ""), M, M + 32, { width: contentW * 0.7 });
+          .text(displayTitle, M, M + 8, { width: contentW * 0.72 });
+        // Fix 3: línea de inicio de construcción + entrega.
+        const infoBits = ["LISTADO DE PRECIOS"];
+        if (inicio) infoBits.push("INICIO DE CONSTRUCCIÓN: " + inicio);
+        if (entrega) infoBits.push("ENTREGA: " + entrega);
+        doc.fillColor("#dbe2ee").font("Helvetica").fontSize(8.5)
+          .text(infoBits.join("   ·   "), M, M + 32, { width: contentW * 0.72 });
         doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
-          .text(ubicacion, M, M + 14, { width: contentW, align: "right" });
+          .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
       }
 
       function drawResumen(y) {
@@ -298,6 +377,48 @@ function renderPdf({ proyectoId, units, meta }) {
         });
       }
 
+      // Fix 2: tabla resumen por edificio/piso (solo página 1).
+      function drawGroupSummary(y) {
+        const grpLabel = (proyectoId === "pse3" || proyectoId === "pse4") ? "Edificio"
+          : proyectoId === "crux_listos" ? "Etapa" : "Piso";
+        const gsCols = [
+          { label: grpLabel, w: 1.6, align: "left", key: "label" },
+          { label: "Vendido", w: 1, align: "center", key: "vendido" },
+          { label: "Bloqueado", w: 1, align: "center", key: "bloqueado" },
+          { label: "Reservado", w: 1, align: "center", key: "reservado" },
+          { label: "Disponible", w: 1, align: "center", key: "disponible" },
+          { label: "Total", w: 1, align: "center", key: "total" },
+          { label: "% Ventas", w: 1, align: "center", key: "pct" },
+        ];
+        const gsTotalW = gsCols.reduce((s, c) => s + c.w, 0);
+        const gsX = []; let ax = M;
+        for (const c of gsCols) { gsX.push(ax); ax += (c.w / gsTotalW) * contentW; }
+        const gsW = (i) => (gsCols[i].w / gsTotalW) * contentW;
+
+        doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8.5)
+          .text("RESUMEN DE INVENTARIO POR " + grpLabel.toUpperCase(), M, y, { width: contentW });
+        let ry = y + 12;
+        // header
+        doc.rect(M, ry, contentW, GS_ROW_H).fill(NAVY);
+        doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7);
+        gsCols.forEach((c, i) => doc.text(c.label, gsX[i] + 3, ry + 3, { width: gsW(i) - 6, align: c.align, ellipsis: true }));
+        ry += GS_ROW_H;
+        // rows
+        gsRows.forEach((r) => {
+          const bg = r.isTotal ? "#e9edf3" : "#ffffff";
+          doc.rect(M, ry, contentW, GS_ROW_H).fill(bg);
+          doc.rect(M, ry, contentW, GS_ROW_H).lineWidth(0.3).stroke(BORDER);
+          doc.fillColor(r.isTotal ? NAVY : "#333333").font(r.isTotal ? "Helvetica-Bold" : "Helvetica").fontSize(7);
+          gsCols.forEach((c, i) => {
+            let v = r[c.key];
+            if (c.key === "pct") v = v + "%";
+            if (c.key !== "label" && c.key !== "pct" && v === 0) v = "";
+            doc.text(String(v), gsX[i] + 3, ry + 3, { width: gsW(i) - 6, align: c.align, ellipsis: true });
+          });
+          ry += GS_ROW_H;
+        });
+      }
+
       function drawColHeader(y) {
         doc.rect(M, y, contentW, COLHDR_H).fill(NAVY);
         doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7.5);
@@ -312,23 +433,31 @@ function renderPdf({ proyectoId, units, meta }) {
         doc.fillColor(GREY).font("Helvetica").fontSize(8)
           .text("Actualizado al " + fmtFechaEs(new Date()), M, y + 5, { width: contentW * 0.4, align: "left" });
         doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8)
-          .text(ubicacion + "   ·   WhatsApp ventas: " + VENTAS_WHATSAPP, M, y + 5, { width: contentW * 0.3, align: "center" });
+          .text(ubicacion + "   ·   WhatsApp ventas: " + VENTAS_WHATSAPP, M, y + 5, { width: contentW, align: "center" });
         doc.fillColor(GREY).font("Helvetica").fontSize(8)
           .text(pageNum + " de " + totalPages, M, y + 5, { width: contentW, align: "right" });
       }
 
+      // Dibuja la decoración de página y devuelve la Y donde empiezan las filas.
       function drawPageFurniture(pageNum) {
         drawHeader();
         drawResumen(M + HEADER_H + 8);
-        drawColHeader(M + HEADER_H + 8 + RESUMEN_H + 8);
+        if (pageNum === 1 && showGroupSummary) {
+          drawGroupSummary(baseFurnitureBottom);
+          drawColHeader(colHdrY1);
+          drawFooter(pageNum);
+          return tableTop1;
+        }
+        drawColHeader(colHdrYN);
         drawFooter(pageNum);
+        return tableTopN;
       }
 
       // Render paginado
       let pageNum = 1;
-      drawPageFurniture(pageNum);
-      let y = tableTop;
+      let y = drawPageFurniture(pageNum);
       let placed = 0;
+      let cap = rowsPerPage1;
 
       const drawRow = (item) => {
         if (item.type === "group") {
@@ -348,12 +477,12 @@ function renderPdf({ proyectoId, units, meta }) {
       };
 
       for (const item of items) {
-        if (placed >= rowsPerPage) {
+        if (placed >= cap) {
           doc.addPage();
           pageNum += 1;
-          drawPageFurniture(pageNum);
-          y = tableTop;
+          y = drawPageFurniture(pageNum);
           placed = 0;
+          cap = rowsPerPageN;
         }
         drawRow(item);
         placed += 1;
@@ -361,7 +490,7 @@ function renderPdf({ proyectoId, units, meta }) {
 
       if (items.length === 0) {
         doc.fillColor(GREY).font("Helvetica").fontSize(11)
-          .text("Sin unidades cargadas para este proyecto.", M, tableTop + 10, { width: contentW });
+          .text("Sin unidades cargadas para este proyecto.", M, y + 10, { width: contentW });
       }
 
       doc.end();
@@ -379,7 +508,11 @@ module.exports = {
   columnsFor,
   groupUnits,
   statusCounts,
+  groupSummary,
+  applyDefaults,
   money,
   floorFromUnidad,
   SCHEMES,
+  CRUX_DEFAULTS,
+  CONSTRUCCION_DEFAULT,
 };
