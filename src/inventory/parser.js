@@ -38,6 +38,9 @@ function parseMetaTab(rows, skipped) {
     nombre_display: row.nombre_display || "",
     ubicacion: row.ubicacion || "",
     entrega_fecha: row.entrega_fecha || "",
+    // Bloque 2 hotfix-51: inicio de construcción (opcional, para el header
+    // del PDF: "INICIO DE CONSTRUCCIÓN [x] · ENTREGA [y]").
+    inicio_construccion: row.inicio_construccion || null,
     plan_normal: row.plan_normal || "",
     plan_feria: row.plan_feria || null,
     total_unidades: toInt(row.total_unidades),
@@ -89,34 +92,40 @@ const parsePR3 = makeUnitParser("pr3", "precio_usd", [
   ["parqueos", (v) => (v ? String(v).trim() : null)],
 ]);
 
+const str = (v) => (v ? String(v).trim() : null);
+
 const parsePR4 = makeUnitParser("pr4", "precio_usd", [
   ["tipo", (v) => (v ? String(v).trim().toUpperCase() : null)],
   ["m2", toInt],
   // hab/parqueos como STRING: el modelo trae "1+ESTAR", "2L" (no enteros).
-  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["hab", str],
   ["bano", toNumber],
-  ["parqueos", (v) => (v ? String(v).trim() : null)],
-  ["orientacion", (v) => (v ? String(v).trim() : null)],
+  ["parqueos", str],
+  ["orientacion", str],
   // vista alias (el modelo PR4 rotula la orientación como "Vista").
-  ["vista", (v) => (v ? String(v).trim() : null)],
+  ["vista", str],
+  // Bloque 2 hotfix-51 (Fix 5): nº de encargos del modelo (opcional).
+  ["numero_encargos", str],
 ]);
 
 const parsePSE3 = makeUnitParser("pse3", "precio_usd", [
   ["edificio", toInt],
-  ["nivel", (v) => (v ? String(v).trim() : null)],
-  ["tipo", (v) => (v ? String(v).trim() : null)],
+  ["nivel", str],
+  ["tipo", str],
   ["m2", toNumber],
   // Bloque 2 hotfix diseño: hab/baños del modelo PDF.
-  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["hab", str],
   ["bano", toNumber],
+  ["numero_encargos", str],
 ]);
 
 const parsePSE4 = makeUnitParser("pse4", "precio_usd", [
   ["edificio", toInt],
-  ["tipo", (v) => (v ? String(v).trim() : null)],
+  ["tipo", str],
   ["m2", toNumber],
-  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["hab", str],
   ["bano", toNumber],
+  ["numero_encargos", str],
 ]);
 
 const parseCruxT6 = makeUnitParser("crux_t6", "precio_usd", [
@@ -124,11 +133,12 @@ const parseCruxT6 = makeUnitParser("crux_t6", "precio_usd", [
   ["letra", (v) => (v ? String(v).trim().toUpperCase() : null)],
   // Bloque 2 hotfix diseño: columnas del modelo PDF Torre 6.
   ["m2", toNumber],
-  ["hab", (v) => (v ? String(v).trim() : null)],
+  ["hab", str],
   ["bano", toNumber],
-  ["parqueos", (v) => (v ? String(v).trim() : null)],
-  ["parqueo_tipo", (v) => (v ? String(v).trim() : null)],
-  ["tipo", (v) => (v ? String(v).trim() : null)],
+  ["parqueos", str],
+  ["parqueo_tipo", str],
+  ["tipo", str],
+  ["numero_encargos", str],
 ]);
 
 const parseCruxListos = makeUnitParser("crux_listos", "precio_dop", [

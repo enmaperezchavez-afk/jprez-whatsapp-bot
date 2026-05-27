@@ -39,7 +39,7 @@
       "src": "api/price-list.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ".claude/skills/**/*.md"
+        "includeFiles": "{.claude/skills/**/*.md,public/logos/**}"
       }
     },
     {
