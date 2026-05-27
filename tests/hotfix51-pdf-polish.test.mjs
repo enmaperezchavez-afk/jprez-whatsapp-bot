@@ -26,7 +26,7 @@ let nextInventory;
 
 const {
   generatePriceListPdf, applyDefaults, groupSummary, columnsFor,
-  CRUX_DEFAULTS, CONSTRUCCION_DEFAULT,
+  CRUX_DEFAULTS, PROJECT_META,
 } = require("../src/documents/price-list-generator");
 const { parseInventory } = require("../src/inventory/parser");
 
@@ -93,10 +93,12 @@ describe("Hotfix-51 Fix 3 — inicio_construccion", () => {
     expect(inv.meta[0].inicio_construccion).toBe(null);
   });
 
-  it("defaults de construcción definidos para pse3/pse4/crux_t6", () => {
-    expect(CONSTRUCCION_DEFAULT.pse3).toBe("Enero 2028");
-    expect(CONSTRUCCION_DEFAULT.crux_t6).toBe("En construcción");
-    expect(CONSTRUCCION_DEFAULT.pr3).toBeUndefined();
+  it("PROJECT_META trae inicio_construccion por proyecto (fallback)", () => {
+    expect(PROJECT_META.pse3.inicio_construccion).toBe("Enero 2028");
+    expect(PROJECT_META.pse4.inicio_construccion).toBe("En construcción");
+    expect(PROJECT_META.crux_t6.inicio_construccion).toBe("En construcción");
+    expect(PROJECT_META.pr3.inicio_construccion).toBe(null);
+    expect(PROJECT_META.crux_listos.inicio_construccion).toBe(null);
   });
 });
 
@@ -121,6 +123,24 @@ describe("Hotfix-51 Fix 5 — columna No. Encargo opcional", () => {
     });
     expect(inv.proyectos.pse3[0].numero_encargos).toBe("237000100335");
     expect(inv.proyectos.crux_t6[0].numero_encargos).toBe("X1");
+  });
+});
+
+describe("Hotfix-51 Fix 4 — logo opcional", () => {
+  it("loadLogo devuelve null cuando no hay PNG (fallback a texto, no crashea)", () => {
+    const { loadLogo } = require("../src/documents/price-list-generator");
+    // No hay archivos en public/logos/ todavía (solo README) → null.
+    expect(loadLogo("pse3")).toBe(null);
+    expect(loadLogo("crux_t6")).toBe(null);
+  });
+
+  it("cada proyecto tiene un logo key asignado en PROJECT_META", () => {
+    for (const p of ["pr3", "pr4", "pse3", "pse4", "crux_t6", "crux_listos"]) {
+      expect(typeof PROJECT_META[p].logo).toBe("string");
+    }
+    // pse3/pse4 comparten logo; crux_t6/crux_listos comparten logo.
+    expect(PROJECT_META.pse3.logo).toBe(PROJECT_META.pse4.logo);
+    expect(PROJECT_META.crux_t6.logo).toBe(PROJECT_META.crux_listos.logo);
   });
 });
 

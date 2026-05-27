@@ -26,8 +26,11 @@
 // PDFKit puro (sin binarios nativos, estable en Vercel serverless). Landscape
 // A4 por la cantidad de columnas.
 
+const fs = require("fs");
+const path = require("path");
 const PDFDocument = require("pdfkit");
 const { loadInventory } = require("../inventory/loader");
+const { botLog } = require("../log");
 
 // Branding
 const NAVY = "#1a2b4a";
@@ -61,13 +64,18 @@ const SCHEMES = {
   crux_listos: null,
 };
 
+// Fix 3 (hotfix-51): inicio_construccion vive en PROJECT_META (fallback si el
+// META tab del Sheet no lo trae). null = proyecto ya entregado/entrega
+// inmediata → el header solo muestra "Entrega".
+// Fix 4 (hotfix-51): logo = nombre del archivo en public/logos/<logo>.png.
+// Si el archivo existe, se embebe; si no, fallback a texto estilizado.
 const PROJECT_META = {
-  pr3: { name: "Prado Residences III", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES III", location: "SANTO DOMINGO" },
-  pr4: { name: "Prado Residences IV", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES IV", location: "SANTO DOMINGO" },
-  pse3: { name: "Prado Suites Puerto Plata — Etapa 3", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 3", location: "PUERTO - PLATA" },
-  pse4: { name: "Prado Suites Puerto Plata — Etapa 4", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 4", location: "PUERTO - PLATA" },
-  crux_t6: { name: "Crux del Prado — Torre 6", currency: "USD", priceField: "precio_usd", title: "CRUX DEL PRADO — TORRE 6", location: "SANTIAGO" },
-  crux_listos: { name: "Crux del Prado — Listos para Entrega", currency: "DOP", priceField: "precio_dop", title: "CRUX DEL PRADO — LISTOS PARA ENTREGA", location: "SANTIAGO" },
+  pr3: { name: "Prado Residences III", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES III", location: "SANTO DOMINGO", inicio_construccion: null, logo: "prado3" },
+  pr4: { name: "Prado Residences IV", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES IV", location: "SANTO DOMINGO", inicio_construccion: null, logo: "prado4" },
+  pse3: { name: "Prado Suites Puerto Plata — Etapa 3", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 3", location: "PUERTO - PLATA", inicio_construccion: "Enero 2028", logo: "pradosuites" },
+  pse4: { name: "Prado Suites Puerto Plata — Etapa 4", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 4", location: "PUERTO - PLATA", inicio_construccion: "En construcción", logo: "pradosuites" },
+  crux_t6: { name: "Crux del Prado — Torre 6", currency: "USD", priceField: "precio_usd", title: "CRUX DEL PRADO — TORRE 6", location: "SANTIAGO", inicio_construccion: "En construcción", logo: "crux" },
+  crux_listos: { name: "Crux del Prado — Listos para Entrega", currency: "DOP", priceField: "precio_dop", title: "CRUX DEL PRADO — LISTOS PARA ENTREGA", location: "SANTIAGO", inicio_construccion: null, logo: "crux" },
 };
 
 const VALID_PROJECTS = Object.keys(PROJECT_META);
@@ -77,13 +85,27 @@ const VALID_PROJECTS = Object.keys(PROJECT_META);
 // código cuando vienen vacías (no inventamos datos para otros proyectos).
 const CRUX_DEFAULTS = { m2: 100, hab: "3", bano: 2, parqueos: "2" };
 
-// Fix 3 (hotfix-51): inicio de construcción por proyecto cuando el META tab
-// no lo trae. Proyectos ya entregados/en entrega se omiten (null).
-const CONSTRUCCION_DEFAULT = {
-  pse3: "Enero 2028",
-  pse4: "En construcción",
-  crux_t6: "En construcción",
-};
+// Fix 4 (hotfix-51): carga del logo del proyecto desde public/logos/<logo>.png.
+// Cacheado por logo. Devuelve Buffer o null (fallback a texto). El Director
+// deja los PNG en public/logos/ y aparecen automáticamente — sin redeploy de
+// código. Mientras no existan, el header usa el wordmark de texto.
+const LOGOS_DIR = path.join(__dirname, "..", "..", "public", "logos");
+const _logoCache = {};
+function loadLogo(proyectoId) {
+  const cfg = PROJECT_META[proyectoId];
+  const key = cfg && cfg.logo;
+  if (!key) return null;
+  if (key in _logoCache) return _logoCache[key];
+  let buf = null;
+  for (const ext of ["png", "jpg", "jpeg"]) {
+    const p = path.join(LOGOS_DIR, key + "." + ext);
+    try {
+      if (fs.existsSync(p)) { buf = fs.readFileSync(p); break; }
+    } catch (e) { /* ignora, cae a fallback */ }
+  }
+  _logoCache[key] = buf;
+  return buf;
+}
 
 function applyDefaults(proyectoId, units) {
   if (proyectoId !== "crux_t6" && proyectoId !== "crux_listos") return units;
@@ -287,9 +309,10 @@ function renderPdf({ proyectoId, units, meta }) {
       const total = units.length;
       const pctVentas = total > 0 ? Math.round(((total - counts.disponible) / total) * 100) : 0;
       const entrega = (meta && meta.entrega_fecha) || "";
-      const inicio = (meta && meta.inicio_construccion) || CONSTRUCCION_DEFAULT[proyectoId] || "";
+      const inicio = (meta && meta.inicio_construccion) || cfg.inicio_construccion || "";
       const ubicacion = (meta && meta.ubicacion) || cfg.location;
       const displayTitle = cfg.title;
+      const logoBuf = loadLogo(proyectoId);
       const gsRows = groupSummary(proyectoId, units);
       const showGroupSummary = gsRows.length > 1; // al menos 1 grupo + total
 
@@ -352,8 +375,20 @@ function renderPdf({ proyectoId, units, meta }) {
         if (entrega) infoBits.push("ENTREGA: " + entrega);
         doc.fillColor("#dbe2ee").font("Helvetica").fontSize(8.5)
           .text(infoBits.join("   ·   "), M, M + 32, { width: contentW * 0.72 });
-        doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
-          .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
+        // Fix 4: logo del proyecto arriba a la derecha si existe el PNG; si no,
+        // wordmark de texto (ubicación en dorado) como fallback.
+        if (logoBuf) {
+          try {
+            doc.image(logoBuf, pageW - M - 150, M - 4, { fit: [150, 46], align: "right", valign: "center" });
+          } catch (e) {
+            botLog("warn", "price_list_logo_render_failed", { proyectoId, error: e.message });
+            doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
+              .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
+          }
+        } else {
+          doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
+            .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
+        }
       }
 
       function drawResumen(y) {
@@ -512,7 +547,7 @@ module.exports = {
   applyDefaults,
   money,
   floorFromUnidad,
+  loadLogo,
   SCHEMES,
   CRUX_DEFAULTS,
-  CONSTRUCCION_DEFAULT,
 };
