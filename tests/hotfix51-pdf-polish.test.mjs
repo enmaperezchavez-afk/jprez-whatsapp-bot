@@ -127,11 +127,16 @@ describe("Hotfix-51 Fix 5 — columna No. Encargo opcional", () => {
 });
 
 describe("Hotfix-51 Fix 4 — logo opcional", () => {
-  it("loadLogo devuelve null cuando no hay PNG (fallback a texto, no crashea)", () => {
+  it("loadLogo devuelve Buffer cuando el PNG existe en public/logos/", () => {
     const { loadLogo } = require("../src/documents/price-list-generator");
-    // No hay archivos en public/logos/ todavía (solo README) → null.
-    expect(loadLogo("pse3")).toBe(null);
-    expect(loadLogo("crux_t6")).toBe(null);
+    // Los 4 PNG ya están en public/logos/ (subidos por el Director).
+    expect(Buffer.isBuffer(loadLogo("pse3"))).toBe(true);
+    expect(Buffer.isBuffer(loadLogo("crux_t6"))).toBe(true);
+  });
+
+  it("loadLogo devuelve null para proyecto sin entry en PROJECT_META (fallback a texto, no crashea)", () => {
+    const { loadLogo } = require("../src/documents/price-list-generator");
+    expect(loadLogo("proyecto_inexistente")).toBe(null);
   });
 
   it("cada proyecto tiene un logo key asignado en PROJECT_META", () => {
