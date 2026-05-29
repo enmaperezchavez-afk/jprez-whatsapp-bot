@@ -31,20 +31,8 @@ const path = require("path");
 const PDFDocument = require("pdfkit");
 const { loadInventory } = require("../inventory/loader");
 const { botLog } = require("../log");
+const { getTheme } = require("./project-themes");
 
-// Branding
-const NAVY = "#1a2b4a";
-const GOLD = "#c9a227";
-const GREY = "#666666";
-const BORDER = "#cfd6e0";
-
-// Colores de fila por estado
-const STATUS_COLORS = {
-  disponible: "#d8f3dc", // verde claro
-  reservado: "#fff3bf",  // amarillo
-  vendido: "#ffd6d6",    // rojo claro
-  bloqueado: "#dee2e6",  // gris
-};
 const STATUS_LABEL = {
   disponible: "Disponible",
   reservado: "Reservado",
@@ -64,9 +52,9 @@ const SCHEMES = {
   crux_listos: null,
 };
 
-// Fix 3 (hotfix-51): inicio_construccion vive en PROJECT_META (fallback si el
-// META tab del Sheet no lo trae). null = proyecto ya entregado/entrega
-// inmediata → el header solo muestra "Entrega".
+// inicio_construccion sigue viviendo en PROJECT_META y en el parser del Sheet
+// (META tab → inv.meta) por compatibilidad de data, pero F4 lo sacó del banner
+// del header del PDF (decisión del Director: queda solo "ENTREGA").
 // Fix 4 (hotfix-51): logo = nombre del archivo en public/logos/<logo>.png.
 // Si el archivo existe, se embebe; si no, fallback a texto estilizado.
 const PROJECT_META = {
@@ -302,6 +290,7 @@ function renderPdf({ proyectoId, units, meta }) {
   return new Promise((resolve, reject) => {
     try {
       const cfg = PROJECT_META[proyectoId];
+      const theme = getTheme(proyectoId);
       const hasEncargos = units.some((u) => u.numero_encargos);
       const columns = columnsFor(proyectoId, { hasEncargos });
       const groups = groupUnits(proyectoId, units);
@@ -309,7 +298,6 @@ function renderPdf({ proyectoId, units, meta }) {
       const total = units.length;
       const pctVentas = total > 0 ? Math.round(((total - counts.disponible) / total) * 100) : 0;
       const entrega = (meta && meta.entrega_fecha) || "";
-      const inicio = (meta && meta.inicio_construccion) || cfg.inicio_construccion || "";
       const ubicacion = (meta && meta.ubicacion) || cfg.location;
       const displayTitle = cfg.title;
       const logoBuf = loadLogo(proyectoId);
@@ -329,13 +317,25 @@ function renderPdf({ proyectoId, units, meta }) {
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
+      // F4: register fonts custom (Montserrat) si el theme los requiere.
+      // PDFKit acepta TTF embedded; el archivo viaja en el bundle Vercel
+      // via includeFiles "src/documents/fonts/**".
+      const FONTS_DIR = path.join(__dirname, "fonts");
+      const TITLE_FONT_PATH = theme.fonts.title === "Montserrat-Bold"
+        ? path.join(FONTS_DIR, "Montserrat-Bold.ttf") : null;
+      if (TITLE_FONT_PATH && fs.existsSync(TITLE_FONT_PATH)) {
+        try { doc.registerFont("Montserrat-Bold", TITLE_FONT_PATH); }
+        catch (e) { botLog("warn", "price_list_font_register_failed", { error: e.message }); }
+      }
+
       const M = doc.page.margins.left;
       const pageW = doc.page.width;
       const pageH = doc.page.height;
       const contentW = pageW - M * 2;
+      const layout = theme.layout || {};
 
-      // Alturas de layout
-      const HEADER_H = 60;
+      // Alturas de layout — header crece si el theme lo pide (mapa, etc).
+      const HEADER_H = layout.headerHeight || 60;
       const RESUMEN_H = 46;
       const COLHDR_H = 20;
       const ROW_H = 15;
@@ -364,52 +364,308 @@ function renderPdf({ proyectoId, units, meta }) {
       for (const c of columns) { colX.push(acc); acc += (c.w / totalW) * contentW; }
       const colWidth = (i) => (columns[i].w / totalW) * contentW;
 
+      // F4 helpers — primitivas reutilizables del nuevo layout (pin SVG,
+      // donut de progreso, barra horizontal, imagen con clipping circular).
+      // PDFKit soporta doc.path() con sintaxis SVG y doc.clip() para masks.
+      function drawPin(cx, cy, h, color) {
+        const r = h * 0.32;
+        const headCy = cy - h + r;
+        doc.save();
+        doc.circle(cx, headCy, r).fillColor(color).fill();
+        doc.moveTo(cx - r * 0.7, headCy + r * 0.55).lineTo(cx, cy).lineTo(cx + r * 0.7, headCy + r * 0.55).fillColor(color).fill();
+        doc.circle(cx, headCy, r * 0.38).fillColor("#FFFFFF").fill();
+        doc.restore();
+      }
+      function drawCircularImage(buf, cx, cy, r) {
+        doc.save();
+        doc.circle(cx, cy, r).clip();
+        doc.image(buf, cx - r, cy - r, { width: r * 2, height: r * 2 });
+        doc.restore();
+      }
+      function drawDonut(cx, cy, rOuter, rInner, pct, fgColor, trackColor) {
+        doc.save();
+        doc.circle(cx, cy, rOuter).fillColor(trackColor).fill();
+        doc.restore();
+        if (pct > 0 && pct < 100) {
+          const a0 = -Math.PI / 2;
+          const a1 = a0 + (pct / 100) * Math.PI * 2;
+          const x0 = cx + rOuter * Math.cos(a0), y0 = cy + rOuter * Math.sin(a0);
+          const x1 = cx + rOuter * Math.cos(a1), y1 = cy + rOuter * Math.sin(a1);
+          const xi0 = cx + rInner * Math.cos(a0), yi0 = cy + rInner * Math.sin(a0);
+          const xi1 = cx + rInner * Math.cos(a1), yi1 = cy + rInner * Math.sin(a1);
+          const large = pct > 50 ? 1 : 0;
+          const path = `M ${x0} ${y0} A ${rOuter} ${rOuter} 0 ${large} 1 ${x1} ${y1} L ${xi1} ${yi1} A ${rInner} ${rInner} 0 ${large} 0 ${xi0} ${yi0} Z`;
+          doc.save();
+          doc.path(path).fillColor(fgColor).fill();
+          doc.restore();
+        } else if (pct >= 100) {
+          doc.save();
+          doc.circle(cx, cy, rOuter).fillColor(fgColor).fill();
+          doc.restore();
+        }
+        doc.save();
+        doc.circle(cx, cy, rInner).fillColor("#FFFFFF").fill();
+        doc.restore();
+      }
+      function drawProgressBar(x, y, w, h, pct, fgColor, trackColor) {
+        doc.save();
+        doc.rect(x, y, w, h).fillColor(trackColor).fill();
+        if (pct > 0) {
+          const fillW = Math.max(2, w * Math.min(pct, 100) / 100);
+          doc.rect(x, y, fillW, h).fillColor(fgColor).fill();
+        }
+        doc.restore();
+      }
+      // F4: sombras manuales (PDFKit no tiene blur). Apilamos rects/circles
+      // semi-transparentes con expansión progresiva para simular un drop
+      // shadow estilo Material/CSS. El elemento real se dibuja DESPUÉS de
+      // estos helpers; el centro queda cubierto y solo se ve la periferia.
+      function drawRectShadow(x, y, w, h, opts) {
+        opts = opts || {};
+        const blur = opts.blur || 6;
+        const offsetY = opts.offsetY || 3;
+        const alpha = opts.alpha || 0.22;
+        doc.save();
+        for (let i = blur; i >= 0; i--) {
+          doc.opacity(alpha / blur);
+          doc.rect(x - i, y + offsetY, w + 2 * i, h + i).fillColor("#000000").fill();
+        }
+        doc.opacity(1);
+        doc.restore();
+      }
+      function drawCircleShadow(cx, cy, r, opts) {
+        opts = opts || {};
+        const blur = opts.blur || 5;
+        const offsetY = opts.offsetY || 2;
+        const alpha = opts.alpha || 0.28;
+        doc.save();
+        for (let i = blur; i >= 0; i--) {
+          doc.opacity(alpha / blur);
+          doc.circle(cx, cy + offsetY, r + i).fillColor("#000000").fill();
+        }
+        doc.opacity(1);
+        doc.restore();
+      }
+      function drawHorizontalShadowFade(x, y, w, opts) {
+        opts = opts || {};
+        const blur = opts.blur || 8;
+        const alpha = opts.alpha || 0.22;
+        doc.save();
+        for (let i = 0; i < blur; i++) {
+          doc.opacity(alpha * (1 - i / blur));
+          doc.rect(x, y + i, w, 1).fillColor("#000000").fill();
+        }
+        doc.opacity(1);
+        doc.restore();
+      }
+
       function drawHeader() {
-        doc.rect(0, 0, pageW, M + HEADER_H).fill(NAVY);
-        doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(9).text("JPREZ", M, M - 4);
-        doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15)
+        if (layout.headerStyle === "white") {
+          drawHeaderWhite();
+        } else {
+          drawHeaderClassic();
+        }
+        if (layout.bandTop) {
+          drawBand(0, layout.bandHeight || 6);
+        }
+        // F4: sombra horizontal debajo del bloque del header — separa la
+        // franja del header del cuerpo blanco del PDF. Solo headerStyle white.
+        if (layout.headerStyle === "white") {
+          drawHorizontalShadowFade(0, M + HEADER_H, pageW, { blur: 8, alpha: 0.22 });
+        }
+      }
+      // F4: banda de marca (top o bottom). Si bandColor es un array, dibuja
+      // un linearGradient horizontal con stops uniformemente espaciados.
+      // PDFKit soporta linearGradient(x0,y0,x1,y1).stop(pct, color).
+      function drawBand(yStart, h) {
+        const c = layout.bandColor || theme.palette.accent;
+        doc.save();
+        if (Array.isArray(c) && c.length > 1) {
+          const grad = doc.linearGradient(0, yStart, pageW, yStart);
+          c.forEach((col, idx) => grad.stop(idx / (c.length - 1), col));
+          doc.rect(0, yStart, pageW, h).fill(grad);
+        } else {
+          doc.rect(0, yStart, pageW, h).fillColor(Array.isArray(c) ? c[0] : c).fill();
+        }
+        doc.restore();
+      }
+
+      function drawHeaderClassic() {
+        doc.rect(0, 0, pageW, M + HEADER_H).fill(theme.palette.headerBg);
+        doc.fillColor(theme.palette.accent).font(theme.fonts.bodyBold).fontSize(9).text("JPREZ", M, M - 4);
+        doc.fillColor(theme.palette.headerText).font(theme.fonts.title).fontSize(15)
           .text(displayTitle, M, M + 8, { width: contentW * 0.72 });
-        // Fix 3: línea de inicio de construcción + entrega.
         const infoBits = ["LISTADO DE PRECIOS"];
-        if (inicio) infoBits.push("INICIO DE CONSTRUCCIÓN: " + inicio);
         if (entrega) infoBits.push("ENTREGA: " + entrega);
-        doc.fillColor("#dbe2ee").font("Helvetica").fontSize(8.5)
+        doc.fillColor(theme.palette.subText).font(theme.fonts.body).fontSize(8.5)
           .text(infoBits.join("   ·   "), M, M + 32, { width: contentW * 0.72 });
-        // Fix 4: logo del proyecto arriba a la derecha si existe el PNG; si no,
-        // wordmark de texto (ubicación en dorado) como fallback.
         if (logoBuf) {
           try {
             doc.image(logoBuf, pageW - M - 150, M - 4, { fit: [150, 46], align: "right", valign: "center" });
           } catch (e) {
             botLog("warn", "price_list_logo_render_failed", { proyectoId, error: e.message });
-            doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
+            doc.fillColor(theme.palette.accent).font(theme.fonts.bodyBold).fontSize(11)
               .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
           }
         } else {
-          doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(11)
+          doc.fillColor(theme.palette.accent).font(theme.fonts.bodyBold).fontSize(11)
             .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
+        }
+      }
+
+      function drawHeaderWhite() {
+        // F4: fondo suave de la franja del header (color por proyecto).
+        // Cubre desde y=0 hasta el final del header — las cards de abajo no
+        // se tocan. La banda de marca (red/turquoise) se pinta DESPUÉS en
+        // drawHeader() para quedar encima de este bg.
+        doc.save();
+        doc.rect(0, 0, pageW, M + HEADER_H).fillColor(theme.palette.headerBg || "#FFFFFF").fill();
+        doc.restore();
+        doc.fillColor(theme.palette.accent).font(theme.fonts.bodyBold).fontSize(9)
+          .text("JPREZ", M, M + 6);
+        // F4: soporte para resaltar la última palabra del título en el accent
+        // (ej: "PRADO RESIDENCES IV" → "IV" en rojo). Si layout.titleHighlightWord
+        // matchea el final del título, lo separamos en dos doc.text() con
+        // continued:true (cursor mantiene posición horizontal).
+        const hw = layout.titleHighlightWord;
+        if (hw && displayTitle.endsWith(" " + hw)) {
+          const mainPart = displayTitle.slice(0, displayTitle.length - hw.length);
+          doc.fillColor(theme.palette.headerText).font(theme.fonts.title).fontSize(18)
+            .text(mainPart, M, M + 16, { width: contentW * 0.60, continued: true })
+            .fillColor(theme.palette.accent)
+            .text(hw, { continued: false });
+        } else {
+          doc.fillColor(theme.palette.headerText).font(theme.fonts.title).fontSize(18)
+            .text(displayTitle, M, M + 16, { width: contentW * 0.60 });
+        }
+        const infoBits = ["LISTADO DE PRECIOS"];
+        if (entrega) infoBits.push("ENTREGA: " + entrega);
+        doc.fillColor(theme.palette.subText).font(theme.fonts.body).fontSize(8.5)
+          .text(infoBits.join("   ·   "), M, M + 42, { width: contentW * 0.60 });
+        // Pin + dirección.
+        if (layout.address) {
+          const pinX = M + 5, pinY = M + 70;
+          drawPin(pinX, pinY, 12, theme.palette.accent);
+          doc.fillColor(theme.palette.headerText).font(theme.fonts.body).fontSize(8.5)
+            .text(layout.address, M + 16, pinY - 9, { width: contentW * 0.60 });
+        }
+        // Mapa circular a la izquierda del logo.
+        const mapD = layout.mapDiameter || 90;
+        const mapR = mapD / 2;
+        let mapBuf = null;
+        if (layout.mapKey) {
+          for (const ext of ["png", "jpg", "jpeg"]) {
+            const p = path.join(LOGOS_DIR, layout.mapKey + "." + ext);
+            try { if (fs.existsSync(p)) { mapBuf = fs.readFileSync(p); break; } } catch (e) { /* skip */ }
+          }
+        }
+        const logoW = layout.logoWidth || 150;
+        const logoH = layout.logoHeight || 46;
+        const logoX = pageW - M - logoW;
+        const logoY = M + (HEADER_H - logoH) / 2;
+        const mapPad = 14;
+        const mapCx = logoX - mapPad - mapR;
+        const mapCy = M + HEADER_H / 2;
+        if (mapBuf) {
+          try {
+            // F4: sombra circular debajo del mapa para efecto de relieve.
+            drawCircleShadow(mapCx, mapCy, mapR, { blur: 6, offsetY: 2, alpha: 0.28 });
+            drawCircularImage(mapBuf, mapCx, mapCy, mapR);
+          } catch (e) { botLog("warn", "price_list_map_render_failed", { proyectoId, error: e.message }); }
+        }
+        if (logoBuf) {
+          try {
+            doc.image(logoBuf, logoX, logoY, { fit: [logoW, logoH], align: "right", valign: "center" });
+          } catch (e) {
+            botLog("warn", "price_list_logo_render_failed", { proyectoId, error: e.message });
+            doc.fillColor(theme.palette.accent).font(theme.fonts.bodyBold).fontSize(11)
+              .text(ubicacion, M, M + 12, { width: contentW, align: "right" });
+          }
         }
       }
 
       function drawResumen(y) {
         const cells = [
-          { label: "Disponibles", value: counts.disponible, color: STATUS_COLORS.disponible },
-          { label: "Reservados", value: counts.reservado, color: STATUS_COLORS.reservado },
-          { label: "Vendidos", value: counts.vendido, color: STATUS_COLORS.vendido },
-          { label: "Bloqueados", value: counts.bloqueado, color: STATUS_COLORS.bloqueado },
-          { label: "Total", value: total, color: "#e9edf3" },
-          { label: "% Ventas", value: pctVentas + "%", color: "#f3e9c9" },
+          { label: "Disponibles", value: counts.disponible, accent: theme.statusColors.disponible, bgColor: theme.statusColors.disponible, kind: "stat" },
+          { label: "Reservados",  value: counts.reservado,  accent: theme.statusColors.reservado,  bgColor: theme.statusColors.reservado,  kind: "stat" },
+          { label: "Vendidos",    value: counts.vendido,    accent: theme.statusColors.vendido,    bgColor: theme.statusColors.vendido,    kind: "stat" },
+          { label: "Bloqueados",  value: counts.bloqueado,  accent: theme.statusColors.bloqueado,  bgColor: theme.statusColors.bloqueado,  kind: "stat" },
+          { label: "Total",       value: total,             accent: theme.palette.totalAccent || theme.palette.headerBg, bgColor: theme.palette.summaryTotalBg, kind: "stat" },
+          {
+            label:   "% Ventas",
+            value:   pctVentas + "%",
+            accent:  theme.palette.pctAccent || theme.palette.accent,
+            bgColor: theme.palette.summaryPctBg,
+            kind:    layout.donutPctVentas ? "donut" : "stat",
+          },
         ];
         const cw = contentW / cells.length;
+        const isElegant = layout.cardStyle === "elegant";
         cells.forEach((cell, i) => {
           const x = M + i * cw;
-          doc.rect(x, y, cw - 4, RESUMEN_H).fill(cell.color);
-          doc.rect(x, y, cw - 4, RESUMEN_H).lineWidth(0.5).stroke(BORDER);
-          doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(16)
-            .text(String(cell.value), x, y + 8, { width: cw - 4, align: "center" });
-          doc.fillColor(GREY).font("Helvetica").fontSize(8)
-            .text(cell.label, x, y + 30, { width: cw - 4, align: "center" });
+          const cw4 = cw - 4;
+          if (isElegant) {
+            drawCardElegant(x, y, cw4, cell);
+          } else if (cell.kind === "donut") {
+            drawCardDonutClassic(x, y, cw4, cell);
+          } else {
+            drawCardStatClassic(x, y, cw4, cell);
+          }
         });
+      }
+
+      function drawCardElegant(x, y, w, cell) {
+        // 0. Sombra de relieve (F4) — drop shadow debajo de la card.
+        drawRectShadow(x, y, w, RESUMEN_H, { blur: 7, offsetY: 3, alpha: 0.24 });
+        // 1. Fondo blanco.
+        doc.save();
+        doc.rect(x, y, w, RESUMEN_H).fillColor(theme.palette.cardBg || "#FFFFFF").fill();
+        doc.restore();
+        // 2. Borde 2.5px del color (stroke centrado en el path → inset 1.25).
+        doc.save();
+        doc.lineWidth(2.5).rect(x + 1.25, y + 1.25, w - 2.5, RESUMEN_H - 2.5).stroke(cell.accent);
+        doc.restore();
+        // 3. Barra lateral izquierda 6px (encima del borde).
+        doc.save();
+        doc.rect(x, y, 6, RESUMEN_H).fillColor(cell.accent).fill();
+        doc.restore();
+        const contentX = x + 6;
+        const contentW2 = w - 6;
+        if (cell.kind === "donut") {
+          const cx = contentX + contentW2 / 2;
+          const cy = y + 20;
+          drawDonut(cx, cy, 16, 10, pctVentas, cell.accent, theme.palette.donutTrackBg || "#F3F4F6");
+          doc.fillColor(cell.accent).font(theme.fonts.bodyBold).fontSize(9)
+            .text(pctVentas + "%", contentX, cy - 4, { width: contentW2, align: "center" });
+          doc.fillColor(theme.palette.cardLabel || "#4A4A4A").font(theme.fonts.body).fontSize(8)
+            .text(cell.label, contentX, y + 38, { width: contentW2, align: "center" });
+        } else {
+          // Número grande en el color del accent + label gris debajo.
+          doc.fillColor(cell.accent).font(theme.fonts.bodyBold).fontSize(18)
+            .text(String(cell.value), contentX, y + 10, { width: contentW2, align: "center" });
+          doc.fillColor(theme.palette.cardLabel || "#4A4A4A").font(theme.fonts.body).fontSize(8)
+            .text(cell.label, contentX, y + 33, { width: contentW2, align: "center" });
+        }
+      }
+
+      function drawCardDonutClassic(x, y, w, cell) {
+        doc.rect(x, y, w, RESUMEN_H).fill("#FFFFFF");
+        doc.rect(x, y, w, RESUMEN_H).lineWidth(0.5).stroke(theme.palette.border);
+        const cx = x + w / 2, cy = y + 20;
+        drawDonut(cx, cy, 16, 10, pctVentas, theme.palette.accent, theme.palette.donutTrackBg || "#F3F4F6");
+        doc.fillColor(theme.palette.headerText || theme.palette.headerBg).font(theme.fonts.bodyBold).fontSize(9)
+          .text(pctVentas + "%", x, cy - 4, { width: w, align: "center" });
+        doc.fillColor(theme.palette.statLabelText || theme.palette.footerSideText).font(theme.fonts.body).fontSize(8)
+          .text(cell.label, x, y + 38, { width: w, align: "center" });
+      }
+
+      function drawCardStatClassic(x, y, w, cell) {
+        doc.rect(x, y, w, RESUMEN_H).fill(cell.bgColor);
+        doc.rect(x, y, w, RESUMEN_H).lineWidth(0.5).stroke(theme.palette.border);
+        doc.fillColor(theme.palette.headerBg).font(theme.fonts.bodyBold).fontSize(16)
+          .text(String(cell.value), x, y + 12, { width: w, align: "center" });
+        doc.fillColor(theme.palette.statLabelText || theme.palette.footerSideText).font(theme.fonts.body).fontSize(8)
+          .text(cell.label, x, y + 33, { width: w, align: "center" });
       }
 
       // Fix 2: tabla resumen por edificio/piso (solo página 1).
@@ -430,21 +686,32 @@ function renderPdf({ proyectoId, units, meta }) {
         for (const c of gsCols) { gsX.push(ax); ax += (c.w / gsTotalW) * contentW; }
         const gsW = (i) => (gsCols[i].w / gsTotalW) * contentW;
 
-        doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8.5)
+        doc.fillColor(theme.palette.groupRowText || theme.palette.headerBg).font(theme.fonts.bodyBold).fontSize(8.5)
           .text("RESUMEN DE INVENTARIO POR " + grpLabel.toUpperCase(), M, y, { width: contentW });
         let ry = y + 12;
         // header
-        doc.rect(M, ry, contentW, GS_ROW_H).fill(NAVY);
-        doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7);
+        doc.rect(M, ry, contentW, GS_ROW_H).fill(theme.palette.tableHeaderBg);
+        doc.fillColor(theme.palette.tableHeaderText).font(theme.fonts.bodyBold).fontSize(7);
         gsCols.forEach((c, i) => doc.text(c.label, gsX[i] + 3, ry + 3, { width: gsW(i) - 6, align: c.align, ellipsis: true }));
         ry += GS_ROW_H;
         // rows
         gsRows.forEach((r) => {
-          const bg = r.isTotal ? "#e9edf3" : "#ffffff";
+          const bg = r.isTotal ? theme.palette.summaryTotalBg : "#ffffff";
           doc.rect(M, ry, contentW, GS_ROW_H).fill(bg);
-          doc.rect(M, ry, contentW, GS_ROW_H).lineWidth(0.3).stroke(BORDER);
-          doc.fillColor(r.isTotal ? NAVY : "#333333").font(r.isTotal ? "Helvetica-Bold" : "Helvetica").fontSize(7);
+          doc.rect(M, ry, contentW, GS_ROW_H).lineWidth(0.3).stroke(theme.palette.border);
+          doc.fillColor(r.isTotal ? (theme.palette.groupRowText || theme.palette.headerBg) : theme.palette.cellTextDim).font(r.isTotal ? theme.fonts.bodyBold : theme.fonts.body).fontSize(7);
           gsCols.forEach((c, i) => {
+            // Si el theme pide barras de progreso, la columna "pct" se renderiza
+            // como progress bar horizontal en lugar de texto.
+            if (c.key === "pct" && layout.progressBarsByGroup) {
+              const barPad = 3, barH = GS_ROW_H - 6;
+              const barX = gsX[i] + barPad, barY = ry + (GS_ROW_H - barH) / 2;
+              const barW = gsW(i) - barPad * 2 - 22; // reserva 22px para texto a la derecha
+              drawProgressBar(barX, barY, barW, barH, r.pct, theme.palette.accent, theme.palette.donutTrackBg || "#F3F4F6");
+              doc.fillColor(r.isTotal ? theme.palette.headerBg : theme.palette.cellTextDim).font(r.isTotal ? theme.fonts.bodyBold : theme.fonts.body).fontSize(7)
+                .text(r.pct + "%", barX + barW + 2, ry + 3, { width: 20, align: "left" });
+              return;
+            }
             let v = r[c.key];
             if (c.key === "pct") v = v + "%";
             if (c.key !== "label" && c.key !== "pct" && v === 0) v = "";
@@ -455,8 +722,8 @@ function renderPdf({ proyectoId, units, meta }) {
       }
 
       function drawColHeader(y) {
-        doc.rect(M, y, contentW, COLHDR_H).fill(NAVY);
-        doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7.5);
+        doc.rect(M, y, contentW, COLHDR_H).fill(theme.palette.tableHeaderBg);
+        doc.fillColor(theme.palette.tableHeaderText).font(theme.fonts.bodyBold).fontSize(7.5);
         columns.forEach((c, i) => {
           doc.text(c.label, colX[i] + 3, y + 6, { width: colWidth(i) - 6, align: c.align, ellipsis: true });
         });
@@ -464,13 +731,42 @@ function renderPdf({ proyectoId, units, meta }) {
 
       function drawFooter(pageNum) {
         const y = pageH - M - FOOTER_H;
-        doc.rect(M, y, contentW, 0.5).fill(BORDER);
-        doc.fillColor(GREY).font("Helvetica").fontSize(8)
-          .text("Actualizado al " + fmtFechaEs(new Date()), M, y + 5, { width: contentW * 0.4, align: "left" });
-        doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8)
-          .text(ubicacion + "   ·   WhatsApp ventas: " + VENTAS_WHATSAPP, M, y + 5, { width: contentW, align: "center" });
-        doc.fillColor(GREY).font("Helvetica").fontSize(8)
-          .text(pageNum + " de " + totalPages, M, y + 5, { width: contentW, align: "right" });
+        if (layout.footerStyle === "dark") {
+          // Fondo oscuro full-width (toca los bordes laterales para anclar
+          // visualmente la banda roja del bottom).
+          doc.save();
+          doc.rect(0, y - 3, pageW, FOOTER_H + 3 + M).fillColor(theme.palette.footerBg).fill();
+          doc.restore();
+          doc.fillColor(theme.palette.footerSideText).font(theme.fonts.body).fontSize(8)
+            .text("Actualizado al " + fmtFechaEs(new Date()), M, y + 5, { width: contentW * 0.4, align: "left" });
+          // Línea central: ubicación + "WhatsApp ventas:" en blanco, número en
+          // verde Brand Book. Layout manual via widthOfString para centrar el
+          // bloque completo, después doc.text con coords explícitas por color.
+          doc.font(theme.fonts.bodyBold).fontSize(8);
+          const fLeft = ubicacion + "   ·   WhatsApp ventas: ";
+          const fRight = VENTAS_WHATSAPP;
+          const wLeft = doc.widthOfString(fLeft);
+          const wRight = doc.widthOfString(fRight);
+          const startX = M + (contentW - (wLeft + wRight)) / 2;
+          doc.fillColor(theme.palette.footerCenter)
+            .text(fLeft, startX, y + 5, { lineBreak: false });
+          doc.fillColor(theme.palette.whatsappColor || "#25D366")
+            .text(fRight, startX + wLeft, y + 5, { lineBreak: false });
+          doc.fillColor(theme.palette.footerSideText).font(theme.fonts.body).fontSize(8)
+            .text(pageNum + " de " + totalPages, M, y + 5, { width: contentW, align: "right" });
+        } else {
+          doc.rect(M, y, contentW, 0.5).fill(theme.palette.border);
+          doc.fillColor(theme.palette.footerSideText).font(theme.fonts.body).fontSize(8)
+            .text("Actualizado al " + fmtFechaEs(new Date()), M, y + 5, { width: contentW * 0.4, align: "left" });
+          doc.fillColor(theme.palette.footerCenter).font(theme.fonts.bodyBold).fontSize(8)
+            .text(ubicacion + "   ·   WhatsApp ventas: " + VENTAS_WHATSAPP, M, y + 5, { width: contentW, align: "center" });
+          doc.fillColor(theme.palette.footerSideText).font(theme.fonts.body).fontSize(8)
+            .text(pageNum + " de " + totalPages, M, y + 5, { width: contentW, align: "right" });
+        }
+        if (layout.bandBottom) {
+          const bh = layout.bandHeight || 6;
+          drawBand(pageH - bh, bh);
+        }
       }
 
       // Dibuja la decoración de página y devuelve la Y donde empiezan las filas.
@@ -496,17 +792,35 @@ function renderPdf({ proyectoId, units, meta }) {
 
       const drawRow = (item) => {
         if (item.type === "group") {
-          doc.rect(M, y, contentW, ROW_H).fill("#eef1f6");
-          doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(8)
-            .text(item.label, M + 4, y + 3.5, { width: contentW - 8 });
+          doc.rect(M, y, contentW, ROW_H).fill(theme.palette.groupRowBg);
+          // Texto del separador: usa groupRowText (semántico). Fallback a
+          // headerBg por retro-compat con _CORE (navy = #1a2b4a sobre bg
+          // claro funciona OK).
+          doc.fillColor(theme.palette.groupRowText || theme.palette.headerBg).font(theme.fonts.bodyBold).fontSize(9)
+            .text(item.label, M + 6, y + 3, { width: contentW - 12 });
         } else {
           const u = item.unit;
-          const bg = STATUS_COLORS[u.estado] || "#ffffff";
-          doc.rect(M, y, contentW, ROW_H).fill(bg);
-          doc.fillColor("#222222").font("Helvetica").fontSize(7);
-          columns.forEach((c, i) => {
-            doc.text(String(c.get(u)), colX[i] + 3, y + 3.5, { width: colWidth(i) - 6, align: c.align, ellipsis: true });
-          });
+          const stColor = theme.statusColors[u.estado];
+          if (layout.rowStyle === "white-with-bar") {
+            // Premium magazine look: bg blanco, barra lateral 3px en el color
+            // de estado, texto rowText. La columna "Estatus" se pinta en el
+            // color accent para identificar el estado de un vistazo.
+            doc.rect(M, y, contentW, ROW_H).fillColor(theme.palette.rowBg || "#FFFFFF").fill();
+            if (stColor) doc.rect(M, y, 3, ROW_H).fillColor(stColor).fill();
+            doc.font(theme.fonts.body).fontSize(7);
+            columns.forEach((c, i) => {
+              const isStatusCol = (c.label === "Estatus");
+              doc.fillColor(isStatusCol && stColor ? stColor : theme.palette.rowText);
+              doc.text(String(c.get(u)), colX[i] + 3, y + 3.5, { width: colWidth(i) - 6, align: c.align, ellipsis: true });
+            });
+          } else {
+            const bg = stColor || "#ffffff";
+            doc.rect(M, y, contentW, ROW_H).fill(bg);
+            doc.fillColor(theme.palette.rowText).font(theme.fonts.body).fontSize(7);
+            columns.forEach((c, i) => {
+              doc.text(String(c.get(u)), colX[i] + 3, y + 3.5, { width: colWidth(i) - 6, align: c.align, ellipsis: true });
+            });
+          }
         }
         y += ROW_H;
       };
@@ -524,7 +838,7 @@ function renderPdf({ proyectoId, units, meta }) {
       }
 
       if (items.length === 0) {
-        doc.fillColor(GREY).font("Helvetica").fontSize(11)
+        doc.fillColor(theme.palette.footerSideText).font(theme.fonts.body).fontSize(11)
           .text("Sin unidades cargadas para este proyecto.", M, y + 10, { width: contentW });
       }
 
