@@ -1,0 +1,161 @@
+{
+  "indicador": "ICDV",
+  "nombre": "Índice de Costos Directos de la Construcción de Viviendas",
+  "fuente": "ONE - Oficina Nacional de Estadística (one.gob.do)",
+  "base": "octubre 2009",
+  "region": "Región Metropolitana (Distrito Nacional y Santo Domingo)",
+  "updated_at": "2026-06-08T15:02:32.980Z",
+  "source": "backfill-live",
+  "latest": {
+    "fuente": "ONE",
+    "indicador": "ICDV",
+    "base": "octubre 2009",
+    "region": "Región Metropolitana (Distrito Nacional y Santo Domingo)",
+    "mes": "abril",
+    "anio": 2026,
+    "month_index": 4,
+    "periodo": "2026-04",
+    "indice": 240.16,
+    "indice_anterior": 238.57,
+    "delta_puntos": 1.59,
+    "tendencia": "alza",
+    "var_mensual_pct": 0.67,
+    "var_anio_corrido_pct": 1.69,
+    "var_12m_pct": 1.65,
+    "sub_indices": {
+      "unifamiliar_1n": 247.57,
+      "unifamiliar_2n": 242.4,
+      "multifamiliar_4n": 235.31,
+      "multifamiliar_8n": 235.37
+    },
+    "grupos": {
+      "herramientas": 9.94,
+      "materiales": 1.37,
+      "subcontratos": 0.72,
+      "mano_obra": 0,
+      "maquinarias": -0.16
+    }
+  },
+  "serie": [
+    {
+      "fuente": "ONE",
+      "indicador": "ICDV",
+      "base": "octubre 2009",
+      "region": "Región Metropolitana (Distrito Nacional y Santo Domingo)",
+      "mes": "abril",
+      "anio": 2026,
+      "month_index": 4,
+      "periodo": "2026-04",
+      "indice": 240.16,
+      "indice_anterior": 238.57,
+      "delta_puntos": 1.59,
+      "tendencia": "alza",
+      "var_mensual_pct": 0.67,
+      "var_anio_corrido_pct": 1.69,
+      "var_12m_pct": 1.65,
+      "sub_indices": {
+        "unifamiliar_1n": 247.57,
+        "unifamiliar_2n": 242.4,
+        "multifamiliar_4n": 235.31,
+        "multifamiliar_8n": 235.37
+      },
+      "grupos": {
+        "herramientas": 9.94,
+        "materiales": 1.37,
+        "subcontratos": 0.72,
+        "mano_obra": 0,
+        "maquinarias": -0.16
+      }
+    },
+    {
+      "fuente": "ONE",
+      "indicador": "ICDV",
+      "base": "octubre 2009",
+      "region": "Región Metropolitana (Distrito Nacional y Santo Domingo)",
+      "mes": "marzo",
+      "anio": 2026,
+      "month_index": 3,
+      "periodo": "2026-03",
+      "indice": 238.57,
+      "indice_anterior": 237.81,
+      "delta_puntos": 0.76,
+      "tendencia": "alza",
+      "var_mensual_pct": 0.32,
+      "var_anio_corrido_pct": 1.02,
+      "var_12m_pct": 0.75,
+      "sub_indices": {
+        "unifamiliar_1n": null,
+        "unifamiliar_2n": null,
+        "multifamiliar_4n": null,
+        "multifamiliar_8n": null
+      },
+      "grupos": {
+        "herramientas": 4.87,
+        "materiales": 0.72,
+        "subcontratos": 0.13,
+        "mano_obra": 0,
+        "maquinarias": -0.85
+      }
+    },
+    {
+      "fuente": "ONE",
+      "indicador": "ICDV",
+      "base": "octubre 2009",
+      "region": "Región Metropolitana (Distrito Nacional y Santo Domingo)",
+      "mes": "febrero",
+      "anio": 2026,
+      "month_index": 2,
+      "periodo": "2026-02",
+      "indice": 237.81,
+      "indice_anterior": 237.42,
+      "delta_puntos": 0.39,
+      "tendencia": "alza",
+      "var_mensual_pct": 0.16,
+      "var_anio_corrido_pct": 0.69,
+      "var_12m_pct": 0.95,
+      "sub_indices": {
+        "unifamiliar_1n": 244.88,
+        "unifamiliar_2n": 239.85,
+        "multifamiliar_4n": 233.39,
+        "multifamiliar_8n": 233.1
+      },
+      "grupos": {
+        "herramientas": 0,
+        "materiales": 0.17,
+        "subcontratos": 0.38,
+        "mano_obra": 0,
+        "maquinarias": -0.72
+      }
+    },
+    {
+      "fuente": "ONE",
+      "indicador": "ICDV",
+      "base": "octubre 2009",
+      "region": "Región Metropolitana (Distrito Nacional y Santo Domingo)",
+      "mes": "enero",
+      "anio": 2026,
+      "month_index": 1,
+      "periodo": "2026-01",
+      "indice": 237.42,
+      "indice_anterior": 236.16,
+      "delta_puntos": 1.26,
+      "tendencia": "alza",
+      "var_mensual_pct": 0.53,
+      "var_anio_corrido_pct": 0.53,
+      "var_12m_pct": 0.57,
+      "sub_indices": {
+        "unifamiliar_1n": 244.34,
+        "unifamiliar_2n": 239.34,
+        "multifamiliar_4n": 233.23,
+        "multifamiliar_8n": 232.78
+      },
+      "grupos": {
+        "herramientas": -10.17,
+        "materiales": null,
+        "subcontratos": 0.26,
+        "mano_obra": null,
+        "maquinarias": -0.08
+      }
+    }
+  ]
+}
