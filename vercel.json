@@ -43,6 +43,13 @@
       }
     },
     {
+      "src": "api/icdv.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "data/icdv-history.json"
+      }
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -81,6 +88,10 @@
       "dest": "/api/price-list.js"
     },
     {
+      "src": "/api/icdv",
+      "dest": "/api/icdv.js"
+    },
+    {
       "src": "/dashboard",
       "dest": "/public/dashboard.html"
     },
@@ -97,6 +108,10 @@
     {
       "path": "/api/followup",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/icdv?cron=1",
+      "schedule": "0 14 23-31 * *"
     }
   ]
 }
