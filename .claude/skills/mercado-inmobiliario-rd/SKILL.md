@@ -249,13 +249,13 @@ Casos legales complejos (litigios, herencias), negociación con banco específic
 
 ### Política por Proyecto (6 mayo 2026)
 
-PRADO RESIDENCES IV (PR4) "la ciudad". Plan actual mantener hasta agotar existencia. Director avisará cuándo actualizar. Plan estándar 10/30/60 y Plan Feria Mayo 10/20/70 vigente hasta 31 mayo 2026.
+PRADO RESIDENCES IV (PR4) "la ciudad". Plan actual mantener hasta agotar existencia. Director avisará cuándo actualizar. Plan estándar 10/30/60.
 
 PRADO RESIDENCES III (PR3). En construcción. Cuando termine y esté LISTO, financiamiento hasta 80%. Mejor margen banco para apartamentos LISTOS vs en planos.
 
-PRADO SUITES PUERTO PLATA E3 (PSE3). Plan estándar 10/30/60. Plan Feria Mayo 10/20/70 vigente hasta 31 mayo 2026. Construcción 36 meses (entrega marzo 2029).
+PRADO SUITES PUERTO PLATA E3 (PSE3). Plan estándar 10/30/60. Construcción 36 meses (entrega marzo 2029).
 
-PRADO SUITES PUERTO PLATA E4 (PSE4). Plan estándar 10/30/60. Plan Feria Mayo 10/20/70 vigente hasta 31 mayo 2026. Entrega diciembre 2027.
+PRADO SUITES PUERTO PLATA E4 (PSE4). Plan estándar 10/30/60. Entrega diciembre 2027.
 
 CRUX TORRE 6 (construcción). Plan base 5/25/70. Negociable 5/20/75 (75% financiamiento). Negociable 5/15/80 (80% con pre-aprobación bancaria). El 80% requiere documento de pre-aprobación del banco.
 

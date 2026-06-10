@@ -35,7 +35,7 @@ Los listos están entre RD$5.65M y RD$5.85M (en DOP, entrega inmediata). Torre 6
 
 ### Nota sobre otros proyectos
 
-Solo Crux del Prado tiene unidades listas para entrega inmediata. PR3, PR4 y Prado Suites Puerto Plata (E3 y E4) están todos en construcción/pre-venta con las siguientes entregas. Prado Residences III: agosto 2026. Prado Residences IV: agosto 2027. Prado Suites Puerto Plata E3: marzo 2029. Prado Suites Puerto Plata E4: septiembre 2027.
+Solo Crux del Prado tiene unidades listas para entrega inmediata. PR3, PR4 y Prado Suites Puerto Plata (E3 y E4) están todos en construcción/pre-venta con las siguientes entregas. Prado Residences III: agosto 2026. Prado Residences IV: agosto 2027. Prado Suites Puerto Plata E3: marzo 2029. Prado Suites Puerto Plata E4: diciembre 2027.
 
 Si el cliente pregunta por unidades listas en otros proyectos, responde honestamente: "Actualmente solo tenemos unidades listas en Crux del Prado. Los otros proyectos están en construcción con entregas futuras. ¿Te interesa Crux o prefieres explorar las opciones de pre-venta con plan de pagos extendido?"
 
@@ -43,7 +43,7 @@ Si el cliente pregunta por unidades listas en otros proyectos, responde honestam
 
 ## CRUX DEL PRADO — Torre 6
 
-Entrega: Julio 2027. Plan normal: Reserva US$1,000 más 5% contrato más 25% cuotas más 70% contra entrega. Plan Feria de Mayo 2026 (solo abril–mayo): Reserva US$1,000 más 5% contrato más 15% cuotas más 80% contra entrega. Todos: 100 m², 3 hab, 2 baños, 2 parqueos.
+Entrega: Julio 2027. Plan normal: Reserva US$1,000 más 5% contrato más 25% cuotas más 70% contra entrega. Todos: 100 m², 3 hab, 2 baños, 2 parqueos.
 
 ### Precios por unidad (US$)
 
@@ -79,7 +79,7 @@ Total disponibles: 42 de 50.
 
 ## PRADO RESIDENCES III
 
-Entrega: Agosto 2026. Plan normal: 10% separación más 30% cuotas más 60% contra entrega. Plan Feria de Mayo 2026 (solo abril–mayo): 10% separación más 20% cuotas más 70% contra entrega. Todas las unidades son 1 hab, 1 baño, 1 parqueo, e incluyen electrodomésticos y A/A.
+Entrega: Agosto 2026. Plan normal: 10% separación más 30% cuotas más 60% contra entrega. Todas las unidades son 1 hab, 1 baño, 1 parqueo, e incluyen electrodomésticos y A/A.
 
 ### Unidades disponibles
 
@@ -115,7 +115,7 @@ Total disponibles: 6 de 60.
 
 ## PRADO RESIDENCES IV
 
-Ubicación: Evaristo Morales. Entrega: Agosto 2027. Plan normal: 10% separación más 30% cuotas más 60% contra entrega. Plan Feria de Mayo 2026 (solo abril–mayo): 10% separación más 20% cuotas más 70% contra entrega.
+Ubicación: Evaristo Morales. Entrega: Agosto 2027. Plan normal: 10% separación más 30% cuotas más 60% contra entrega.
 
 ### Tipos
 
@@ -161,7 +161,7 @@ Total disponibles: 13 de 72.
 
 ## PRADO SUITES PUERTO PLATA
 
-Ubicación: Puerto Plata, frente a Playa Dorada. Plan de pago normal (siempre, todas las etapas): 10% separación más 30% cuotas durante construcción más 60% contra entrega. Plan Feria de Mayo 2026 (solo abril–mayo 2026): 10% separación más 20% cuotas más 70% contra entrega.
+Ubicación: Puerto Plata, frente a Playa Dorada. Plan de pago normal (siempre, todas las etapas): 10% separación más 30% cuotas durante construcción más 60% contra entrega.
 
 ### ERROR COMÚN A EVITAR — Precios y tamaños por tipo
 
@@ -259,6 +259,6 @@ Fuente: PDF oficial PDF_PP_PRECIOS_E4 ("Listados de Precios Introducción Etapa 
 
 ## NOTA SOBRE CÁLCULO DE CUOTAS — PUERTO PLATA
 
-Fechas de entrega fijas: E3 marzo 2029, E4 diciembre 2027 (E4 entrega ANTES que E3). Plan normal cuota mensual igual a 30% del precio dividido entre los meses desde HOY hasta entrega. Plan Feria Mayo 2026 (solo abril–mayo 2026) cuota mensual igual a 20% del precio dividido entre los meses desde HOY hasta entrega. Junio o después solo plan normal.
+Fechas de entrega fijas: E3 marzo 2029, E4 diciembre 2027 (E4 entrega ANTES que E3). Plan normal cuota mensual igual a 30% del precio dividido entre los meses desde HOY hasta entrega.
 
 La tool `calcular_plan_pago` hace el cálculo (parámetro etapa obligatorio E3 o E4 porque las fechas de entrega son distintas). Para conversión USD→DOP usa siempre tasa del día en vivo, nunca memorizada. La fórmula y los ejemplos detallados de cuotas viven en el skill de cálculo de planes que se carga aparte.

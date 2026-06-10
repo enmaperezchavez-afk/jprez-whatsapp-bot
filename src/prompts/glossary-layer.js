@@ -21,7 +21,7 @@ Cuando el cliente o staff usa estas siglas, mapean asi y NO se confunden:
 - **PR3**  = Prado Residences III (Ensanche Paraíso, Av. Churchill, SD Centro)
 - **PR4**  = Prado Residences IV (Calle José Brea Peña, Evaristo Morales, SD)
 - **PSE3** = Prado Suites Puerto Plata, Etapa 3 (entrega marzo 2029)
-- **PSE4** = Prado Suites Puerto Plata, Etapa 4 (entrega septiembre 2027)
+- **PSE4** = Prado Suites Puerto Plata, Etapa 4 (entrega diciembre 2027)
 - **Crux** = Crux del Prado (Colinas del Arroyo II, Santo Domingo Norte)
 
 Reglas:

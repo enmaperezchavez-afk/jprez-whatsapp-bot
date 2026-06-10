@@ -139,7 +139,7 @@ describe("Fix 2a (hotfix-5) — Inventario detallado de listos Crux en el prompt
     expect(prompt).toContain("Prado Residences III: agosto 2026");
     expect(prompt).toContain("Prado Residences IV: agosto 2027");
     expect(prompt).toContain("Prado Suites Puerto Plata E3: marzo 2029");
-    expect(prompt).toContain("Prado Suites Puerto Plata E4: septiembre 2027");
+    expect(prompt).toContain("Prado Suites Puerto Plata E4: diciembre 2027");
   });
 });
 

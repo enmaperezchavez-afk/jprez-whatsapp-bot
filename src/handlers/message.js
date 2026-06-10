@@ -167,7 +167,10 @@ const DELIVERY_DATES = {
 
 const PUERTO_PLATA_DELIVERY = {
   E3: "2029-03-01",
-  E4: "2027-09-01",
+  // Sprint0-delta: E4 entrega DICIEMBRE 2027 (era 2027-09-01, que inflaba
+  // la cuota mensual ~20% al calcular con 3 meses menos). Los PDFs y el
+  // resto de la doctrina ya decían dic 2027.
+  E4: "2027-12-01",
 };
 
 // Hotfix-30 Fix 1: infiere la etapa de Puerto Plata (E3/E4) del texto del
@@ -225,7 +228,7 @@ function calcularPlanPago(proyecto, precioUsd, etapa, customInicialPct, customCo
       // resolverla del mensaje ANTES de llegar acá.
       return {
         needs_etapa: true,
-        ask_client: "Puerto Plata tiene dos etapas con fechas y planes distintos: Etapa 3 (entrega marzo 2029) y Etapa 4 (entrega septiembre 2027). Pregúntale al cliente cuál le interesa ANTES de dar números, con un texto natural. NO es un error.",
+        ask_client: "Puerto Plata tiene dos etapas con fechas y planes distintos: Etapa 3 (entrega marzo 2029) y Etapa 4 (entrega diciembre 2027). Pregúntale al cliente cuál le interesa ANTES de dar números, con un texto natural. NO es un error.",
       };
     }
     delivery = PUERTO_PLATA_DELIVERY[etapa];
@@ -300,7 +303,7 @@ const TOOLS = [
         etapa: {
           type: "string",
           enum: ["E3", "E4"],
-          description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega septiembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. Si el cliente menciona PSE3/'etapa 3' usa E3; si menciona PSE4/'etapa 4' usa E4. Si NO sabes la etapa para Puerto Plata, NO llames esta herramienta: primero preguntale al cliente con texto cual etapa le interesa (Etapa 3 o Etapa 4). Ignorado en otros proyectos.",
+          description: "SOLO para Puerto Plata: etapa del proyecto (E3 entrega marzo 2029, E4 entrega diciembre 2027). Afecta el calculo de cuotas porque los meses hasta entrega son distintos. Si el cliente menciona PSE3/'etapa 3' usa E3; si menciona PSE4/'etapa 4' usa E4. Si NO sabes la etapa para Puerto Plata, NO llames esta herramienta: primero preguntale al cliente con texto cual etapa le interesa (Etapa 3 o Etapa 4). Ignorado en otros proyectos.",
         },
         inicial_pct: {
           type: "number",

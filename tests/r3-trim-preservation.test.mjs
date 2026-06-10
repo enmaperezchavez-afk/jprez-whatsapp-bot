@@ -128,12 +128,16 @@ describe("Hotfix-22 V3 r3 — preservación post-trim", () => {
 
   // ===== INVARIANTES VENDEDOR-JPREZ (REGLAS DE ORO + PROMOCIÓN) =====
 
-  it("Test 7 [P1]: Reglas de oro 1-14 + Promoción Feria Mayo preservadas en vendedor-jprez", () => {
+  it("Test 7 [P1]: Reglas de oro 1-14 + feria PURGADA en vendedor-jprez (Sprint0-delta)", () => {
     // 14 reglas de oro críticas.
     expect(VENDEDOR_SKILL).toMatch(/Reglas de oro/i);
-    // Promoción Feria Mayo (vigencia hasta 31 mayo 2026).
-    expect(VENDEDOR_SKILL).toContain("Feria de Mayo 2026");
-    expect(VENDEDOR_SKILL).toContain("31 de mayo");
+    // Sprint0-delta: la Feria de Mayo 2026 expiró el 31 mayo y fue purgada.
+    // Solo debe quedar la nota de expiración en la regla 14 (que anula las
+    // menciones del prompt base congelado) — nada de planes feria vivos.
+    expect(VENDEDOR_SKILL).toContain("expiró el 31 de mayo de 2026");
+    expect(VENDEDOR_SKILL).toContain("queda ANULADA");
+    expect(VENDEDOR_SKILL).not.toContain("PROMOCIÓN ACTIVA");
+    expect(VENDEDOR_SKILL).not.toContain("as bajo la manga");
     // Advertencia E3 vs E4 (precios + tamaños distintos).
     expect(VENDEDOR_SKILL).toContain("US$73,000");
     expect(VENDEDOR_SKILL).toContain("ADVERTENCIA");

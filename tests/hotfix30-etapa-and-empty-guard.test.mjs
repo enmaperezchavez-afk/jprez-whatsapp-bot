@@ -96,11 +96,12 @@ describe("Hotfix-30 Fix 1 — calcularPlanPago puertoPlata sin etapa NO es error
     expect(r.proyecto).toContain("Etapa E3");
   });
 
-  it("puertoPlata E4 → cálculo normal con fecha de entrega septiembre 2027", () => {
+  it("puertoPlata E4 → cálculo normal con fecha de entrega diciembre 2027", () => {
     const r = calcularPlanPago("puertoPlata", 163400, "E4");
     expect(r.error).toBeUndefined();
     expect(r.etapa).toBe("E4");
-    expect(r.entrega_fecha).toBe("2027-09-01");
+    // Sprint0-delta: E4 entrega dic 2027 (sep 2027 inflaba la cuota ~20%).
+    expect(r.entrega_fecha).toBe("2027-12-01");
   });
 
   it("otros proyectos (pr3) siguen ignorando etapa y calculan", () => {
