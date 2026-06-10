@@ -21,6 +21,7 @@ import {
   classify,
   lintFile,
   runLinter,
+  isSkippedSkill,
   RE_BOLD,
   RE_BULLET,
   RE_TABLE,
@@ -156,5 +157,15 @@ describe("Hotfix-22 V2 b3 — skill-linter (puro)", () => {
     const hasCalc = out.results.some((r) => r.file.includes("calculadora-plan-pago"));
     expect(hasMercado).toBe(true);
     expect(hasCalc).toBe(true);
+  });
+
+  it("Test 6: isSkippedSkill aplica SKIP_DIRS tambien en modo --staged (Sprint0)", () => {
+    // Bug: el modo --staged del pre-commit linteaba los docs de Claude Code
+    // (arquitectura/seguridad) y bloqueaba commits por tablas/bullets que
+    // son formato legitimo ahi. walkSkills ya los saltaba; staged no.
+    expect(isSkippedSkill(".claude/skills/jprez-bot-architecture/SKILL.md")).toBe(true);
+    expect(isSkippedSkill(".claude\\skills\\jprez-security-patterns\\SKILL.md")).toBe(true);
+    expect(isSkippedSkill(".claude/skills/vendedor-whatsapp-jprez/SKILL.md")).toBe(false);
+    expect(isSkippedSkill(".claude/skills/calculadora-plan-pago/SKILL.md")).toBe(false);
   });
 });
