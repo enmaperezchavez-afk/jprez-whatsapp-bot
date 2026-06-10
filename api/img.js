@@ -5,6 +5,12 @@
 // Mismo enfoque que /api/pdf pero default a image/jpeg.
 // ============================================
 
+const { readBodyCapped } = require("../src/fetch-capped");
+
+// Hotfix-31: tope de descarga. WhatsApp acepta imágenes de hasta 5MB; sin
+// tope un file ID malicioso podía agotar la memoria de la función.
+const MAX_IMG_BYTES = 10 * 1024 * 1024;
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).send("Method Not Allowed");
@@ -42,7 +48,11 @@ module.exports = async function handler(req, res) {
     }
 
     const contentType = response.headers.get("content-type") || "image/jpeg";
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const buffer = await readBodyCapped(response, MAX_IMG_BYTES);
+    if (!buffer) {
+      console.error("Imagen excede el tope de " + MAX_IMG_BYTES + " bytes, file ID: " + id);
+      return res.status(413).send("File too large");
+    }
 
     const bufferStart = buffer.slice(0, 200).toString("utf-8").toLowerCase();
     const isHtml =
@@ -67,7 +77,11 @@ module.exports = async function handler(req, res) {
       if (altResponse.ok) {
         const altContentType =
           altResponse.headers.get("content-type") || "image/jpeg";
-        const altBuffer = Buffer.from(await altResponse.arrayBuffer());
+        const altBuffer = await readBodyCapped(altResponse, MAX_IMG_BYTES);
+        if (!altBuffer) {
+          console.error("Imagen alternativa excede el tope, file ID: " + id);
+          return res.status(413).send("File too large");
+        }
 
         const altStart = altBuffer.slice(0, 200).toString("utf-8").toLowerCase();
         const altIsHtml =

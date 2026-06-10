@@ -85,6 +85,11 @@ describe("ICDV parser — parseNum (regresión del punto de cierre de oración)"
     expect(P.parseNum("sin numero")).toBe(null);
     expect(P.parseNum(null)).toBe(null);
   });
+
+  it("acepta decimales sin dígito inicial: '.5' (Hotfix-31)", () => {
+    expect(P.parseNum(".5")).toBe(0.5);
+    expect(P.parseNum("-.16")).toBe(-0.16);
+  });
 });
 
 describe("ICDV parser — discoverLatestFromListing / listIcdvPublications", () => {
@@ -132,6 +137,13 @@ describe("ICDV parser — extractPdfUrl (slug aleatorio no derivable)", () => {
   it("devuelve null si la landing no tiene PDF", () => {
     expect(P.extractPdfUrl("<html>sin pdf</html>")).toBeNull();
   });
+
+  it("tolera espacios alrededor del = en el href (Hotfix-31)", () => {
+    const html = '<a href = "/media/abc123/icdv-junio-2026.pdf" download>bajar</a>';
+    expect(P.extractPdfUrl(html)).toBe(
+      "https://www.one.gob.do/media/abc123/icdv-junio-2026.pdf"
+    );
+  });
 });
 
 describe("ICDV parser — buildLandingUrl (patrón de slug ESTABLE)", () => {
@@ -168,5 +180,16 @@ describe("ICDV parser — mergeIntoSeries (acumulación de la serie)", () => {
     expect(P.mergeIntoSeries(undefined, { periodo: "2026-01" })).toEqual([
       { periodo: "2026-01" },
     ]);
+  });
+
+  it("ignora entradas con periodo malformado (Hotfix-31)", () => {
+    const base = [{ periodo: "2026-01", indice: 237.42 }];
+    // "202-4" rompería el orden cronológico (sort por string) y
+    // contaminaría el store canónico de Redis.
+    expect(P.mergeIntoSeries(base, { periodo: "202-4", indice: 1 })).toEqual(base);
+    expect(P.mergeIntoSeries(base, { periodo: "abril 2026", indice: 1 })).toEqual(base);
+    // Formato válido sigue mergeando normal.
+    const ok = P.mergeIntoSeries(base, { periodo: "2026-02", indice: 237.81 });
+    expect(ok.length).toBe(2);
   });
 });

@@ -24,6 +24,7 @@ const path = require("path");
 const { getRedis } = require("../src/store/redis");
 const { mergeIntoSeries } = require("../src/services/icdv-parser");
 const { scrapeLatest } = require("../src/services/icdv-scraper");
+const { safeEqual } = require("../src/security/safe-compare");
 
 const CACHE_KEY = "icdv:series:cache";
 const STORE_KEY = "icdv:series:store"; // serie canónica persistida por el cron
@@ -117,16 +118,18 @@ async function loadSerie(redis) {
 // ---- cron auth (mismo esquema que api/followup.js) ----
 function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // sin secret configurado, acceso libre (dev)
+  // Hotfix-31: fail-closed. Sin CRON_SECRET el trigger del scrape quedaba
+  // abierto (cualquiera podía forzar scrapes / contaminar la serie).
+  if (!cronSecret) return false;
   const auth = req.headers.authorization || "";
   const vercelCronAuth = req.headers["x-vercel-cron-authorization"] || "";
-  const querySecret = req.query && req.query.secret;
+  const querySecret = (req.query && req.query.secret) || "";
   const bearerFormat = "Bearer " + cronSecret;
   return (
-    auth === bearerFormat ||
-    vercelCronAuth === bearerFormat ||
-    vercelCronAuth === cronSecret ||
-    querySecret === cronSecret
+    safeEqual(auth, bearerFormat) ||
+    safeEqual(vercelCronAuth, bearerFormat) ||
+    safeEqual(vercelCronAuth, cronSecret) ||
+    safeEqual(querySecret, cronSecret)
   );
 }
 
@@ -212,8 +215,9 @@ module.exports = async function handler(req, res) {
     res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
     return res.status(200).json(data);
   } catch (e) {
+    // Hotfix-31: no exponer e.message al público (info disclosure).
     console.error("[icdv] error:", e.message);
-    return res.status(500).json({ error: "Internal server error", message: e.message });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 

@@ -66,7 +66,8 @@ function normalizar(s) {
 // número. La ONE usa punto decimal en estos boletines.
 function parseNum(s) {
   if (s == null) return null;
-  const m = String(s).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  // Hotfix-31: acepta también decimales sin dígito inicial (".5%").
+  const m = String(s).replace(/,/g, "").match(/-?(?:\d+(?:\.\d+)?|\.\d+)/);
   if (!m) return null;
   const n = Number(m[0]);
   return Number.isFinite(n) ? n : null;
@@ -149,10 +150,12 @@ function buildLandingUrl(mes, anio) {
 function extractPdfUrl(landingHtml, origin = ONE_ORIGIN) {
   const src = String(landingHtml || "");
   // Preferimos el /media/*.pdf (boletín alojado). Tomamos el primero.
-  let m = src.match(/href=["'](\/media\/[^"']+?\.pdf)["']/i);
+  // Hotfix-31: href\s*=\s* tolera espacios alrededor del = (variaciones
+  // del CMS de la ONE no deben romper el scrape del mes).
+  let m = src.match(/href\s*=\s*["'](\/media\/[^"']+?\.pdf)["']/i);
   if (!m) {
     // Fallback: cualquier href absoluto a un .pdf de one.gob.do.
-    m = src.match(/href=["'](https?:\/\/[^"']*one\.gob\.do\/[^"']+?\.pdf)["']/i);
+    m = src.match(/href\s*=\s*["'](https?:\/\/[^"']*one\.gob\.do\/[^"']+?\.pdf)["']/i);
     if (m) return m[1];
     return null;
   }
@@ -331,6 +334,12 @@ function round2(n) {
 function mergeIntoSeries(existing, entry) {
   const base = Array.isArray(existing) ? existing.slice() : [];
   if (!entry || !entry.periodo) return base.sort(ordPeriodoDesc);
+  // Hotfix-31: un periodo malformado ("202-4") rompería el orden
+  // cronológico de toda la serie (sort por string). Se ignora la entrada
+  // en vez de contaminar el store canónico de Redis.
+  if (!/^\d{4}-\d{2}$/.test(String(entry.periodo))) {
+    return base.sort(ordPeriodoDesc);
+  }
   const filtered = base.filter((e) => e && e.periodo !== entry.periodo);
   filtered.push(entry);
   return filtered.sort(ordPeriodoDesc);

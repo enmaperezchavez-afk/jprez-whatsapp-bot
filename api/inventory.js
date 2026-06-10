@@ -28,6 +28,7 @@
 const { getRedis } = require("../src/store/redis");
 const { loadInventory, CACHE_KEY } = require("../src/inventory/loader");
 const { botLog } = require("../src/log");
+const { safeEqual } = require("../src/security/safe-compare");
 
 function getClientIp(req) {
   const xff = req.headers["x-forwarded-for"];
@@ -57,10 +58,11 @@ module.exports = async function handler(req, res) {
 
   const authHeader = req.headers.authorization || "";
   const providedToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  // Hotfix-31: comparación timing-safe (=== permite timing attacks).
   let tokenSource = null;
-  if (providedToken && providedToken === expectedToken) {
+  if (safeEqual(providedToken || "", expectedToken)) {
     tokenSource = "current";
-  } else if (providedToken && expectedTokenPrev && providedToken === expectedTokenPrev) {
+  } else if (expectedTokenPrev && safeEqual(providedToken || "", expectedTokenPrev)) {
     tokenSource = "prev";
   }
   if (!tokenSource) {
@@ -93,7 +95,8 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(inventory);
   } catch (e) {
     botLog("error", "inventory_endpoint_error", { error: e.message, stack: e.stack?.slice(0, 500) });
-    return res.status(500).json({ error: "Internal server error", message: e.message });
+    // Hotfix-31: no exponer e.message al cliente (info disclosure).
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 

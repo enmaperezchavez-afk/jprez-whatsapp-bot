@@ -5,6 +5,12 @@
 // WhatsApp necesita una URL directa al archivo.
 // ============================================
 
+const { readBodyCapped } = require("../src/fetch-capped");
+
+// Hotfix-31: tope de descarga. Los brochures reales pesan <20MB; sin tope
+// un file ID malicioso podía agotar la memoria de la función serverless.
+const MAX_PDF_BYTES = 30 * 1024 * 1024;
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).send("Method Not Allowed");
@@ -44,9 +50,13 @@ module.exports = async function handler(req, res) {
     }
 
     const contentType = response.headers.get("content-type") || "application/pdf";
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const buffer = await readBodyCapped(response, MAX_PDF_BYTES);
+    if (!buffer) {
+      console.error("Archivo excede el tope de " + MAX_PDF_BYTES + " bytes, file ID: " + id);
+      return res.status(413).send("File too large");
+    }
 
-    // Detectar HTML por content-type O por contenido real (sin limite de tamano)
+    // Detectar HTML por content-type O por contenido real
     const bufferStart = buffer.slice(0, 200).toString("utf-8").toLowerCase();
     const isHtml =
       contentType.includes("text/html") ||
@@ -71,7 +81,11 @@ module.exports = async function handler(req, res) {
       if (altResponse.ok) {
         const altContentType =
           altResponse.headers.get("content-type") || "application/pdf";
-        const altBuffer = Buffer.from(await altResponse.arrayBuffer());
+        const altBuffer = await readBodyCapped(altResponse, MAX_PDF_BYTES);
+        if (!altBuffer) {
+          console.error("Archivo alternativo excede el tope, file ID: " + id);
+          return res.status(413).send("File too large");
+        }
 
         // Verificar que ahora si es un archivo real (no HTML)
         const altStart = altBuffer.slice(0, 200).toString("utf-8").toLowerCase();

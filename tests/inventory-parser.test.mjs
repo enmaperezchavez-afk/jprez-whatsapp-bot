@@ -23,6 +23,20 @@ describe("Bloque 1 — parser inventario", () => {
     expect(toNumber("abc")).toBe(null);
   });
 
+  it("toNumber: coma decimal vs coma de miles (Hotfix-31)", () => {
+    // Coma decimal (formato europeo/latam): última coma + 1-2 dígitos.
+    // Antes "240,16" parseaba como 24016 — error 100x en precios.
+    expect(toNumber("240,16")).toBe(240.16);
+    expect(toNumber("1.250,50")).toBe(1250.5);
+    expect(toNumber("US$ 98,5")).toBe(98.5);
+    // Coma de miles (formato US, el habitual del Sheet): intacta.
+    expect(toNumber("1,250.50")).toBe(1250.5);
+    expect(toNumber("95,000")).toBe(95000);
+    expect(toNumber("US$156,000.75")).toBe(156000.75);
+    // Punto decimal simple sigue igual.
+    expect(toNumber("240.16")).toBe(240.16);
+  });
+
   it("normEstado: normaliza a lowercase y valida", () => {
     expect(normEstado("DISPONIBLE")).toBe("disponible");
     expect(normEstado("Reservado")).toBe("reservado");

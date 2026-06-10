@@ -19,6 +19,8 @@
 //     reply = string para mandar al supervisor
 //     didWrite = true si escribió Sheet (caller invalida cache Redis)
 
+const { toNumber } = require("./parser");
+
 const VALID_PROJECTS = {
   pr3: "PR3",
   pr4: "PR4",
@@ -70,20 +72,24 @@ function parseAdminCommand(text) {
     result.error = "missing_unit";
     return result;
   }
-  result.unit = tokens[2];
 
+  // Hotfix-31: la unidad puede tener espacios ("APT 201"). Para comandos
+  // con precio, el precio es el ÚLTIMO token y la unidad lo de en medio.
   if (command === "liberar" || command === "precio") {
+    result.unit = tokens.length >= 4 ? tokens.slice(2, -1).join(" ") : tokens[2];
     if (tokens.length < 4) {
       result.error = "missing_price";
       return result;
     }
-    const priceRaw = tokens[3].replace(/[^\d.]/g, "");
-    const price = Number(priceRaw);
-    if (!Number.isFinite(price) || price <= 0) {
+    // Hotfix-31: toNumber maneja coma decimal/miles ("95,000" y "240,16").
+    const price = toNumber(tokens[tokens.length - 1]);
+    if (price == null || price <= 0) {
       result.error = "invalid_price";
       return result;
     }
     result.price = price;
+  } else {
+    result.unit = tokens.slice(2).join(" ");
   }
 
   return result;

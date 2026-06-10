@@ -31,16 +31,31 @@ const FALLBACK_PATH = path.join(
   "inventario-precios.md",
 );
 
+// Hotfix-31: red de seguridad final si tampoco se puede leer el archivo.
+// Instruye al bot a escalar en vez de inventar datos o quedar mudo.
+const FALLBACK_UNAVAILABLE_MD =
+  "# Inventario temporalmente no disponible\n\n" +
+  "No tengo el detalle de unidades/precios a mano en este momento. " +
+  "Toma los datos del cliente y escala a Enmanuel para confirmar " +
+  "disponibilidad y precios exactos. NO inventes precios.";
+
 let cachedFallback = null;
 function readFallbackInventory() {
   if (cachedFallback !== null) return cachedFallback;
   try {
-    cachedFallback = fs.readFileSync(FALLBACK_PATH, "utf8");
+    const raw = fs.readFileSync(FALLBACK_PATH, "utf8");
+    if (raw && raw.trim()) {
+      cachedFallback = raw;
+      return cachedFallback;
+    }
+    botLog("error", "inventory_fallback_read_failed", { error: "archivo vacio" });
   } catch (e) {
     botLog("error", "inventory_fallback_read_failed", { error: e.message });
-    cachedFallback = "";
   }
-  return cachedFallback;
+  // Hotfix-31: NO cachear el fallo — antes se cacheaba "" para siempre y
+  // el bot quedaba sin inventario hasta el próximo cold start aunque el
+  // problema fuera transitorio. Reintenta en la próxima invocación.
+  return FALLBACK_UNAVAILABLE_MD;
 }
 
 function computeTotals(inventory) {

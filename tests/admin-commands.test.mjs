@@ -144,6 +144,27 @@ describe("Bloque 1 Fase 3.5 — admin commands parser", () => {
     expect(r.error).toBe("missing_unit");
     expect(r.project).toBe("pse3");
   });
+
+  it("unidad con espacios (Hotfix-31): /reservar y /precio", () => {
+    expect(parseAdminCommand("/reservar pr3 APT 201")).toEqual({
+      command: "reservar",
+      project: "pr3",
+      unit: "APT 201",
+    });
+    // Con precio: el precio es el ÚLTIMO token, la unidad lo de en medio.
+    expect(parseAdminCommand("/precio pr3 APT 201 99000")).toEqual({
+      command: "precio",
+      project: "pr3",
+      unit: "APT 201",
+      price: 99000,
+    });
+  });
+
+  it("precio con coma de miles y coma decimal (Hotfix-31)", () => {
+    expect(parseAdminCommand("/precio pse3 15-102 95,000").price).toBe(95000);
+    expect(parseAdminCommand("/liberar pse3 15-102 US$120,500.50").price).toBe(120500.5);
+    expect(parseAdminCommand("/precio pse3 15-102 abc").error).toBe("invalid_price");
+  });
 });
 
 describe("Bloque 1 Fase 3.5 — admin commands executor", () => {
