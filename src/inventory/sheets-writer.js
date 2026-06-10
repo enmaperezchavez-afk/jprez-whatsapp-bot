@@ -24,6 +24,7 @@
 
 const sheetsApi = require("@googleapis/sheets");
 const { botLog } = require("../log");
+const { findHeaderRowIndex } = require("./sheets-client");
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
@@ -55,26 +56,36 @@ function colIndexToLetter(idx) {
   return result;
 }
 
-// findUnitRow: lee headers (fila 1) y columna A del tab, encuentra
-// el row con unidad_id === unitId. Retorna { rowNumber (1-indexed),
-// headers, rowValues } o null si no se encontró.
+// findUnitRow: encuentra el row con unidad_id === unitId. Retorna
+// { rowNumber (1-indexed), headers, rowValues } o null si no se encontró.
+//
+// Hotfix-31: detección dinámica de headers + columna unidad_id. Hotfix-29
+// estableció que el Sheet real tiene títulos/notas en filas previas a los
+// headers (por eso el reader sheets-client usa findHeaderRowIndex), pero
+// este writer seguía asumiendo headers en fila 1 y unidad_id en columna A
+// — con el Sheet real, TODOS los comandos supervisor de escritura fallaban
+// con unit_not_found/column_not_found.
 async function findUnitRow(sheets, spreadsheetId, tabName, unitId) {
   const response = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
-    ranges: [tabName + "!1:1", tabName + "!A:Z"],
+    ranges: [tabName + "!A:Z"],
   });
-  const headersRow = (response.data.valueRanges[0].values || [[]])[0] || [];
-  const allRows = response.data.valueRanges[1].values || [];
+  const allRows = response.data.valueRanges[0].values || [];
+
+  const headerRowIdx = findHeaderRowIndex(allRows);
+  if (headerRowIdx === -1) return null;
+  const headersRow = (allRows[headerRowIdx] || []).map((h) => String(h || "").trim());
+  const idColIdx = headersRow.findIndex((h) => h.toLowerCase() === "unidad_id");
+  if (idColIdx === -1) return null;
 
   const target = String(unitId).trim();
-  // allRows[0] son headers. Buscar desde índice 1.
-  for (let i = 1; i < allRows.length; i++) {
+  for (let i = headerRowIdx + 1; i < allRows.length; i++) {
     const row = allRows[i] || [];
-    const id = String((row[0] || "")).trim();
+    const id = String((row[idColIdx] || "")).trim();
     if (id === target) {
       return {
         rowNumber: i + 1, // 1-indexed para Sheets
-        headers: headersRow.map((h) => String(h || "").trim()),
+        headers: headersRow,
         rowValues: row,
       };
     }
