@@ -148,7 +148,7 @@ Para clientes que buscan 3 habitaciones en Puerto Plata: E3 tiene PH dúplex 134
 
 #### Etapa 3 (E3) — en preventa
 
-Inicio construcción enero 2028. Entrega marzo 2029. Disponibilidad 63 de 126 unidades (Edificios 15 y 16). Productos: Estudio 27m², Apto 1 hab 31m², Apto 2 hab 67m², PH dúplex 1 hab 62m², PH dúplex 3 hab 134m².
+Inicio construcción enero 2028. Entrega marzo 2029. Edificios 15 y 16, 126 unidades — conteo de disponibles: ver inventario vivo (regla 11). Productos: Estudio 27m², Apto 1 hab 31m², Apto 2 hab 67m², PH dúplex 1 hab 62m², PH dúplex 3 hab 134m².
 
 #### Etapa 4 (E4) — entrega antes que E3
 

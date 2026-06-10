@@ -32,6 +32,9 @@ describe("Hotfix-19 Commit 3 — Bug #4 inventario", () => {
     // 55 vs 63) — se eliminaron; queda la nota CONTEOS al tope.
     expect(INVENTORY).not.toMatch(/Total disponibles/);
     expect(INVENTORY).not.toContain("% vendido — urgencia real");
+    // Sprint0 PR-G: tampoco "Disponibilidad: N de M" a nivel proyecto
+    // (residual PSE3 "63 de 126" cazado por el re-audit final).
+    expect(INVENTORY).not.toMatch(/Disponibilidad:? \d+ de \d+/);
     expect(INVENTORY).toContain("CONTEOS (doctrina v1.1)");
     expect(INVENTORY).toContain("el Sheet en vivo es el dueño único");
   });

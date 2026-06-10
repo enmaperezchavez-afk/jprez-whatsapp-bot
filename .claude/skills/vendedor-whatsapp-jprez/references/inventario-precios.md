@@ -186,7 +186,7 @@ Cliente busca 3 habitaciones en Puerto Plata: hay dos productos MUY distintos. E
 
 ### ETAPA 3 (E3)
 
-Entrega: marzo 2029. Disponibilidad: 63 de 126 unidades (Edificios 15 y 16). Productos: Estudio 27m², Apto 1 hab 31m², Apto 2 hab 67m², PH dúplex 1 hab 62m², PH dúplex 3 hab 134m².
+Entrega: marzo 2029. Edificios 15 y 16 (126 unidades; conteo de disponibles: Sheet en vivo). Productos: Estudio 27m², Apto 1 hab 31m², Apto 2 hab 67m², PH dúplex 1 hab 62m², PH dúplex 3 hab 134m².
 
 #### Disponibles Edificio 15 (27 unidades)
 
