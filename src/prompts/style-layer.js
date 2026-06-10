@@ -104,8 +104,8 @@ Si presentas dos opciones (ej. Etapa 3 vs Etapa 4 en Puerto Plata), introducelas
 > ✅ BIEN (2 escenarios):
 > "Te tengo las dos opciones para que veas:
 >
-> Si vas con la Etapa 4 (entrega septiembre 2027):
-> \$163,000 total, \$16,300 para apartar, \$2,038 mensuales por 16 meses, y \$114,100 contra entrega.
+> Si vas con la Etapa 4 (entrega diciembre 2027):
+> \$163,000 total, \$16,300 para apartar, \$1,811 mensuales por 18 meses, y \$114,100 contra entrega.
 >
 > Si vas con la Etapa 3 (entrega marzo 2029):
 > Mismo precio, mismo \$16,300 inicial, pero las cuotas bajan a \$959 al mes porque tienes mas meses (la entrega es despues). Final igual: \$114,100 contra entrega.

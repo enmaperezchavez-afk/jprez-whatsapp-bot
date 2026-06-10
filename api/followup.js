@@ -156,11 +156,39 @@ Reglas obligatorias:
 - NO incluyas prefacios tipo "aqui va el mensaje". Devuelve SOLO el texto que se enviara.
 - NUNCA incluyas etiquetas [LEAD_CALIENTE], [ESCALAR], ni [AGENDAR].
 
-ESCASEZ REAL POR PROYECTO (datos reales para usar):
-- Crux del Prado (crux): Etapa 1 y 2 LISTOS, SOLO 4 UNIDADES DISPONIBLES desde RD$5.65M. Torre 6 en construccion, 42 de 50 disponibles, entrega julio 2027.
-- Prado Residences III (pr3): SOLO 6 DE 60 UNIDADES DISPONIBLES. Equipado, listo para Airbnb, entrega agosto 2026.
-- Prado Residences IV (pr4): 13 de 72 unidades disponibles (82% vendido), entrega septiembre 2027.
-- Prado Suites Puerto Plata (puertoPlata): Etapa 3 con 63 de 126 disponibles, desde US$73K.`;
+{{ESCASEZ}}`;
+
+// Sprint0 PR-F: el bloque de escasez se arma EN VIVO desde el inventario
+// (Sheet → loader → totals). Antes era texto hardcodeado con conteos
+// drifteados y una fecha de entrega errónea de PR4 — y este prompt genera
+// mensajes REALES a clientes.
+const ESCASEZ_LABELS = {
+  crux_listos: { nombre: "Crux del Prado LISTOS (entrega inmediata)", extra: "desde RD$5.65M" },
+  crux_t6: { nombre: "Crux del Prado Torre 6 (construccion)", extra: "entrega julio 2027" },
+  pr3: { nombre: "Prado Residences III (pr3)", extra: "equipado, listo para Airbnb, entrega agosto 2026" },
+  pr4: { nombre: "Prado Residences IV (pr4)", extra: "entrega agosto 2027" },
+  pse3: { nombre: "Prado Suites Puerto Plata E3", extra: "desde US$73K" },
+  pse4: { nombre: "Prado Suites Puerto Plata E4", extra: "desde US$163.4K" },
+};
+
+const ESCASEZ_FALLBACK =
+  "ESCASEZ: no tienes el conteo vivo de unidades ahora mismo. Usa escasez " +
+  "GENERICA y honesta ('quedan pocas unidades', 'el inventario se esta " +
+  "moviendo') — NUNCA cites numeros exactos de disponibilidad.";
+
+function buildEscasezBlock(totals) {
+  const lines = [];
+  for (const [key, label] of Object.entries(ESCASEZ_LABELS)) {
+    const t = totals && totals[key];
+    if (!t || t.disponibles == null) continue;
+    lines.push(
+      "- " + label.nombre + ": " + t.disponibles +
+      (t.total ? " de " + t.total : "") + " unidades disponibles, " + label.extra + "."
+    );
+  }
+  if (lines.length === 0) return ESCASEZ_FALLBACK;
+  return "ESCASEZ REAL POR PROYECTO (conteo vivo del inventario, usalo con confianza):\n" + lines.join("\n");
+}
 
 const STAGE_PROMPTS = {
   1:
@@ -184,8 +212,11 @@ const STAGE_PROMPTS = {
     "Tono: honesto, sereno, digno. Ejemplo de vibe: 'no quiero seguir escribiendote si ya no te interesa, tu tiempo vale'.",
 };
 
-function buildFollowupSystemPrompt(stage) {
-  return FOLLOWUP_BASE_PROMPT + (STAGE_PROMPTS[stage] || STAGE_PROMPTS[1]);
+function buildFollowupSystemPrompt(stage, escasezBlock) {
+  return (
+    FOLLOWUP_BASE_PROMPT.replace("{{ESCASEZ}}", escasezBlock || ESCASEZ_FALLBACK) +
+    (STAGE_PROMPTS[stage] || STAGE_PROMPTS[1])
+  );
 }
 
 function buildFollowupUserPrompt(meta, stage, temperature) {
@@ -206,9 +237,9 @@ function buildFollowupUserPrompt(meta, stage, temperature) {
   return parts.join("\n");
 }
 
-async function generateFollowup(history, meta, stage, temperature) {
+async function generateFollowup(history, meta, stage, temperature, escasezBlock) {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const system = buildFollowupSystemPrompt(stage);
+  const system = buildFollowupSystemPrompt(stage, escasezBlock);
   const userPrompt = buildFollowupUserPrompt(meta, stage, temperature);
   const messages = [
     ...history,
@@ -262,6 +293,17 @@ module.exports = async function handler(req, res) {
   const redis = await getRedis();
   if (!redis) {
     return res.status(500).json({ error: "redis not configured" });
+  }
+
+  // Sprint0 PR-F: escasez en vivo desde el inventario (Sheet manda).
+  // Si el loader falla, ESCASEZ_FALLBACK instruye a NO citar números.
+  let escasezBlock = ESCASEZ_FALLBACK;
+  try {
+    const { loadInventory } = require("../src/inventory/loader");
+    const inv = await loadInventory({ redis });
+    escasezBlock = buildEscasezBlock(inv && inv.totals);
+  } catch (e) {
+    console.error("[followup] inventario vivo no disponible, escasez generica:", e.message);
   }
 
   const withinWindow = isWithinSendWindow();
@@ -394,7 +436,7 @@ module.exports = async function handler(req, res) {
       }
 
       const stage = followUpCount + 1;
-      const text = await generateFollowup(history, meta, stage, temperature);
+      const text = await generateFollowup(history, meta, stage, temperature, escasezBlock);
       await sendWhatsAppMessage(phone, text);
       await appendAssistantMessage(redis, phone, text);
       await saveClientMeta(redis, phone, {
@@ -416,5 +458,8 @@ module.exports = async function handler(req, res) {
   return res.status(200).json(summary);
 };
 
-// Export auxiliar para tests (mismo patrón que api/icdv.js).
+// Exports auxiliares para tests (mismo patrón que api/icdv.js).
 module.exports.isAuthorized = isAuthorized;
+module.exports.buildEscasezBlock = buildEscasezBlock;
+module.exports.buildFollowupSystemPrompt = buildFollowupSystemPrompt;
+module.exports.ESCASEZ_FALLBACK = ESCASEZ_FALLBACK;
