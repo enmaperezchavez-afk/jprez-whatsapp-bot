@@ -89,7 +89,12 @@ function loadLogo(proyectoId) {
     const p = path.join(LOGOS_DIR, key + "." + ext);
     try {
       if (fs.existsSync(p)) { buf = fs.readFileSync(p); break; }
-    } catch (e) { /* ignora, cae a fallback */ }
+    } catch (e) {
+      // Hotfix-31: el archivo EXISTE pero no se pudo leer (permisos,
+      // corrupto). Antes se silenciaba y el PDF salía con wordmark de
+      // texto sin pista alguna en Axiom de por qué.
+      botLog("warn", "price_list_logo_load_failed", { proyectoId, logo: key, path: p, error: e.message });
+    }
   }
   _logoCache[key] = buf;
   return buf;

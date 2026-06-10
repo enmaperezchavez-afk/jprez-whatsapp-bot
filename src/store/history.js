@@ -45,9 +45,23 @@ const MAX_MESSAGES = 20;
 const TTL_SECONDS = 2592000; // 30 días
 
 // Parseo defensivo: Upstash puede devolver string o objeto ya parseado.
+// Hotfix-31: JSON corrupto retorna null (historial limpio) con log
+// específico, en vez de lanzar y caer al fallback RAM por el catch
+// genérico de red — que enmascaraba la corrupción como "error Redis".
 function parseValue(raw) {
   if (raw === null || raw === undefined) return null;
-  return typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (typeof raw !== "string") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.log(
+      "[history] JSON corrupto en Redis, empezando historial limpio:",
+      e.message,
+      "| preview:",
+      raw.slice(0, 80)
+    );
+    return null;
+  }
 }
 
 // Normaliza cualquier valor leído a la estructura v2 con migración v1→v2.
