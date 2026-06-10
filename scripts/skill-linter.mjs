@@ -82,8 +82,18 @@ async function walkSkills(dir) {
   return out;
 }
 
+// isSkippedSkill: true si el path cae dentro de un SKIP_DIRS (docs para
+// Claude Code que NO se inyectan al prompt del bot — su formato es libre).
+function isSkippedSkill(path) {
+  const normalized = String(path).replace(/\\/g, "/");
+  return SKIP_DIRS.some((d) => normalized.includes("/" + d + "/"));
+}
+
 // stagedSkills: archivos staged en git diff --cached que matcheen
 // .claude/skills/**/*.md. Para uso pre-commit hook.
+// Sprint0: aplica SKIP_DIRS igual que walkSkills — antes el modo --staged
+// linteaba los docs de arquitectura/seguridad y bloqueaba commits por
+// formato que es legítimo en esos archivos.
 function stagedSkills() {
   let out = [];
   try {
@@ -91,7 +101,8 @@ function stagedSkills() {
     out = raw
       .split("\n")
       .map((s) => s.trim())
-      .filter((s) => s.startsWith(SKILLS_ROOT) && s.endsWith(".md"));
+      .filter((s) => s.startsWith(SKILLS_ROOT) && s.endsWith(".md"))
+      .filter((s) => !isSkippedSkill(s));
   } catch (e) {
     // Si no hay repo git o no hay staged, retornamos vacio.
   }
@@ -197,6 +208,7 @@ export {
   formatReport,
   walkSkills,
   stagedSkills,
+  isSkippedSkill,
   countMatches,
   MAX_BOLDS,
   MAX_BULLETS,
