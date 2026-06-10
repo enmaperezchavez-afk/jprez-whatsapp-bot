@@ -7,7 +7,33 @@
 // DEUDA TÉCNICA CONOCIDA: phoneNumberId/token/url se duplican en cada send*.
 // Dedup pendiente para commit posterior (no parte del refactor de Día 2).
 
-async function sendWhatsAppMessage(to, text) {
+// Hotfix-31: WhatsApp Cloud API rechaza bodies de texto >4096 chars con
+// 400 ("body length is too long") y el cliente no recibe NADA. Partimos
+// en chunks en límites naturales (párrafo > línea > espacio > corte duro)
+// y los enviamos en orden.
+const WHATSAPP_MAX_CHARS = 4096;
+
+function splitMessageForWhatsApp(text, maxChars = WHATSAPP_MAX_CHARS) {
+  const s = String(text == null ? "" : text);
+  if (s.length <= maxChars) return [s];
+  const chunks = [];
+  let rest = s;
+  while (rest.length > maxChars) {
+    const window = rest.slice(0, maxChars);
+    // Preferir cortes naturales, pero nunca generar chunks diminutos:
+    // si el corte cae antes de la mitad de la ventana, probar el siguiente.
+    let cut = window.lastIndexOf("\n\n");
+    if (cut < maxChars * 0.5) cut = window.lastIndexOf("\n");
+    if (cut < maxChars * 0.5) cut = window.lastIndexOf(" ");
+    if (cut < maxChars * 0.5) cut = maxChars;
+    chunks.push(rest.slice(0, cut).trimEnd());
+    rest = rest.slice(cut).replace(/^\s+/, "");
+  }
+  if (rest) chunks.push(rest);
+  return chunks;
+}
+
+async function sendWhatsAppTextOnce(to, body) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_TOKEN;
   const url = "https://graph.facebook.com/v21.0/" + phoneNumberId + "/messages";
@@ -22,7 +48,7 @@ async function sendWhatsAppMessage(to, text) {
       messaging_product: "whatsapp",
       to: to,
       type: "text",
-      text: { body: text },
+      text: { body: body },
     }),
   });
 
@@ -33,6 +59,15 @@ async function sendWhatsAppMessage(to, text) {
   }
 
   return response.json();
+}
+
+async function sendWhatsAppMessage(to, text) {
+  const chunks = splitMessageForWhatsApp(text);
+  let last = null;
+  for (const chunk of chunks) {
+    last = await sendWhatsAppTextOnce(to, chunk);
+  }
+  return last;
 }
 
 async function sendWhatsAppDocument(to, documentUrl, filename, caption) {
@@ -226,4 +261,6 @@ module.exports = {
   sendWhatsAppDocument,
   sendWhatsAppImage,
   transcribeWhatsAppAudio,
+  splitMessageForWhatsApp,
+  WHATSAPP_MAX_CHARS,
 };
