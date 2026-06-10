@@ -140,10 +140,42 @@ describe("ICDV — src/tools/icdv.js schema (drop-in para Fase 2)", () => {
   });
 });
 
-describe("ICDV — disciplina: tool NO conectada a Mateo todavía (Fase 2)", () => {
-  it("consultar_icdv no está en TOOLS[] de src/handlers/message.js", () => {
+describe("ICDV — Fase 2 ACTIVADA (Sprint0 PR-D): tool cableada a Mateo", () => {
+  it("consultar_icdv está en TOOLS[] de message.js con su handler", () => {
     const messageHandler = readFileSync("src/handlers/message.js", "utf8");
-    expect(messageHandler).not.toContain("consultar_icdv");
-    expect(messageHandler).not.toContain("tools/icdv");
+    expect(messageHandler).toContain("TOOL_CONSULTAR_ICDV");
+    expect(messageHandler).toMatch(/consultar_icdv:\s*\(input\)\s*=>\s*consultarICDV\(input\)/);
+    expect(messageHandler).toContain('require("../tools/icdv")');
+  });
+
+  it("webhook bundlea el seed (vercel.json includeFiles)", () => {
+    const vercelJson = JSON.parse(readFileSync("vercel.json", "utf8"));
+    const webhookBuild = vercelJson.builds.find((b) => b.src === "api/webhook.js");
+    expect(webhookBuild.config.includeFiles).toContain("data/icdv-history.json");
+  });
+
+  it("consultarICDV prefiere la serie viva (loadSerie inyectado)", async () => {
+    const { consultarICDV } = require("../src/tools/icdv.js");
+    const liveDoc = {
+      serie: [{ periodo: "2026-05", mes: "mayo", anio: 2026, indice: 241.5, var_12m_pct: 3.1 }],
+      latest: { periodo: "2026-05", mes: "mayo", anio: 2026, indice: 241.5, var_12m_pct: 3.1 },
+      updated_at: "2026-06-10T00:00:00Z",
+    };
+    const out = await consultarICDV(
+      { detalle: "resumen" },
+      { getRedis: async () => null, loadSerie: async () => liveDoc }
+    );
+    expect(out.ok).toBe(true);
+    expect(out.latest.indice).toBe(241.5); // vino del live, no del seed (240.16)
+  });
+
+  it("consultarICDV cae al seed de disco si la serie viva falla", async () => {
+    const { consultarICDV } = require("../src/tools/icdv.js");
+    const out = await consultarICDV(
+      { detalle: "resumen" },
+      { getRedis: async () => { throw new Error("redis caído"); } }
+    );
+    expect(out.ok).toBe(true);
+    expect(out.latest.indice).toBeGreaterThan(0); // seed real del repo
   });
 });
