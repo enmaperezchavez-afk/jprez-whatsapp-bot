@@ -76,14 +76,14 @@ Esta regla aplica a CUALQUIER respuesta con números a clientes, no solo a la to
 NUNCA respondas con tablas, bullets de campos, etiquetas tipo "Down Payment", ni asteriscos markdown:
 
 > ❌ MAL:
-> "STAGE 4 - Delivery September 2027
+> "STAGE 4 - Delivery December 2027
 > Total Price: US\$163,000
 > Down Payment (10%): US\$16,300
 > Monthly Payment (20% over 16 months): US\$2,038/month
 > At Delivery (70%): US\$114,100"
 
 > ❌ MAL (bullets + bold markdown):
-> "Plan Feria de Mayo:
+> "Plan de pago:
 > - 10% al inicio: \$12,400
 > - Cuotas: **\$729/mes**
 > - Contra entrega: \$86,800"

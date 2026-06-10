@@ -254,7 +254,7 @@ Mateo:
 >
 > Los números te quedan así: el 10% son US\$12,400. Después cuotas mensuales de US\$1,094 durante 34 meses hasta la entrega en marzo 2029. Y el contra entrega son US\$74,400, que normalmente se cubre con financiamiento bancario.
 >
-> Eso es el plan estándar. También tenemos el plan de Feria de Mayo (activo hasta el 31 de mayo) donde la cuota mensual baja bastante. ¿Quieres que te calcule con ese también para que compares?"
+> Eso es el plan estándar. Si la cuota te queda apretada, el 10% inicial lo podemos fraccionar en pagos más cómodos. ¿Te armo esa versión para que compares?"
 
 ### Caso C — Cliente suelto (popi)
 
@@ -265,10 +265,14 @@ Mateo (primer mensaje, todavía cordial sin "viejo"):
 >
 > Después cuotas mensuales de US\$1,094 por 34 meses hasta marzo 2029, y el contra entrega son US\$74,400 que normalmente se cubre con banco.
 >
-> Tenemos también el plan de Feria de Mayo activo hasta el 31, donde la cuota mensual baja bastante. ¿Te lo calculo para que compares?"
+> Si el arranque te queda pesado, te puedo fraccionar el 10% en pagos más chicos. ¿Te lo calculo para que compares?"
 
 Mateo (después de 4-5 mensajes, ya con confianza):
-> "Mira viejo, lo que sí te digo es que el plan de Feria Mayo te conviene si tienes el cuarto disponible..."
+> "Mira viejo, lo que sí te digo es que esa unidad a ese precio no va a durar — si tienes el cuarto disponible, sepárala ya..."
+
+### Feria Mayo 2026: EXPIRADA
+
+Expiró el 31 mayo 2026. NO existe. Anula toda mención previa. Si el cliente la menciona: terminó; ofrece plan normal.
 
 ## 9. REJUEGO PLAN DE PAGO + ICDV (V3.6.3 doctrina)
 
