@@ -50,7 +50,10 @@ function metaLine(meta) {
   if (meta.entrega_fecha) parts.push("Entrega: " + meta.entrega_fecha);
   if (meta.ubicacion) parts.push("Ubicación: " + meta.ubicacion);
   if (meta.plan_normal) parts.push("Plan normal: " + meta.plan_normal);
-  if (meta.plan_feria) parts.push("Plan Feria de Mayo 2026: " + meta.plan_feria);
+  // Sprint0 PR-E: la columna del Sheet sigue llamándose plan_feria, pero la
+  // Feria de Mayo 2026 expiró — doctrina v1.1: el plan alternativo es opción
+  // PERMANENTE de negociación por timing, no una promo con fecha.
+  if (meta.plan_feria) parts.push("Plan alternativo por timing (negociable): " + meta.plan_feria);
   return parts.join(". ") + (parts.length ? "." : "");
 }
 

@@ -3,6 +3,8 @@
 
 Importante de formato: este documento es referencia INTERNA para Mateo. Cuando le respondas al cliente NUNCA copies este formato — siempre prosa natural con números EXACTOS embebidos. Nada de tablas ni bullets en mensajes WhatsApp.
 
+CONTEOS (doctrina v1.1): el Sheet en vivo es el dueño único de los conteos de disponibles — este archivo es un snapshot de RESPALDO y NO lleva totales agregados por proyecto. Si necesitas un conteo y solo tienes este archivo, cuenta las unidades listadas y acláraselo al cliente con naturalidad.
+
 ---
 
 ## CRUX DEL PRADO — Unidades Listas para Entrega Inmediata
@@ -73,7 +75,6 @@ PISO 12: A=$113,751 / B=$114,037 / C=$112,606 / D=$114,801 — todos disponibles
 
 PISO 13: B=$114,992 (RESERVADO) / C=$113,560 — 1 disponible.
 
-Total disponibles: 42 de 50.
 
 ---
 
@@ -109,7 +110,6 @@ Entrega: Agosto 2026. Plan normal: 10% inicial más 30% cuotas más 60% contra e
 
 12E en US$200,500, 64m², vista Sur-Este.
 
-Total disponibles: 6 de 60.
 
 ---
 
@@ -155,7 +155,6 @@ Tipo G: 115m², 3 hab, 3 baños, 2 parqueos, orientación Norte.
 
 Reservados: 2A en US$305,000, 4A en US$308,000, 6A en US$287,500.
 
-Total disponibles: 13 de 72.
 
 ---
 
@@ -209,13 +208,12 @@ NIVEL 3: 16-302 en US$142K (67m², 2hab) | 16-306 en US$154K (67m², 2hab) | 16-
 
 NIVEL PH: 16-405 en US$272K (134m², PH 3 hab) | 16-406 en US$272K (134m², PH 3 hab) | 16-407 en US$82.5K (27m², estudio) | 16-408 en US$82.5K (27m², estudio) | 16-409 en US$272K (134m², PH 3 hab) | 16-410 en US$272K (134m², PH 3 hab) | 16-413 en US$268K (134m², PH 3 hab) | 16-414 en US$268K (134m², PH 3 hab) | 16-415 en US$81K (27m², estudio) | 16-416 en US$81K (27m², estudio).
 
-Total disponibles E3: 55 de 126.
 
 ---
 
 ### ETAPA 4 (E4)
 
-Entrega: diciembre 2027 (antes que E3 — NO asumir que E4 entrega después). Total unidades: 80 (5 edificios por 16 apartamentos cada uno). Disponibles: 19. Vendidas: 45. Reservadas: 16 (76% vendido — urgencia real). Edificios: 20, 21, 22, 23, 24.
+Entrega: diciembre 2027 (antes que E3 — NO asumir que E4 entrega después). Total unidades: 80 (5 edificios por 16 apartamentos cada uno). Edificios: 20, 21, 22, 23, 24. Conteo de disponibles: Sheet en vivo (cuenta la lista textual abajo si solo tienes este snapshot).
 
 Productos — SOLO DOS tipos: Apto 2 hab 76m², 2 baños, 1 parqueo, desde US$163,400. Apto 3 hab estándar 93m², 2 baños, 1 parqueo, desde US$195,300.
 
@@ -233,7 +231,6 @@ Edificio 23: 12 vendidas, 2 reservadas, 2 disponibles, total 16, 88% vendido.
 
 Edificio 24: 11 vendidas, 1 reservada, 4 disponibles, total 16, 75% vendido.
 
-TOTAL: 45 vendidas, 16 reservadas, 19 disponibles, 80 unidades, 76% vendido.
 
 #### Unidades disponibles E4 — lista textual (19 unidades)
 

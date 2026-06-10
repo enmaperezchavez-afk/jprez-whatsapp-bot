@@ -124,7 +124,10 @@ describe("Bloque 1 — markdown formatter", () => {
     expect(md).toContain("Total disponibles: 1 de 50.");
     expect(md).toContain("3B en US$156,000, 52m², vista Oeste.");
     expect(md).toContain("Total disponibles: 1 de 60.");
-    expect(md).toContain("Plan Feria de Mayo 2026: 10/15/80");
+    // Sprint0 PR-E: la feria expiró — el plan alternativo es opción
+    // permanente por timing (doctrina v1.1), la columna Sheet no cambia.
+    expect(md).toContain("Plan alternativo por timing (negociable): 10/15/80");
+    expect(md).not.toContain("Feria de Mayo");
   });
 
   it("Crux Listos: precio en RD$ (no US$)", () => {

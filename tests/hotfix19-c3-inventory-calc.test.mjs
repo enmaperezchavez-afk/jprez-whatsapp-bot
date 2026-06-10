@@ -26,12 +26,14 @@ const HANDLER_SRC = readFileSync("src/handlers/message.js", "utf-8");
 const { calcularPlanPago } = require("../src/handlers/message");
 
 describe("Hotfix-19 Commit 3 — Bug #4 inventario", () => {
-  it("Test 1: cifras actualizadas (PR3 6/60, PSE3 55/126, Crux 42/50, PSE4 19/80)", () => {
-    expect(INVENTORY).toContain("Total disponibles: 6 de 60");
-    expect(INVENTORY).toContain("Total disponibles E3: 55 de 126");
-    expect(INVENTORY).toContain("Total disponibles: 42 de 50");
-    // PSE4 ya estaba 19/80 — verificacion de que no rompimos
-    expect(INVENTORY).toMatch(/19[\s\S]{0,20}80/);
+  it("Test 1: inventario fallback SIN totales agregados hardcodeados (Sprint0 PR-E)", () => {
+    // Doctrina v1.1: el Sheet en vivo es el dueño único de los conteos.
+    // Las cifras agregadas del snapshot drifteaban (42 vs 43, 6 vs 13,
+    // 55 vs 63) — se eliminaron; queda la nota CONTEOS al tope.
+    expect(INVENTORY).not.toMatch(/Total disponibles/);
+    expect(INVENTORY).not.toContain("% vendido — urgencia real");
+    expect(INVENTORY).toContain("CONTEOS (doctrina v1.1)");
+    expect(INVENTORY).toContain("el Sheet en vivo es el dueño único");
   });
 
   it("Test 2: SUPERVISOR_PROMPT mini-fichas SIN conteos hardcoded (Sprint0-delta)", () => {
@@ -47,9 +49,6 @@ describe("Hotfix-19 Commit 3 — Bug #4 inventario", () => {
   });
 
   it("Test 3: cifras viejas removidas (no quedan rastros del prompt anterior)", () => {
-    expect(INVENTORY).not.toContain("Total disponibles: 13 de 60");
-    expect(INVENTORY).not.toContain("Total disponibles E3: 63 de 126");
-    expect(INVENTORY).not.toContain("Total disponibles: 43 de 50");
     expect(SUPERVISOR_PROMPT).not.toContain("US$156K, 13/60");
     expect(SUPERVISOR_PROMPT).not.toContain("US$73K, 63/126");
   });
