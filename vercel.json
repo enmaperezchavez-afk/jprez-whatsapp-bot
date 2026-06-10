@@ -5,7 +5,7 @@
       "src": "api/webhook.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ".claude/skills/**/*.md"
+        "includeFiles": "{.claude/skills/**/*.md,data/icdv-history.json}"
       }
     },
     {

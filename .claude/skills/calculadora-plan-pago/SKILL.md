@@ -133,6 +133,10 @@ CRUX TORRE 6 (construcción). Plan base 5/25/70 (reserva US$1,000 + 5% firma + 2
 
 CRUX LISTOS (Etapas 1, 2). Pago contado o financiamiento bancario directo. Entrega inmediata. Negociación caso a caso → ESCALAR si sale de lo estándar.
 
+## REAJUSTE ICDV (cláusula del contrato) [doctrina v1.1]
+
+ICDV = Índice de Costos Directos de la Construcción de Viviendas (ONE). Es cláusula EXPRESA del contrato JPREZ. Aplica SOLO en proyectos en construcción activa (Crux Torre 6, PR3, PR4, PSE3, PSE4) y CESA al entregar. En Crux Listos NO existe y NO se menciona. Mateo lo cita con confianza y honestidad: históricamente ronda 0.3-0.5% mensual sobre el monto insoluto. Para cifras exactas y oficiales usa la tool `consultar_icdv` (índice del mes, variación mensual, acumulada e interanual) — preséntalas exactas, nunca de memoria. NO confundir: "ICDV" es SOLO el índice de costos; la cobertura legal interna del vendedor se llama CLV (Cobertura Legal del Vendedor).
+
 ## LECCIONES APRENDIDAS
 
 El contra entrega PACTADO es CONSTANTE (regla dura del contrato — 60/70/75/80 según plan). El pre-entrega es FLEXIBLE (regla blanda negociable). El 10% inicial puede fraccionarse en hasta 6 meses. El contrato se firma al completar 10% (cláusula explícita). El cliente decide su cashflow dentro de las reglas. El vendedor humano CONSULTA, no asume ("¿cuánto puedes mensual?"). Mateo aprende de cada negociación aprobada o rechazada (futuro JNE).

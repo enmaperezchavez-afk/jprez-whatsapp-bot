@@ -3,22 +3,18 @@
 // Scraper ICDV — Tool Use de Anthropic
 // ============================================
 //
-// Mismo patrón que src/tools/market.js: schema + handler que lee de
-// disco (data/icdv-history.json), escrito por el cron de api/icdv.js.
+// Mismo patrón que src/tools/market.js: schema + handler.
 //
-// IMPORTANTE — NO se importa desde message.js todavía. Sigue el precedente
-// de market.js: el schema queda listo como drop-in, pero NO se agrega al
-// array TOOLS de src/handlers/message.js hasta una activación deliberada
-// (Fase 2). Cablearlo a Mateo es un PR de 3 líneas:
-//   const { TOOL_CONSULTAR_ICDV } = require("../tools/icdv");
-//   const TOOLS = [...existing, TOOL_CONSULTAR_ICDV];
-//   case "consultar_icdv": return await consultarICDV(input);
+// ACTIVADA en Sprint0 PR-D (Fase 2 del Bloque 3): cableada al array TOOLS
+// de src/handlers/message.js. El ICDV lo publica la ONE SOLO como PDF
+// mensual; el scraper de src/services/icdv-scraper.js lo extrae y el cron
+// de api/icdv.js acumula la serie en Redis (icdv:series:store).
 //
-// FUENTE DE DATOS:
-//   data/icdv-history.json (seed committeado + refresh por cron). El ICDV
-//   lo publica la ONE SOLO como PDF mensual; el scraper de
-//   src/services/icdv-scraper.js lo extrae y acumula la serie histórica
-//   que la ONE no ofrece en ningún formato leíble por máquina.
+// FUENTE DE DATOS (Sprint0 PR-D): primero la serie VIVA vía loadSerie de
+// api/icdv.js (cache Redis → store del cron → seed disco → mock); fallback
+// final el seed data/icdv-history.json directo. Antes el handler leía SOLO
+// el seed de disco — habría servido datos stale para siempre después del
+// primer cron real.
 
 const fs = require("fs");
 const path = require("path");
@@ -88,14 +84,31 @@ function resumenEntry(e) {
   };
 }
 
+// loadLiveSerie: intenta la serie viva (Redis cache → store del cron →
+// seed → mock) vía api/icdv.js. Devuelve el doc solo si trae serie con
+// datos; null ante cualquier fallo (el caller cae al seed de disco).
+// deps inyectables para tests.
+async function loadLiveSerie(deps = {}) {
+  try {
+    const getRedis = deps.getRedis || require("../store/redis").getRedis;
+    const loadSerie = deps.loadSerie || require("../../api/icdv.js").loadSerie;
+    const doc = await loadSerie(await getRedis());
+    if (doc && Array.isArray(doc.serie) && doc.serie.length > 0) return doc;
+    return null;
+  } catch (e) {
+    console.error("[tool:icdv] loadSerie falló, uso seed de disco:", e.message);
+    return null;
+  }
+}
+
 // consultarICDV: handler de tool_use. input ya viene validado por el SDK
 // contra el schema. Devuelve JSON estructurado que Mateo serializa en
 // prosa.
-async function consultarICDV(input) {
+async function consultarICDV(input, deps = {}) {
   const detalle = (input && input.detalle) || "resumen";
   const meses = Math.max(1, Math.min(24, (input && input.meses) || 6));
 
-  const data = readIcdvData();
+  const data = (await loadLiveSerie(deps)) || readIcdvData();
   if (!data || !Array.isArray(data.serie) || data.serie.length === 0) {
     return {
       ok: false,
@@ -137,7 +150,8 @@ async function consultarICDV(input) {
 module.exports = {
   TOOL_CONSULTAR_ICDV,
   consultarICDV,
-  // Helper expuesto para testing — permite mockear el JSON sin tocar disco.
+  // Helpers expuestos para testing — permiten mockear sin tocar disco/Redis.
   readIcdvData,
   resumenEntry,
+  loadLiveSerie,
 };

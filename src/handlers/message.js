@@ -57,6 +57,7 @@ const { cleanFormat } = require("./format-postprocess");
 const { stripParameterBlocks, stripInternalBlocks } = require("./parameter-block-cleaner");
 const adminTesting = require("../admin-testing-mode");
 const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
+const { TOOL_CONSULTAR_ICDV, consultarICDV } = require("../tools/icdv");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -345,6 +346,10 @@ const TOOLS = [
       required: ["tipo", "proyecto"],
     },
   },
+  // Sprint0 PR-D: Fase 2 del scraper ICDV — tool activada (era skeleton
+  // drop-in desde Bloque 3). Cifras oficiales ONE para justificar el
+  // reajuste de costos con datos exactos.
+  TOOL_CONSULTAR_ICDV,
 ];
 
 // Bloque 2: handler del tool enviar_documento. Genera/resuelve la URL del
@@ -851,6 +856,8 @@ async function processMessage(body) {
           phone: senderPhone,
           storageKey,
         }),
+        // Sprint0 PR-D: índice de costos ONE (serie viva Redis → seed disco).
+        consultar_icdv: (input) => consultarICDV(input),
       },
     });
 
