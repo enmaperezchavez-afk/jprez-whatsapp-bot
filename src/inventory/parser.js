@@ -14,9 +14,27 @@
 
 const VALID_ESTADOS = new Set(["disponible", "reservado", "vendido", "bloqueado"]);
 
+// Hotfix-31: manejo de coma. Antes la coma se eliminaba junto con el resto
+// de caracteres no numéricos, así que "240,16" (coma decimal) se convertía
+// en 24016 — error 100x silencioso en precios. Heurística: si la última
+// coma va seguida de 1-2 dígitos al final y está después del último punto,
+// es decimal ("240,16", "1.250,50"); si no, es separador de miles
+// ("1,250.50", "95,000") y se elimina.
 function toNumber(value) {
   if (value == null || value === "") return null;
-  const cleaned = String(value).replace(/[^\d.-]/g, "");
+  let cleaned = String(value).replace(/[^\d.,\-]/g, "");
+  const lastComma = cleaned.lastIndexOf(",");
+  if (lastComma !== -1) {
+    const lastDot = cleaned.lastIndexOf(".");
+    if (lastComma > lastDot && /,\d{1,2}$/.test(cleaned)) {
+      cleaned =
+        cleaned.slice(0, lastComma).replace(/[.,]/g, "") +
+        "." +
+        cleaned.slice(lastComma + 1);
+    } else {
+      cleaned = cleaned.replace(/,/g, "");
+    }
+  }
   if (cleaned === "" || cleaned === "-" || cleaned === ".") return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
