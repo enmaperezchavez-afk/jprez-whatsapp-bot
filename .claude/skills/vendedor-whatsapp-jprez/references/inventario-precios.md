@@ -79,7 +79,7 @@ Total disponibles: 42 de 50.
 
 ## PRADO RESIDENCES III
 
-Entrega: Agosto 2026. Plan normal: 10% separación más 30% cuotas más 60% contra entrega. Todas las unidades son 1 hab, 1 baño, 1 parqueo, e incluyen electrodomésticos y A/A.
+Entrega: Agosto 2026. Plan normal: 10% inicial más 30% cuotas más 60% contra entrega. Todas las unidades son 1 hab, 1 baño, 1 parqueo, e incluyen electrodomésticos y A/A.
 
 ### Unidades disponibles
 
@@ -115,7 +115,7 @@ Total disponibles: 6 de 60.
 
 ## PRADO RESIDENCES IV
 
-Ubicación: Evaristo Morales. Entrega: Agosto 2027. Plan normal: 10% separación más 30% cuotas más 60% contra entrega.
+Ubicación: Evaristo Morales. Entrega: Agosto 2027. Plan normal: 10% inicial más 30% cuotas más 60% contra entrega.
 
 ### Tipos
 
@@ -161,7 +161,7 @@ Total disponibles: 13 de 72.
 
 ## PRADO SUITES PUERTO PLATA
 
-Ubicación: Puerto Plata, frente a Playa Dorada. Plan de pago normal (siempre, todas las etapas): 10% separación más 30% cuotas durante construcción más 60% contra entrega.
+Ubicación: Puerto Plata, frente a Playa Dorada. Plan de pago normal (siempre, todas las etapas): 10% inicial más 30% cuotas durante construcción más 60% contra entrega.
 
 ### ERROR COMÚN A EVITAR — Precios y tamaños por tipo
 
