@@ -34,11 +34,16 @@ describe("Hotfix-19 Commit 3 — Bug #4 inventario", () => {
     expect(INVENTORY).toMatch(/19[\s\S]{0,20}80/);
   });
 
-  it("Test 2: SUPERVISOR_PROMPT mini-fichas alineadas con inventario", () => {
-    expect(SUPERVISOR_PROMPT).toContain("PR3 - Churchill: Equipado, desde US$156K, 6/60");
-    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E3: Desde US$73K, 55/126");
-    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E4: Desde US$163K, 19/80");
-    expect(SUPERVISOR_PROMPT).toContain("US$140K hasta US$310K, 13/72"); // PR4 sin cambio
+  it("Test 2: SUPERVISOR_PROMPT mini-fichas SIN conteos hardcoded (Sprint0-delta)", () => {
+    // Sprint0-delta: los conteos se des-hardcodearon — drifteaban del Sheet
+    // (6/60 vs 13 listadas, 42/50 vs 43). El supervisor usa /inventario.
+    expect(SUPERVISOR_PROMPT).toContain("PR3 - Churchill: Equipado, desde US$156K, entrega agosto 2026");
+    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E3: Desde US$73K, entrega marzo 2029");
+    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E4: Desde US$163K, entrega diciembre 2027");
+    expect(SUPERVISOR_PROMPT).toContain("usa /inventario");
+    // Ningún conteo N/M en las fichas de proyectos.
+    const fichas = SUPERVISOR_PROMPT.slice(SUPERVISOR_PROMPT.indexOf("PROYECTOS ACTIVOS"));
+    expect(fichas).not.toMatch(/\d+\/\d+ (disponibles|quedan)/);
   });
 
   it("Test 3: cifras viejas removidas (no quedan rastros del prompt anterior)", () => {

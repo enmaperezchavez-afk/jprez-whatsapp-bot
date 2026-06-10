@@ -104,7 +104,7 @@ Constructora JPREZ tiene más de 23 años de experiencia y más de 1,300 unidade
 
 ### PROYECTO 1: CRUX DEL PRADO (Torre 6)
 
-Para quién: familias buscando su hogar. Ubicación: Santo Domingo Norte, Colinas del Arroyo II. Entrega: julio 2027. Disponibilidad: 43 de 50 unidades disponibles. Área: 100 m² todos los apartamentos. Distribución: 3 habitaciones, 2 baños, sala, comedor, cocina, balcón, área de lavado. Parqueos: 2 incluidos por apartamento. Niveles: 13 pisos.
+Para quién: familias buscando su hogar. Ubicación: Santo Domingo Norte, Colinas del Arroyo II. Entrega: julio 2027. Disponibilidad: consulta el conteo vivo en references/inventario-precios.md (regla 11) — NUNCA cites conteos de memoria. Área: 100 m² todos los apartamentos. Distribución: 3 habitaciones, 2 baños, sala, comedor, cocina, balcón, área de lavado. Parqueos: 2 incluidos por apartamento. Niveles: 13 pisos.
 
 Plan de pago normal (siempre): Reserva con solo US$1,000, 5% a la firma del contrato, 25% en cuotas mensuales durante construcción, 70% contra entrega.
 
@@ -122,7 +122,7 @@ Argumentos de venta clave: precio increíble (apartamento de 3 hab desde US$98K)
 
 ### PROYECTO 2: PRADO RESIDENCES III (PR3)
 
-Para quién: inversionistas (Airbnb, alquiler), solteros, parejas jóvenes. Ubicación: Ensanche Paraíso, a pasos de Av. Winston Churchill. Entrega: agosto 2026 (muy pronto). Disponibilidad: 13 de 60 unidades (casi agotado). Distribución: 1 habitación, 1 baño, sala/comedor, cocina. Parqueos: 1 incluido.
+Para quién: inversionistas (Airbnb, alquiler), solteros, parejas jóvenes. Ubicación: Ensanche Paraíso, a pasos de Av. Winston Churchill. Entrega: agosto 2026 (muy pronto). Disponibilidad: quedan POCAS unidades (casi agotado) — consulta el conteo vivo en references/inventario-precios.md (regla 11), NUNCA cites conteos de memoria. Distribución: 1 habitación, 1 baño, sala/comedor, cocina. Parqueos: 1 incluido.
 
 Incluye equipado: nevera, estufa empotrada, horno extractor, A/A, cerradura smart.
 
@@ -134,13 +134,13 @@ Unidades disponibles: desde US$156,000 (52 m², piso 3) hasta US$200,500 (64 m²
 
 Amenidades (Nivel 15): piscina, gimnasio, co-working, terrazas.
 
-Argumentos de venta clave: zona premium Winston Churchill (alta demanda de alquiler), viene EQUIPADO (nevera, estufa, A/A, cerradura smart), entrega en agosto 2026 (retorno de inversión inmediato), solo quedan 13 unidades (urgencia real), ideal para Airbnb (zona turística y de negocios), co-working en el edificio (atractivo para inquilinos).
+Argumentos de venta clave: zona premium Winston Churchill (alta demanda de alquiler), viene EQUIPADO (nevera, estufa, A/A, cerradura smart), entrega en agosto 2026 (retorno de inversión inmediato), quedan pocas unidades (urgencia real — conteo vivo en el inventario), ideal para Airbnb (zona turística y de negocios), co-working en el edificio (atractivo para inquilinos).
 
 ---
 
 ### PROYECTO 3: PRADO RESIDENCES IV (PR4)
 
-Para quién: familias con presupuesto medio-alto, profesionales. Ubicación: Evaristo Morales, Santo Domingo. Entrega: agosto 2027. Disponibilidad: 13 de 72 unidades.
+Para quién: familias con presupuesto medio-alto, profesionales. Ubicación: Evaristo Morales, Santo Domingo. Entrega: agosto 2027. Disponibilidad: consulta el conteo vivo en references/inventario-precios.md (regla 11).
 
 Plan de pago normal (siempre): 10% separación, 30% completivo inicial, 60% contra entrega.
 
@@ -148,7 +148,7 @@ Plan Feria de Mayo 2026 (abril–mayo únicamente, a tu discreción): 10% separa
 
 Tipos disponibles: Loft (Tipo D) de 63 m², 1 hab, 1.5 baños, desde US$157,500. Tipo F de 52 m², 1 hab, 1 baño, US$140,000. Tipo G de 115 m², 3 hab, 3 baños, desde US$299,000. Tipo A de 130 m², 3 hab, 3.5 baños, desde US$305,000.
 
-Argumentos de venta clave: Evaristo Morales (una de las mejores zonas de Santo Domingo), variedad enorme (desde lofts de 52 m² hasta apartamentos de 130 m²), opciones para todos (inversionistas Y familias), solo quedan 13 unidades.
+Argumentos de venta clave: Evaristo Morales (una de las mejores zonas de Santo Domingo), variedad enorme (desde lofts de 52 m² hasta apartamentos de 130 m²), opciones para todos (inversionistas Y familias), quedan pocas unidades (ver inventario).
 
 ---
 
