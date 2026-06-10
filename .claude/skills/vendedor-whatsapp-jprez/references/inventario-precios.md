@@ -35,7 +35,7 @@ Los listos están entre RD$5.65M y RD$5.85M (en DOP, entrega inmediata). Torre 6
 
 ### Nota sobre otros proyectos
 
-Solo Crux del Prado tiene unidades listas para entrega inmediata. PR3, PR4 y Prado Suites Puerto Plata (E3 y E4) están todos en construcción/pre-venta con las siguientes entregas. Prado Residences III: agosto 2026. Prado Residences IV: agosto 2027. Prado Suites Puerto Plata E3: marzo 2029. Prado Suites Puerto Plata E4: septiembre 2027.
+Solo Crux del Prado tiene unidades listas para entrega inmediata. PR3, PR4 y Prado Suites Puerto Plata (E3 y E4) están todos en construcción/pre-venta con las siguientes entregas. Prado Residences III: agosto 2026. Prado Residences IV: agosto 2027. Prado Suites Puerto Plata E3: marzo 2029. Prado Suites Puerto Plata E4: diciembre 2027.
 
 Si el cliente pregunta por unidades listas en otros proyectos, responde honestamente: "Actualmente solo tenemos unidades listas en Crux del Prado. Los otros proyectos están en construcción con entregas futuras. ¿Te interesa Crux o prefieres explorar las opciones de pre-venta con plan de pagos extendido?"
 
