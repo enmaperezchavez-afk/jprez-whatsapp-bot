@@ -19,6 +19,7 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { STAFF_PHONES } = require("../src/staff");
 const { getRedis } = require("../src/store/redis");
+const { safeEqual } = require("../src/security/safe-compare");
 
 // ============================================
 // CONSTANTES
@@ -234,16 +235,18 @@ async function generateFollowup(history, meta, stage, temperature) {
 
 function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // sin secret configurado, acceso libre (para compatibilidad)
+  // Hotfix-31: fail-closed. Sin CRON_SECRET el endpoint quedaba abierto y
+  // cualquiera podía disparar followups masivos a clientes reales.
+  if (!cronSecret) return false;
   const auth = req.headers.authorization || "";
   const vercelCronAuth = req.headers["x-vercel-cron-authorization"] || "";
-  const querySecret = req.query?.secret;
+  const querySecret = req.query?.secret || "";
   const bearerFormat = "Bearer " + cronSecret;
   return (
-    auth === bearerFormat ||
-    vercelCronAuth === bearerFormat ||
-    vercelCronAuth === cronSecret ||
-    querySecret === cronSecret
+    safeEqual(auth, bearerFormat) ||
+    safeEqual(vercelCronAuth, bearerFormat) ||
+    safeEqual(vercelCronAuth, cronSecret) ||
+    safeEqual(querySecret, cronSecret)
   );
 }
 
@@ -412,3 +415,6 @@ module.exports = async function handler(req, res) {
   console.log("Followup summary:", JSON.stringify(summary));
   return res.status(200).json(summary);
 };
+
+// Export auxiliar para tests (mismo patrón que api/icdv.js).
+module.exports.isAuthorized = isAuthorized;

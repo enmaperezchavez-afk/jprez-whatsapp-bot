@@ -84,11 +84,12 @@ describe("ICDV — api/icdv.js endpoint", () => {
 
 describe("ICDV — auth y detección de cron", () => {
   const { isAuthorized, default: _d } = {};
-  it("isAuthorized: sin CRON_SECRET es libre; con secret exige Bearer", () => {
+  it("isAuthorized: sin CRON_SECRET rechaza (fail-closed Hotfix-31); con secret exige Bearer", () => {
     const mod = require("../api/icdv.js");
     const prev = process.env.CRON_SECRET;
     delete process.env.CRON_SECRET;
-    expect(mod.isAuthorized({ headers: {}, query: {} })).toBe(true);
+    // Hotfix-31: antes era fail-open (true). Sin secret = trigger cerrado.
+    expect(mod.isAuthorized({ headers: {}, query: {} })).toBe(false);
 
     process.env.CRON_SECRET = "s3cr3t";
     expect(mod.isAuthorized({ headers: {}, query: {} })).toBe(false);

@@ -52,7 +52,12 @@ async function handler(req, res) {
     if (hmac.status === "valid") {
       botLog("info", "HMAC valido", { ip: clientIp });
     } else if (hmac.status === "missing_secret") {
-      botLog("warn", "HMAC no validado (META_APP_SECRET ausente)", { ip: clientIp });
+      // Hotfix-31: fail-closed. Sin META_APP_SECRET no podemos verificar que
+      // el request venga de Meta. Antes se aceptaba con warning (fail-open),
+      // lo que dejaba el webhook abierto a requests forjados si la env var
+      // se perdía en un redeploy o ambiente nuevo.
+      botLog("error", "Request rechazado: META_APP_SECRET ausente (fail-closed)", { ip: clientIp });
+      return res.status(401).json({ error: "Unauthorized: webhook signature unverifiable" });
     } else {
       // Fase 2: enforcement activo. Firma invalida o ausente = rechazar con 401.
       // Solo requests firmados correctamente por Meta pueden pasar.

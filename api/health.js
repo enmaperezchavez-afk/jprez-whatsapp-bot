@@ -34,6 +34,7 @@
 const { Ratelimit } = require("@upstash/ratelimit");
 const { Redis } = require("@upstash/redis");
 const { botLog } = require("../src/log");
+const { safeEqual } = require("../src/security/safe-compare");
 
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "jprez-bot";
 const AXIOM_APL_URL = "https://api.axiom.co/v1/datasets/_apl?format=tabular";
@@ -222,10 +223,11 @@ module.exports = async function handler(req, res) {
   const providedToken = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7)
     : null;
+  // Hotfix-31: comparación timing-safe (=== permite timing attacks).
   let tokenSource = null;
-  if (providedToken && providedToken === expectedToken) {
+  if (safeEqual(providedToken || "", expectedToken)) {
     tokenSource = "current";
-  } else if (providedToken && expectedTokenPrev && providedToken === expectedTokenPrev) {
+  } else if (expectedTokenPrev && safeEqual(providedToken || "", expectedTokenPrev)) {
     tokenSource = "prev";
   }
   if (!tokenSource) {

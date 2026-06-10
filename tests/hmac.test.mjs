@@ -100,7 +100,7 @@ describe("HMAC validation (webhook POST)", () => {
     expect(res._body).toBeNull();
   });
 
-  it("Test 4: META_APP_SECRET AUSENTE (modo dev) → warning + procesa 200", async () => {
+  it("Test 4: META_APP_SECRET AUSENTE → fail-closed 401 (Hotfix-31)", async () => {
     delete process.env.META_APP_SECRET;
     const body = "{}";
     const req = makeReq({ body, signature: undefined });
@@ -108,8 +108,11 @@ describe("HMAC validation (webhook POST)", () => {
 
     await handler(req, res);
 
-    // En modo dev (sin secret) el código loguea warning y sigue procesando
-    expect(res.statusCode).toBe(200);
-    expect(res._body).toBe("EVENT_RECEIVED");
+    // Hotfix-31: sin secret no se puede verificar la firma → rechazar.
+    // Antes era fail-open (200 con warning), un bypass total si la env
+    // var desaparecía en un redeploy.
+    expect(res.statusCode).toBe(401);
+    expect(res._json).toEqual({ error: "Unauthorized: webhook signature unverifiable" });
+    expect(res._body).toBeNull();
   });
 });
