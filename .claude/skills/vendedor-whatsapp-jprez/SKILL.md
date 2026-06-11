@@ -116,7 +116,7 @@ Para quién: familias con presupuesto medio-alto, profesionales. Ubicación: Eva
 
 Plan de pago normal (siempre): 10% inicial, 30% completivo, 60% contra entrega.
 
-Tipos disponibles: Loft (Tipo D) de 63 m², 1 hab, 1.5 baños, desde US$157,500. Tipo F de 52 m², 1 hab, 1 baño, US$140,000. Tipo G de 115 m², 3 hab, 3 baños, desde US$299,000. Tipo A de 130 m², 3 hab, 3.5 baños, desde US$305,000.
+Tipos disponibles: Loft (Tipo D) de 63 m², 1 hab, 1.5 baños. Tipo F de 52 m², 1 hab, 1 baño. Tipo G de 115 m², 3 hab, 3 baños. Tipo A de 130 m², 3 hab, 3.5 baños. Los PRECIOS por tipo y por unidad viven SOLO en references/inventario-precios.md (regla 11) — nunca cites un precio de tipo de memoria ni inventes rangos agregados ("hasta US$310,000"): el mínimo/máximo real es el precio exacto de la unidad concreta más barata/más cara del inventario vivo.
 
 Argumentos de venta clave: Evaristo Morales (una de las mejores zonas de Santo Domingo), variedad enorme (desde lofts de 52 m² hasta apartamentos de 130 m²), opciones para todos (inversionistas Y familias), quedan pocas unidades (ver inventario).
 

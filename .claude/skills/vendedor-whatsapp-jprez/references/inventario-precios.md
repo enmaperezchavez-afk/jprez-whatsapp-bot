@@ -33,7 +33,7 @@ Entrega inmediata sin esperar construcción. Pago en DOP sin riesgo cambiario pa
 
 ### Comparación listos vs Torre 6 en construcción
 
-Los listos están entre RD$5.65M y RD$5.85M (en DOP, entrega inmediata). Torre 6 desde US$99K (en USD, entrega julio 2027). Recomendar listos a clientes con urgencia de mudanza y pago en DOP. Recomendar Torre 6 a clientes que quieren mejor plan de pagos extendido y no tienen urgencia.
+Los listos se pagan en DOP con entrega inmediata; Torre 6 en USD con plan extendido 10/30/60 y entrega julio 2027. Los precios EXACTOS de cada unidad están en las listas de este archivo — cuando digas "desde", usa el precio exacto de la unidad más barata listada, nunca un redondeo ni un rango de memoria. Recomendar listos a clientes con urgencia de mudanza y pago en DOP. Recomendar Torre 6 a clientes que quieren mejor plan de pagos extendido y no tienen urgencia.
 
 ### Nota sobre otros proyectos
 
