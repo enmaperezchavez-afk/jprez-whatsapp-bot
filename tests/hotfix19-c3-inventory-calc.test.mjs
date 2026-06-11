@@ -42,9 +42,12 @@ describe("Hotfix-19 Commit 3 — Bug #4 inventario", () => {
   it("Test 2: SUPERVISOR_PROMPT mini-fichas SIN conteos hardcoded (Sprint0-delta)", () => {
     // Sprint0-delta: los conteos se des-hardcodearon — drifteaban del Sheet
     // (6/60 vs 13 listadas, 42/50 vs 43). El supervisor usa /inventario.
-    expect(SUPERVISOR_PROMPT).toContain("PR3 - Churchill: Equipado, desde US$156K, entrega agosto 2026");
-    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E3: Desde US$73K, entrega marzo 2029");
-    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E4: Desde US$163K, entrega diciembre 2027");
+    // Sprint1.8 PR-3: tambien los PRECIOS se des-hardcodearon (el US$310K/
+    // US$163K fantasma del 11 jun salia de aqui). Fichas sin cifras:
+    expect(SUPERVISOR_PROMPT).toContain("PR3 - Churchill: Equipado, entrega agosto 2026");
+    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E3: entrega marzo 2029");
+    expect(SUPERVISOR_PROMPT).toContain("Puerto Plata E4: entrega diciembre 2027");
+    expect(SUPERVISOR_PROMPT).toMatch(/NO cites conteos NI precios de memoria/);
     expect(SUPERVISOR_PROMPT).toContain("usa /inventario");
     // Ningún conteo N/M en las fichas de proyectos.
     const fichas = SUPERVISOR_PROMPT.slice(SUPERVISOR_PROMPT.indexOf("PROYECTOS ACTIVOS"));

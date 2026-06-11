@@ -20,6 +20,9 @@
 //     didWrite = true si escribió Sheet (caller invalida cache Redis)
 
 const { toNumber } = require("./parser");
+// Sprint1.8 PR-3: montos con formato en confirmaciones ("US$95,000",
+// no "95000"). natural-admin no requiere este módulo (sin ciclo).
+const { formatMonto } = require("./natural-admin");
 
 const VALID_PROJECTS = {
   pr3: "PR3",
@@ -147,7 +150,9 @@ async function executeAdminCommand(parsed, ctx) {
 
   if (error === "missing_project") {
     return {
-      reply: "¿En cuál proyecto? " + VALID_PROJECT_KEYS_LIST,
+      reply:
+        "¿En cuál proyecto? " + VALID_PROJECT_KEYS_LIST +
+        '\n(También puedes decirlo natural: "reserva el 15-102 de puerto plata etapa 4")',
       didWrite: false,
     };
   }
@@ -260,16 +265,18 @@ async function executeAdminCommand(parsed, ctx) {
     };
   }
 
-  // Construir confirmación según comando
+  // Construir confirmación según comando. Montos SIEMPRE formateados
+  // (Sprint1.8 PR-3): "US$95,000", no "95000". Crux Listos va en RD$.
+  const moneda = parsed.tab === "CRUX_LISTOS" ? "RD$" : "US$";
   let confirm;
   if (command === "reservar") {
     confirm = "✅ " + parsed.tab + " " + unit + " marcada como reservada.";
   } else if (command === "vender") {
     confirm = "✅ " + parsed.tab + " " + unit + " marcada como vendida.";
   } else if (command === "liberar") {
-    confirm = "✅ " + parsed.tab + " " + unit + " liberada en " + price + ".";
+    confirm = "✅ " + parsed.tab + " " + unit + " liberada en " + formatMonto(price, moneda) + ".";
   } else if (command === "precio") {
-    confirm = "✅ Precio de " + parsed.tab + " " + unit + " actualizado a " + price + ".";
+    confirm = "✅ Precio de " + parsed.tab + " " + unit + " actualizado a " + formatMonto(price, moneda) + ".";
   }
 
   // Invalidar cache Redis para que el próximo cliente vea el cambio

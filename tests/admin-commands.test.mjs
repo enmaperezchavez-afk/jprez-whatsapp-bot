@@ -211,7 +211,8 @@ describe("Bloque 1 Fase 3.5 — admin commands executor", () => {
     const result = await executeAdminCommand(parsed, newCtx());
     expect(result.didWrite).toBe(true);
     expect(result.reply).toContain("liberada");
-    expect(result.reply).toContain("99000");
+    // Sprint1.8 PR-3: montos formateados en confirmaciones.
+    expect(result.reply).toContain("US$99,000");
     // 2 writes: status + price
     expect(sheetsWriterCalls.length).toBe(2);
     expect(sheetsWriterCalls[0]).toMatchObject({
@@ -233,7 +234,7 @@ describe("Bloque 1 Fase 3.5 — admin commands executor", () => {
     const result = await executeAdminCommand(parsed, newCtx());
     expect(result.didWrite).toBe(true);
     expect(result.reply).toContain("Precio");
-    expect(result.reply).toContain("200000");
+    expect(result.reply).toContain("US$200,000");
     expect(sheetsWriterCalls).toEqual([
       {
         op: "price",
