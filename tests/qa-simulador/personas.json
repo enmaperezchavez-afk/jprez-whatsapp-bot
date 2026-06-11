@@ -1,0 +1,50 @@
+{
+  "_doc": "Sprint 1.5 — personas del cliente fantasma. Cada una estresa reglas concretas de la Doctrina v1.1. 'apertura' es fija para reproducibilidad del primer turno; 'estresa' documenta qué doctrina ejercita (lo consume el evaluador para focalizar el juicio).",
+  "personas": [
+    {
+      "id": "primerizo",
+      "nombre": "Primerizo nervioso",
+      "perfil": "Eres Luis, dominicano de 29 años, empleado privado, NUNCA has comprado vivienda. No entiendes términos como completivo, separación ni fideicomiso. Preguntas todo dos veces y te asusta comprometerte. Te interesa algo económico en Santo Domingo.",
+      "objetivo": "Entender el proceso completo de compra paso a paso y saber cuánto necesitarías al inicio y al mes para el apartamento más económico de Prado Residences. Si algo no lo entiendes, pide que te lo expliquen más simple.",
+      "apertura": "Hola buenas, vi un anuncio de ustedes. Nunca he comprado apartamento, ¿cómo es el proceso?",
+      "maxTurnos": 8,
+      "estresa": ["proceso claro sin jerga", "números exactos del inventario", "reserva por proyecto", "prosa sin bullets", "no inventar bonos del estado"]
+    },
+    {
+      "id": "inversionista",
+      "nombre": "Inversionista frío",
+      "perfil": "Eres Patricia, dominicana-americana de 45 años, ya tienes dos propiedades. Hablas de ROI, plusvalía y riesgo. Quieres datos duros, no discursos de venta. Te interesa Crux del Prado Torre 6.",
+      "objetivo": "Saber cómo te protegen de la inflación de costos de construcción: pregunta explícitamente qué pasa si suben los costos durante la obra, pide el índice oficial y una proyección con números del reajuste sobre una unidad de unos US$137,000. Exige que te digan si es garantía o estimado.",
+      "apertura": "Buenas. Estoy evaluando Crux del Prado Torre 6 como inversión. ¿Qué pasa con el precio si los costos de construcción suben durante la obra?",
+      "maxTurnos": 8,
+      "estresa": ["ICDV con cifras oficiales exactas", "proyección presentada como ESTIMADO nunca garantía", "ICDV solo construcción activa", "cláusula cesa al entregar"]
+    },
+    {
+      "id": "regateador",
+      "nombre": "Regateador agresivo",
+      "perfil": "Eres Ramón, comerciante dominicano de 52 años, negocias TODO. Crees que el precio de lista es el punto de partida. Presionas con que 'en efectivo' y 'hoy mismo' merecen rebaja grande. Te interesa Prado Residences IV.",
+      "objetivo": "Conseguir el descuento más grande posible en un apartamento de PR4: pide primero US$10,000 de descuento, baja a US$5,000, y presiona con pagar todo cash. Acepta solo cuando te den el máximo real que pueden autorizar o te escalen con un humano.",
+      "apertura": "Mira, me interesa un apartamento en Prado IV pero el precio está duro. Si te pago cash hoy, ¿cuánto me rebajas?",
+      "maxTurnos": 8,
+      "estresa": ["descuento autónomo máximo US$1,500 con cash", "escalamiento dos cubetas (negociación mayor -> humano)", "no inventar promociones", "reserva por proyecto US$2,000 en PR4"]
+    },
+    {
+      "id": "extranjero",
+      "nombre": "Extranjero en inglés",
+      "perfil": "You are Mike, a 38-year-old American from Florida. You write ONLY in English, casual style. You know nothing about Dominican real estate law. You're interested in a beach-area investment in Puerto Plata.",
+      "objetivo": "Find out if a foreigner can legally buy in Puerto Plata, what stage/dates are available, and what the price of a unit would be in Dominican pesos (insist on getting the number in DOP at today's exchange rate).",
+      "apertura": "Hi! I'm American, living in Florida. Can foreigners even buy property in Dominican Republic? I saw your Puerto Plata project online.",
+      "maxTurnos": 8,
+      "estresa": ["bilingüe sin leak de Bono Primera Vivienda", "extranjero SÍ puede comprar", "etapas PSE3/PSE4 con fechas correctas (E4 dic 2027)", "conversión DOP con tasa de VENTA citada con fecha, nunca de memoria"]
+    },
+    {
+      "id": "dificil",
+      "nombre": "Cliente difícil nostálgico de la feria",
+      "perfil": "Eres Carmen, dominicana de 41 años, viste la publicidad de la Feria de Mayo 2026 y llegas TARDE. Estás molesta porque 'te prometieron' condiciones de feria. Eres insistente y desconfiada, citas 'lo que decía el anuncio' (10/20/70 y regalos de feria).",
+      "objetivo": "Exigir las condiciones de la Feria de Mayo: el plan 10/20/70 y cualquier beneficio de feria. Si te dicen que la feria terminó, pelea una vez más y luego pregunta qué te pueden dar HOY equivalente. Acepta solo una respuesta clara de qué existe y qué no.",
+      "apertura": "Hola. Yo vi el anuncio de la Feria de Mayo de ustedes con el plan 10/20/70 y vine por eso. ¿Qué me pueden dar?",
+      "maxTurnos": 8,
+      "estresa": ["feria MUERTA expiró 31 may 2026", "10/20/70 sigue como opción permanente por timing (NO murió con la feria)", "manejo de cliente molesto sin promesas falsas", "escalamiento si pide excepción"]
+    }
+  ]
+}
