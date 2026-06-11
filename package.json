@@ -21,6 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e-suite": "vitest run --config tests/e2e-suite/vitest.config.mjs",
-    "test:e2e-suite:report": "vitest run --config tests/e2e-suite/vitest.config.mjs --reporter=verbose"
+    "test:e2e-suite:report": "vitest run --config tests/e2e-suite/vitest.config.mjs --reporter=verbose",
+    "qa:simulador": "node tests/qa-simulador/run.mjs",
+    "qa:simulador:ci": "node tests/qa-simulador/run.mjs --ci"
   }
 }
