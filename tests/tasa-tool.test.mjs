@@ -1,10 +1,8 @@
-// Sprint 1 PR-1 — tool consultar_tasa_dolar: skeleton drop-in, NO cableada.
+// Sprint 1 PR-1 — tool consultar_tasa_dolar (PR-2: Fase 2 ACTIVADA).
 //
-// Disciplina del Bloque 3 / ICDV Fase 1: la tool queda lista pero NO se
-// conecta a TOOLS[] de message.js hasta la Fase 2 (cablear toca prompt
-// budget y comportamiento de Mateo — decisión aparte). El test de
-// disciplina se INVERTIRÁ cuando la Fase 2 la active, igual que pasó con
-// el ICDV en Sprint0 PR-D.
+// PR-1 la dejó como skeleton drop-in (disciplina Bloque 3 / ICDV Fase 1);
+// PR-2 la cableó a TOOLS[] de message.js — el test de disciplina de abajo
+// se invirtió en ese momento, igual que pasó con el ICDV en Sprint0 PR-D.
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
@@ -102,11 +100,29 @@ describe("TASA — src/tools/tasa.js schema (drop-in para Fase 2)", () => {
   });
 });
 
-describe("TASA — disciplina Fase 1: NO cableada a Mateo", () => {
-  it("consultar_tasa_dolar NO está en TOOLS[] de message.js (se activa en Fase 2)", () => {
+describe("TASA — Fase 2 ACTIVADA (Sprint1 PR-2): tool cableada a Mateo", () => {
+  it("consultar_tasa_dolar está en TOOLS[] de message.js con su handler", () => {
     const messageHandler = readFileSync("src/handlers/message.js", "utf8");
-    expect(messageHandler).not.toContain("TOOL_CONSULTAR_TASA");
-    expect(messageHandler).not.toContain("consultar_tasa_dolar");
-    expect(messageHandler).not.toContain('require("../tools/tasa")');
+    expect(messageHandler).toContain("TOOL_CONSULTAR_TASA");
+    expect(messageHandler).toMatch(
+      /consultar_tasa_dolar:\s*\(input\)\s*=>\s*consultarTasaDolar\(input\)/
+    );
+    expect(messageHandler).toContain('require("../tools/tasa")');
+  });
+
+  it("la doctrina de conversión a pesos vive en la calculadora SKILL (no en OVERRIDES)", () => {
+    const skill = readFileSync(".claude/skills/calculadora-plan-pago/SKILL.md", "utf8");
+    expect(skill).toContain("consultar_tasa_dolar");
+    expect(skill).toMatch(/tasa de VENTA/i);
+    expect(skill).toMatch(/fecha/i);
+    // Decisión Vegeta Sprint1: el OVERRIDES (19,998/20,000) NO se toca.
+    const overrides = readFileSync("src/prompts/overrides-layer.js", "utf8");
+    expect(overrides).not.toContain("consultar_tasa_dolar");
+  });
+
+  it("regla 13 del vendedor apunta a la tool, no a 'búsqueda web'", () => {
+    const vendedor = readFileSync(".claude/skills/vendedor-whatsapp-jprez/SKILL.md", "utf8");
+    expect(vendedor).toContain("consultar_tasa_dolar");
+    expect(vendedor).not.toMatch(/herramienta de búsqueda web o API de tipo de cambio/);
   });
 });

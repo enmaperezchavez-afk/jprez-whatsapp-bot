@@ -58,6 +58,7 @@ const { stripParameterBlocks, stripInternalBlocks } = require("./parameter-block
 const adminTesting = require("../admin-testing-mode");
 const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 const { TOOL_CONSULTAR_ICDV, consultarICDV } = require("../tools/icdv");
+const { TOOL_CONSULTAR_TASA, consultarTasaDolar } = require("../tools/tasa");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -350,6 +351,10 @@ const TOOLS = [
   // drop-in desde Bloque 3). Cifras oficiales ONE para justificar el
   // reajuste de costos con datos exactos.
   TOOL_CONSULTAR_ICDV,
+  // Sprint1 PR-2: Fase 2 del scraper de tasa — tool activada (era skeleton
+  // drop-in de PR-1). Tasa USD/DOP oficial BCRD para conversiones a pesos
+  // (regla 13 del vendedor: tasa del día, nunca de memoria).
+  TOOL_CONSULTAR_TASA,
 ];
 
 // Bloque 2: handler del tool enviar_documento. Genera/resuelve la URL del
@@ -858,6 +863,9 @@ async function processMessage(body) {
         }),
         // Sprint0 PR-D: índice de costos ONE (serie viva Redis → seed disco).
         consultar_icdv: (input) => consultarICDV(input),
+        // Sprint1 PR-2: tasa USD/DOP oficial BCRD (store del cron en Redis;
+        // sin dato degrada con ok:false y Mateo escala, nunca inventa tasa).
+        consultar_tasa_dolar: (input) => consultarTasaDolar(input),
       },
     });
 
