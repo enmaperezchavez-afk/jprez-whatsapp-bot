@@ -52,7 +52,7 @@ describe("Hotfix-11 — admin-testing-mode usa getRedis compartido (Redis dual)"
     expect(content).not.toContain("let redisClient");
   });
 
-  it("las 4 llamadas a getRedis() están awaiteadas (el shared es async)", async () => {
+  it("las 6 llamadas a getRedis() están awaiteadas (el shared es async)", async () => {
     const content = await readFile(ADMIN_TESTING_PATH, "utf-8");
 
     // Quitar comentarios para evitar matches falsos en docstrings
@@ -60,10 +60,11 @@ describe("Hotfix-11 — admin-testing-mode usa getRedis compartido (Redis dual)"
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/.*$/gm, "");
 
-    // Exactamente 4 llamadas await getRedis() — una por cada función pública
-    // que toca Redis: isActive, activate, deactivate, getStatus.
+    // Exactamente 6 llamadas await getRedis() — una por cada función pública
+    // que toca Redis: isActive, activate, deactivate, getStatus +
+    // consumeExpiredFlag y renewIfActive (Hotfix-32).
     const awaitedCalls = codeOnly.match(/await\s+getRedis\(\)/g) || [];
-    expect(awaitedCalls.length).toBe(4);
+    expect(awaitedCalls.length).toBe(6);
 
     // CERO llamadas sin await (regresión común al editar este archivo).
     // Buscamos `getRedis()` que NO esté precedido de `await ` (con boundary
