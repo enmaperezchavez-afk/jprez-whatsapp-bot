@@ -60,6 +60,7 @@ const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 const { TOOL_CONSULTAR_ICDV, consultarICDV } = require("../tools/icdv");
 const { TOOL_CONSULTAR_TASA, consultarTasaDolar } = require("../tools/tasa");
 const { TOOL_PROYECTAR_REAJUSTE, proyectarReajusteTool } = require("../tools/reajuste");
+const { TOOL_GENERAR_PLAN_XLSX, generarPlanXlsxTool } = require("../tools/plan-xlsx");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -360,6 +361,9 @@ const TOOLS = [
   // cláusula de reajuste sobre el insoluto (doctrina v1.1 sección 6).
   // Tool hermana de calcular_plan_pago, nunca garantía.
   TOOL_PROYECTAR_REAJUSTE,
+  // Sprint1 PR-4: Excel del plan de pago por WhatsApp (URL firmada 7d,
+  // generado al vuelo en /api/plan-xlsx, cero storage).
+  TOOL_GENERAR_PLAN_XLSX,
 ];
 
 // Bloque 2: handler del tool enviar_documento. Genera/resuelve la URL del
@@ -880,6 +884,23 @@ async function processMessage(body) {
             etapa = inferEtapaFromContext(userMessage);
           }
           return proyectarReajusteTool({ ...input, etapa }, { calcularPlanPago });
+        },
+        // Sprint1 PR-4: Excel del plan al cliente. Misma inferencia de
+        // etapa; reusa la calculadora y el motor de reajuste por DI.
+        generar_plan_pago_xlsx: (input) => {
+          let etapa = input.etapa;
+          if (input.proyecto === "puertoPlata" && !etapa) {
+            etapa = inferEtapaFromContext(userMessage);
+          }
+          return generarPlanXlsxTool(
+            { ...input, etapa },
+            {
+              calcularPlanPago,
+              proyectarReajuste: (i) => proyectarReajusteTool(i, { calcularPlanPago }),
+              sendDocument,
+              phone: senderPhone,
+            }
+          );
         },
       },
     });

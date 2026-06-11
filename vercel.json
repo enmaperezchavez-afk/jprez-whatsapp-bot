@@ -54,6 +54,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/plan-xlsx.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -98,6 +102,10 @@
     {
       "src": "/api/tasa",
       "dest": "/api/tasa.js"
+    },
+    {
+      "src": "/api/plan-xlsx",
+      "dest": "/api/plan-xlsx.js"
     },
     {
       "src": "/dashboard",
