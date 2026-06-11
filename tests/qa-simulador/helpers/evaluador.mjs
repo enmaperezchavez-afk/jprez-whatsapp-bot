@@ -18,8 +18,73 @@
 
 // ---------- Capa 1: checks programáticos ----------
 
+import { readFileSync } from "fs";
+
 // Reserva por proyecto (doctrina v1.1): Crux US$1,000; PR3/PR4/PP US$2,000.
 const RESERVA_ESPERADA = { crux: 1000, pr3: 2000, pr4: 2000, puertoPlata: 2000 };
+
+// ---- Anti-cifra-fantasma (Sprint1.8 PR-1) ----
+// Bug real 11 jun: Mateo dijo "desde US$99K" (real 98,292), "$163,000"
+// (real 163,400) y "hasta $310,000" (real 315,500) — cifras agregadas/
+// redondeadas que NO existen en el inventario. Este check extrae los
+// montos del inventario fallback (mismo archivo que Mateo lee como
+// referencia) y exige que todo claim de rango ("desde/hasta/entre/
+// mínimo/más económico") cite un monto que EXISTE. Las cuotas y montos
+// de plan calculados por tool NO pasan por aquí (no son claims de rango).
+const INVENTARIO_PATH = ".claude/skills/vendedor-whatsapp-jprez/references/inventario-precios.md";
+
+export function cargarMontosInventario(path = INVENTARIO_PATH) {
+  let texto = "";
+  try {
+    texto = readFileSync(path, "utf8");
+  } catch {
+    return new Set();
+  }
+  const montos = new Set();
+  const re = /(?:US|RD)\$\s?([\d]{1,3}(?:,\d{3})+|\d{4,})/g;
+  let m;
+  while ((m = re.exec(texto)) !== null) {
+    montos.add(Number(m[1].replace(/,/g, "")));
+  }
+  return montos;
+}
+
+const MONTOS_INVENTARIO = cargarMontosInventario();
+
+export function checkCifraFantasma(texto, montosInventario = MONTOS_INVENTARIO) {
+  if (!montosInventario || montosInventario.size === 0) return [];
+  const out = [];
+  // Claims de rango: "desde US$X", "hasta US$X", "entre US$X y US$Y",
+  // "arranca en", "el más económico ... US$X", "mínimo US$X".
+  const re = /(desde|hasta|entre|arranca[n]?\s+en|m[ií]nimo\s+de?|m[aá]s\s+(?:econ[oó]mic[oa]|barat[oa])[^.]{0,40}?)\s+(?:los\s+|el\s+|US|RD)?\$\s?([\d]{1,3}(?:,\d{3})+|\d{4,})(?:K|k)?/gi;
+  let m;
+  while ((m = re.exec(texto)) !== null) {
+    const esK = /K$/i.test(m[0]);
+    const monto = Number(m[2].replace(/,/g, "")) * (esK ? 1000 : 1);
+    if (!montosInventario.has(monto)) {
+      out.push(
+        hit(
+          `cifra fantasma: "${m[1]} $${m[2]}${esK ? "K" : ""}" no existe en el inventario (rangos solo del inventario vivo)`,
+          oracionDe(texto, m.index)
+        )
+      );
+    }
+  }
+  // "desde $99K" estilo K-redondeado SIN coma: desde US$99K
+  const reK = /(desde|hasta)\s+(?:US|RD)?\$\s?(\d{2,3})K\b/gi;
+  while ((m = reK.exec(texto)) !== null) {
+    const monto = Number(m[2]) * 1000;
+    if (!montosInventario.has(monto)) {
+      out.push(
+        hit(
+          `cifra fantasma redondeada: "${m[1]} $${m[2]}K" no existe en el inventario`,
+          oracionDe(texto, m.index)
+        )
+      );
+    }
+  }
+  return out;
+}
 
 function hit(regla, cita, severidad = "alta") {
   return { regla, cita: String(cita).slice(0, 220), severidad, fuente: "programatico" };
@@ -126,6 +191,7 @@ export function evaluarProgramatico({ transcript, eventos = [], proyecto }) {
       enTurno(checkFeriaViva(t.texto));
       enTurno(checkDescuentoExcesivo(t.texto));
       enTurno(checkReservaEquivocada(t.texto, proyecto));
+      enTurno(checkCifraFantasma(t.texto));
     });
 
   for (const ev of eventos) {

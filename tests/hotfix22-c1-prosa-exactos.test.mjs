@@ -54,15 +54,23 @@ describe("Hotfix-22 c1 — STYLE_LAYER §4 numeros exactos + universal", () => {
     expect(STYLE_LAYER).toMatch(/no solo a la tool/i);
   });
 
-  it("Test 3: ejemplos 'BIEN' usan numeros exactos ($163,000 no $163K)", () => {
-    // Numeros exactos esperados en ejemplos BIEN.
-    expect(STYLE_LAYER).toContain("$163,000");
-    expect(STYLE_LAYER).toContain("$16,300");
-    expect(STYLE_LAYER).toContain("$2,038");
-    expect(STYLE_LAYER).toContain("$114,100");
-    // Regla 1 invertida: exactos por default, redondeo solo marketing.
-    expect(STYLE_LAYER).toMatch(/N[uú]meros EXACTOS por default/);
-    expect(STYLE_LAYER).toMatch(/Redondeo permitido SOLO en precio base de marketing/);
+  it("Test 3: ejemplos 'BIEN' didacticos declarados + cero redondeo de marketing (Sprint1.8 PR-1)", () => {
+    // Sprint1.8 PR-1: los ejemplos usan cifras DIDACTICAS (120,000 redondo
+    // declarado) para que el LLM no las recite como precios reales — el
+    // $163,000 de los ejemplos viejos salio DOS veces a clientes reales.
+    expect(STYLE_LAYER).toContain("$120,000");
+    expect(STYLE_LAYER).toContain("$12,000");
+    expect(STYLE_LAYER).toContain("$1,500");
+    expect(STYLE_LAYER).toContain("$84,000");
+    expect(STYLE_LAYER).toMatch(/DIDACTICAS/);
+    expect(STYLE_LAYER).toMatch(/JAMAS recites una cifra de estos ejemplos/);
+    // Regla 1: exactos siempre.
+    expect(STYLE_LAYER).toMatch(/N[uú]meros EXACTOS siempre/);
+    // Regla 2 NUEVA: el redondeo de marketing esta MUERTO — desde/hasta
+    // exactos del inventario vivo, con anulacion del 99K del frozen.
+    expect(STYLE_LAYER).not.toMatch(/Redondeo permitido SOLO en precio base de marketing/);
+    expect(STYLE_LAYER).toMatch(/desde\/hasta" tambien exactos y del INVENTARIO VIVO/);
+    expect(STYLE_LAYER).toMatch(/ANULA cualquier ejemplo con "desde US\$99K/);
     // Razon legal: contratos firma con exactos.
     expect(STYLE_LAYER).toMatch(/Inmobiliaria firma contratos con n[uú]meros exactos/);
   });
@@ -80,15 +88,19 @@ describe("Hotfix-22 c1 — COMMERCIAL_LAYER ejemplos al cliente sin bullets/bold
     expect(lineasEjemplo.length).toBeGreaterThan(0);
   });
 
-  it("Test 5: ejemplos al cliente con numeros exactos (no $5.65M sin formato exacto)", () => {
-    // El ejemplo Crux ambigüedad debe decir RD$5,650,000 (exacto), no RD$5.65M.
-    // Y el fallback Torre 6 debe decir US$99,000 (exacto), no US$99K en el reply.
-    // Buscamos al menos 1 ejemplo con numero exacto formato $X,XXX,XXX o $X,XXX.
-    expect(COMMERCIAL_LAYER).toMatch(/US\$\d{1,3}(?:,\d{3})+/);
-    // El reply de Torre 6 sin PDF tiene 4 numeros exactos: $99,000, $9,900, $19,850, $69,500.
-    expect(COMMERCIAL_LAYER).toContain("US$9,900");
-    expect(COMMERCIAL_LAYER).toContain("US$19,850");
-    expect(COMMERCIAL_LAYER).toContain("US$69,500");
+  it("Test 5: ejemplos al cliente SIN cifras de inventario — placeholders del vivo (Sprint1.8 PR-1)", () => {
+    // Sprint1.8 PR-1: las cifras literales de los ejemplos (99,000 / 9,900 /
+    // 19,850 / 69,500 / 5,650,000 / "42 de 50") drifteaban y el LLM las
+    // recitaba. Ahora los ejemplos son estructura con placeholders y los
+    // montos salen EXACTOS del inventario vivo.
+    expect(COMMERCIAL_LAYER).not.toContain("US$99,000");
+    expect(COMMERCIAL_LAYER).not.toContain("US$9,900");
+    expect(COMMERCIAL_LAYER).not.toContain("US$19,850");
+    expect(COMMERCIAL_LAYER).not.toContain("US$69,500");
+    expect(COMMERCIAL_LAYER).not.toContain("RD$5,650,000");
+    expect(COMMERCIAL_LAYER).not.toMatch(/42 de 50/);
+    expect(COMMERCIAL_LAYER).toMatch(/\[precio exacto[^\]]*INVENTARIO\]/);
+    expect(COMMERCIAL_LAYER).toMatch(/jamas de memoria|jamas cifras de memoria/i);
   });
 });
 

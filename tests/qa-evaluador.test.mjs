@@ -14,6 +14,8 @@ import {
   checkFeriaViva,
   checkDescuentoExcesivo,
   checkReservaEquivocada,
+  checkCifraFantasma,
+  cargarMontosInventario,
   evaluarProgramatico,
   juzgarTranscripcion,
   evaluarEscenario,
@@ -66,6 +68,30 @@ describe("QA evaluador — checks programáticos (violación + caso legítimo)",
     expect(checkReservaEquivocada("Separas con US$2,000", "pr4")).toHaveLength(0);
     // montos grandes en la misma frase no son la reserva
     expect(checkReservaEquivocada("La reserva es US$2,000 y la inicial US$13,700", "pr4")).toHaveLength(0);
+  });
+
+  it("cifra fantasma (Sprint1.8 PR-1): flaggea rangos que no existen en el inventario", () => {
+    const montos = new Set([98292, 315500, 5650000]);
+    // Los 3 bugs reales del 11 jun:
+    expect(checkCifraFantasma("Torre 6 desde US$99,000 con plan extendido", montos)).toHaveLength(1);
+    expect(checkCifraFantasma("PR4 va hasta US$310,000 según disponibilidad", montos)).toHaveLength(1);
+    expect(checkCifraFantasma("arranca en US$163,000 esa etapa", montos)).toHaveLength(1);
+    // El K-redondeado clásico:
+    expect(checkCifraFantasma("tenemos desde $99K", montos)).toHaveLength(1);
+    // Legítimos: cifras que SÍ existen en el inventario
+    expect(checkCifraFantasma("Torre 6 desde US$98,292", montos)).toHaveLength(0);
+    expect(checkCifraFantasma("hasta US$315,500 la más grande", montos)).toHaveLength(0);
+    // Cifras de plan calculado (sin claim de rango) NO se validan:
+    expect(checkCifraFantasma("pones US$16,340 para apartar y US$2,038 mensuales", montos)).toHaveLength(0);
+  });
+
+  it("cargarMontosInventario parsea el fallback real del repo", () => {
+    const montos = cargarMontosInventario();
+    expect(montos.size).toBeGreaterThan(20);
+    expect(montos.has(315500)).toBe(true); // 11A PR4, el "hasta" real
+    // las cifras fantasma del bug NO existen:
+    expect(montos.has(99000)).toBe(false);
+    expect(montos.has(310000)).toBe(false);
   });
 
   it("evaluarProgramatico: integra checks por turno de Mateo + warnings de formato crudo", () => {
