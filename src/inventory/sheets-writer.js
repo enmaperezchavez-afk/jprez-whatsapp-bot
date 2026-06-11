@@ -164,6 +164,32 @@ async function updateUnitPrice({ tabName, unitId, newPrice, supervisorPhone }) {
   });
 }
 
+// readUnitSnapshot (Sprint1.8 PR-2): LECTURA del estado actual de una
+// unidad para el preview de confirmación del admin natural ("¿Confirmo?
+// {antes} → {después}"). Cero escritura. Mismo pipeline de detección
+// dinámica de headers que las escrituras (Hotfix-31 c2).
+async function readUnitSnapshot({ tabName, unitId }) {
+  const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+  if (!spreadsheetId) return { ok: false, reason: "missing_env_vars" };
+  const sheets = getSheetsWriter();
+  if (!sheets) return { ok: false, reason: "missing_env_vars" };
+
+  const row = await findUnitRow(sheets, spreadsheetId, tabName, unitId);
+  if (!row) return { ok: false, reason: "unit_not_found" };
+
+  const col = (name) => {
+    const idx = row.headers.findIndex((h) => h === name);
+    return idx === -1 ? null : String(row.rowValues[idx] || "");
+  };
+  const precioCol = tabName === "CRUX_LISTOS" ? "precio_dop" : "precio_usd";
+  return {
+    ok: true,
+    estado: col("estado"),
+    precio: col(precioCol),
+    moneda: tabName === "CRUX_LISTOS" ? "RD$" : "US$",
+  };
+}
+
 module.exports = {
   updateUnitStatus,
   updateUnitPrice,
@@ -171,4 +197,5 @@ module.exports = {
   findUnitRow,
   colIndexToLetter,
   getSheetsWriter,
+  readUnitSnapshot,
 };

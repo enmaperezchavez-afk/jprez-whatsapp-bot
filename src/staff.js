@@ -21,4 +21,12 @@ const STAFF_PHONES = {
   },
 };
 
-module.exports = { STAFF_PHONES };
+// ADMIN_PHONES (Sprint1.8 PR-2): lista blanca de números con permiso de
+// ESCRITURA al inventario vía lenguaje natural (texto o audio). Separada
+// de STAFF_PHONES a propósito: ser staff da modo supervisor; escribir el
+// Sheet con frases naturales exige estar AQUÍ. La autorización es SOLO
+// por número verificado de WhatsApp — conocer la sintaxis no da poder.
+// Hoy: solo el Director.
+const ADMIN_PHONES = [ENMANUEL_PHONE];
+
+module.exports = { STAFF_PHONES, ADMIN_PHONES };
