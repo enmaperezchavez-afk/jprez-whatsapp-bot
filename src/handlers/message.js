@@ -1656,6 +1656,10 @@ async function processMessage(body) {
 module.exports = {
   processMessage,
   DOC_TYPE_NAMES,
+  // Sprint1.5: TOOLS exportado para el simulador QA (tests/qa-simulador
+  // arma sus propios handlers con stubs y un guard de drift verifica que
+  // cubra cada tool de este array).
+  TOOLS,
   calcularPlanPago,
   inferEtapaFromContext,
   buildClientContext,

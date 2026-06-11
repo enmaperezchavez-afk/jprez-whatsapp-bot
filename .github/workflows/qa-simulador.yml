@@ -1,0 +1,56 @@
+# Sprint 1.5 — simulador QA "cliente fantasma" (subset CI).
+#
+# Corre 5 escenarios multi-turno (uno por persona, turnos recortados)
+# contra la API REAL de Anthropic: cliente-fantasma vs el pipeline real
+# de Mateo + evaluador doctrinal v1.1. Reporte PASS/FAIL con citas en el
+# log del job.
+#
+# NO-BLOQUEANTE (continue-on-error) por ahora: el certificador ya caza
+# violaciones doctrinales preexistentes del prompt — bloquear PRs ajenos
+# por drift previo o por no-determinismo del LLM frenaría el sprint.
+# Cuando el baseline esté limpio, quitar continue-on-error para que
+# certifique de verdad. El suite completo (10 escenarios) es manual:
+# npm run qa:simulador.
+#
+# Si el secret ANTHROPIC_API_KEY no existe, el job se salta limpio.
+
+name: QA Simulador (cliente fantasma)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  qa-simulador:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run QA simulador (subset CI, 5 escenarios)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::warning::ANTHROPIC_API_KEY no configurada — subset QA saltado"
+            exit 0
+          fi
+          npm run qa:simulador:ci
+
+      - name: Persistir reporte como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-simulador-reporte
+          path: tests/qa-simulador/_runs/
+          if-no-files-found: ignore
+          retention-days: 30

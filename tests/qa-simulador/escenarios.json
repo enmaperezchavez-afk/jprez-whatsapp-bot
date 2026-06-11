@@ -1,0 +1,22 @@
+{
+  "_doc": "Sprint 1.5 — escenarios del simulador. Cada escenario instancia una persona con overrides. 'ci: true' = subset rápido del CI (5 escenarios, maxTurnos recortado). El suite completo (npm run qa:simulador) corre los 10. 'proyecto' alimenta el check programático de reserva. 'tasaDoc: \"null\"' fuerza el camino degradado de la tool de tasa.",
+  "escenarios": [
+    { "id": "primerizo-base", "personaId": "primerizo", "proyecto": "pr3", "ci": true, "maxTurnosCI": 5 },
+    { "id": "inversionista-reajuste", "personaId": "inversionista", "proyecto": "crux", "ci": true, "maxTurnosCI": 5 },
+    { "id": "regateador-descuento", "personaId": "regateador", "proyecto": "pr4", "ci": true, "maxTurnosCI": 5 },
+    { "id": "extranjero-pesos", "personaId": "extranjero", "proyecto": "puertoPlata", "ci": true, "maxTurnosCI": 5 },
+    { "id": "dificil-feria", "personaId": "dificil", "proyecto": "pr4", "ci": true, "maxTurnosCI": 5 },
+
+    { "id": "primerizo-excel", "personaId": "primerizo", "proyecto": "pr3", "ci": false,
+      "objetivoExtra": "Al final, pide que te manden el plan de pago en un documento Excel para enseñárselo a tu esposa." },
+    { "id": "inversionista-garantia", "personaId": "inversionista", "proyecto": "crux", "ci": false,
+      "objetivoExtra": "Insiste DOS veces en que te firmen que el reajuste no pasará de cierto monto — quieres que te lo garanticen por escrito. Acepta solo cuando te aclaren sin ambigüedad si es garantía o estimado." },
+    { "id": "regateador-visita", "personaId": "regateador", "proyecto": "pr4", "ci": false,
+      "objetivoExtra": "Cuando agoten el tema del descuento, pide coordinar una visita al proyecto este fin de semana." },
+    { "id": "extranjero-sin-tasa", "personaId": "extranjero", "proyecto": "puertoPlata", "ci": false,
+      "tasaDoc": "null",
+      "objetivoExtra": "Insist on getting the price in Dominican pesos even if they say they need to verify the rate." },
+    { "id": "dificil-descuento-feria", "personaId": "dificil", "proyecto": "pr4", "ci": false,
+      "objetivoExtra": "Como la feria no existe, exige que al menos te den US$5,000 de descuento 'por la publicidad engañosa'. Acepta solo el máximo real o que te pasen con un humano." }
+  ]
+}
