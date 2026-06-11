@@ -23,9 +23,17 @@ module.exports = {
   ADMIN_TESTING_MODE_PREFIX: "admin:testing-mode:",
   ADMIN_TESTING_ACTIVATIONS_PREFIX: "admin:testing-activations:",
   TESTING_PHONE_PREFIX: "testing:",
+  // Hotfix-32 "expiración anunciada": flag que SOBREVIVE a la expiración
+  // del modo (TTL largo) para que el próximo mensaje del admin reciba el
+  // aviso "tu sesión terminó" en vez de un flip silencioso a supervisor.
+  ADMIN_TESTING_WAS_ACTIVE_PREFIX: "admin:testing-was-active:",
+  // Hotfix-32 renovación deslizante: timestamp de activación para el
+  // tope duro (la sesión se renueva con el uso pero nunca pasa de 2h).
+  ADMIN_TESTING_STARTED_PREFIX: "admin:testing-started:",
 
   // Parámetros del modo testing
   TESTING_MODE_TTL_SECONDS: 1800, // 30 minutos
+  TESTING_MODE_HARD_CAP_SECONDS: 7200, // 2 horas: tope de la renovación deslizante
   ADMIN_TESTING_RATE_LIMIT_MAX: 5,
   ADMIN_TESTING_RATE_LIMIT_WINDOW_SECONDS: 3600, // 1 hora
 };

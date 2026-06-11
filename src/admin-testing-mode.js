@@ -48,8 +48,11 @@ const { getRedis } = require("./store/redis");
 const {
   ADMIN_TESTING_MODE_PREFIX,
   ADMIN_TESTING_ACTIVATIONS_PREFIX,
+  ADMIN_TESTING_WAS_ACTIVE_PREFIX,
+  ADMIN_TESTING_STARTED_PREFIX,
   TESTING_PHONE_PREFIX,
   TESTING_MODE_TTL_SECONDS,
+  TESTING_MODE_HARD_CAP_SECONDS,
   ADMIN_TESTING_RATE_LIMIT_MAX,
   ADMIN_TESTING_RATE_LIMIT_WINDOW_SECONDS,
   CHAT_PREFIX,
@@ -111,17 +114,30 @@ async function activate(phone) {
     await r.set(ADMIN_TESTING_MODE_PREFIX + phone, "active", {
       ex: TESTING_MODE_TTL_SECONDS,
     });
+    // Hotfix-32: flags de soporte (best-effort, no bloquean la activación).
+    //   was-active: sobrevive a la expiración del modo para anunciar el
+    //     flip en el PRÓXIMO mensaje (TTL = hard cap + margen de 24h para
+    //     que el aviso llegue aunque el admin vuelva horas después).
+    //   started: ancla del tope duro de la renovación deslizante.
+    try {
+      const supportTtl = TESTING_MODE_HARD_CAP_SECONDS + 24 * 3600;
+      await r.set(ADMIN_TESTING_WAS_ACTIVE_PREFIX + phone, "1", { ex: supportTtl });
+      await r.set(ADMIN_TESTING_STARTED_PREFIX + phone, String(Date.now()), { ex: supportTtl });
+    } catch (e) {
+      console.log("[admin-testing] support flags error:", e.message);
+    }
   } catch (e) {
     console.log("[admin-testing] activate set error:", e.message);
     return { ok: false, reason: "redis_write_error" };
   }
 
+  const expiresAtMs = Date.now() + TESTING_MODE_TTL_SECONDS * 1000;
   botLog("info", "admin_testing_on", {
     admin: phone,
     timestamp: new Date().toISOString(),
     ttlSec: TESTING_MODE_TTL_SECONDS,
   });
-  return { ok: true, ttlSec: TESTING_MODE_TTL_SECONDS };
+  return { ok: true, ttlSec: TESTING_MODE_TTL_SECONDS, expiresAtMs };
 }
 
 async function deactivate(phone) {
@@ -131,6 +147,9 @@ async function deactivate(phone) {
 
   try {
     await r.del(ADMIN_TESTING_MODE_PREFIX + phone);
+    // Hotfix-32: salida EXPLÍCITA no anuncia expiración — limpiar flags.
+    await r.del(ADMIN_TESTING_WAS_ACTIVE_PREFIX + phone);
+    await r.del(ADMIN_TESTING_STARTED_PREFIX + phone);
     // Limpiar la caja testing (chat, meta, profile bajo storage key
     // "testing:<phone>"). Sin esto queda basura hasta que los TTLs
     // individuales expiren (30d/90d).
@@ -177,6 +196,85 @@ function getStorageKey(phone, inTesting) {
   return inTesting ? TESTING_PHONE_PREFIX + phone : phone;
 }
 
+// ============================================================
+// Hotfix-32 — expiración anunciada + renovación deslizante
+// ============================================================
+
+// consumeExpiredFlag: true UNA sola vez si el modo testing del admin
+// expiró por TTL (no por /test-off). El caller antepone el aviso
+// "⏰ tu sesión terminó" al procesamiento normal del mensaje. Consumir
+// borra el flag: cero avisos repetidos. Best-effort: ante cualquier
+// error devuelve false (nunca rompe el turno).
+async function consumeExpiredFlag(phone) {
+  if (!isAdmin(phone)) return false;
+  const r = await getRedis();
+  if (!r) return false;
+  try {
+    const active = await r.get(ADMIN_TESTING_MODE_PREFIX + phone);
+    if (active === "active") return false; // sigue viva, nada que anunciar
+    const was = await r.get(ADMIN_TESTING_WAS_ACTIVE_PREFIX + phone);
+    if (!was) return false;
+    await r.del(ADMIN_TESTING_WAS_ACTIVE_PREFIX + phone);
+    await r.del(ADMIN_TESTING_STARTED_PREFIX + phone);
+    botLog("info", "admin_testing_expired_announced", {
+      admin: phone,
+      timestamp: new Date().toISOString(),
+    });
+    return true;
+  } catch (e) {
+    console.log("[admin-testing] consumeExpiredFlag error:", e.message);
+    return false;
+  }
+}
+
+// renewIfActive: renovación deslizante — cada mensaje del admin en modo
+// testing re-arma el TTL de 30 min, con tope DURO de 2h desde la
+// activación (la sesión vive mientras se usa, nunca infinita). Devuelve
+// { renewed, hardCapReached }. Best-effort.
+async function renewIfActive(phone) {
+  if (!isAdmin(phone)) return { renewed: false, hardCapReached: false };
+  const r = await getRedis();
+  if (!r) return { renewed: false, hardCapReached: false };
+  try {
+    const active = await r.get(ADMIN_TESTING_MODE_PREFIX + phone);
+    if (active !== "active") return { renewed: false, hardCapReached: false };
+    const started = Number(await r.get(ADMIN_TESTING_STARTED_PREFIX + phone));
+    // Sin ancla (sesión pre-Hotfix-32): no renovar, muere a su TTL original.
+    if (!Number.isFinite(started) || started <= 0) {
+      return { renewed: false, hardCapReached: false };
+    }
+    const elapsedSec = (Date.now() - started) / 1000;
+    if (elapsedSec >= TESTING_MODE_HARD_CAP_SECONDS) {
+      return { renewed: false, hardCapReached: true };
+    }
+    // El TTL renovado nunca pasa del tope duro.
+    const ttl = Math.min(
+      TESTING_MODE_TTL_SECONDS,
+      Math.max(1, Math.round(TESTING_MODE_HARD_CAP_SECONDS - elapsedSec))
+    );
+    await r.expire(ADMIN_TESTING_MODE_PREFIX + phone, ttl);
+    return { renewed: true, hardCapReached: false, ttlSec: ttl };
+  } catch (e) {
+    console.log("[admin-testing] renewIfActive error:", e.message);
+    return { renewed: false, hardCapReached: false };
+  }
+}
+
+// formatHoraRD: "hasta la 1:25 PM" — hora de República Dominicana
+// (America/Santo_Domingo, UTC-4 sin DST). Puro, exportado para test.
+function formatHoraRD(dateMs) {
+  return new Date(dateMs).toLocaleTimeString("es-DO", {
+    timeZone: "America/Santo_Domingo",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+const TESTING_EXPIRED_ANNOUNCEMENT =
+  "⏰ Tu sesión de prueba (30 min) terminó — estás de vuelta en modo supervisor. " +
+  "Manda /test-on para otra ronda.";
+
 module.exports = {
   isActive,
   activate,
@@ -184,4 +282,9 @@ module.exports = {
   getStatus,
   getStorageKey,
   isAdmin,
+  // Hotfix-32
+  consumeExpiredFlag,
+  renewIfActive,
+  formatHoraRD,
+  TESTING_EXPIRED_ANNOUNCEMENT,
 };
