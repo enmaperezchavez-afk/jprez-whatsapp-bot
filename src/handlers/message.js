@@ -614,6 +614,25 @@ async function processMessage(body) {
         admin: senderPhone,
         storageKey,
       });
+      // Hotfix-32: renovación deslizante — la sesión vive mientras se usa,
+      // con tope duro de 2h desde la activación.
+      await adminTesting.renewIfActive(senderPhone);
+    } else if (adminTesting.isAdmin(senderPhone)) {
+      // Hotfix-32 "expiración anunciada": si el testing expiró por TTL
+      // (no por /test-off), el PRÓXIMO mensaje del admin recibe PRIMERO
+      // el aviso y LUEGO se procesa normal en modo supervisor. Cero
+      // flips silenciosos (bug Director 11 jun: "amnesia" 1:25 PM).
+      const expiro = await adminTesting.consumeExpiredFlag(senderPhone);
+      if (expiro) {
+        try {
+          await sendWhatsAppMessage(senderPhone, adminTesting.TESTING_EXPIRED_ANNOUNCEMENT);
+        } catch (e) {
+          botLog("warn", "admin_testing_expiry_announce_failed", {
+            admin: senderPhone,
+            error: e.message,
+          });
+        }
+      }
     }
 
     // Guardar nombre del cliente en metadata

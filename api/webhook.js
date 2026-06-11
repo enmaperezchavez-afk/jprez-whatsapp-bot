@@ -172,9 +172,14 @@ async function handleTestingCommand(command, adminPhone) {
       let reply;
       if (result.ok) {
         const mins = Math.round(result.ttlSec / 60);
+        // Hotfix-32: hora exacta de expiración (zona RD) + aviso de la
+        // renovación deslizante. Cero expiraciones sorpresa.
+        const hora = adminTesting.formatHoraRD(result.expiresAtMs);
         reply =
-          "✅ Modo testing activado por " + mins + " min. Te trataré como " +
-          "cliente nuevo sin historial. Manda /test-off para salir.";
+          "✅ Modo testing activado por " + mins + " min (hasta la " + hora + " — " +
+          "se renueva sola con cada mensaje tuyo, tope 2h). Te trataré como " +
+          "cliente nuevo sin historial. Cuando expire te aviso en tu próximo " +
+          "mensaje. Manda /test-off para salir.";
       } else if (result.reason === "rate_limit") {
         reply =
           "⚠️ Llegaste al límite de " + result.max + " activaciones por hora. " +
