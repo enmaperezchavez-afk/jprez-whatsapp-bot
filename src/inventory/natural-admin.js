@@ -166,6 +166,21 @@ function buildRevertCommand(parsed, snapshot) {
   return null;
 }
 
+// ---- eco de confirmación (Sprint1.8 PR-3) ----
+// El supervisor a veces reenvía/copia una confirmación del propio bot
+// ("✅ PSE4 15-102 marcada como reservada."). Sin guard, el LLM
+// supervisor tiende a re-confirmar una acción que NO ejecutó. Detecta
+// el shape de las confirmaciones del executor y del flujo natural.
+function esEcoConfirmacion(text) {
+  const t = String(text || "").trim();
+  if (!t.startsWith("✅")) return false;
+  return /(marcada?\s+como\s+(reservad|vendid)|liberad[ao]\s+en|precio\s+de\s+.+\s+actualizado)/i.test(t);
+}
+
+const ECO_CONFIRMACION_REPLY =
+  "Eso parece el eco de una confirmación mía — NO ejecuté ningún cambio nuevo. " +
+  "Si quieres repetir la operación, dímela como orden (natural o /comando).";
+
 // ---- respuesta de confirmación: sí / no / null ----
 function esRespuestaConfirmacion(text) {
   const t = quitarAcentos(String(text || "").toLowerCase()).replace(/[¡!.,;:]+/g, "").trim();
@@ -202,6 +217,8 @@ module.exports = {
   resolveProjectAlias,
   parseMonto,
   formatMonto,
+  esEcoConfirmacion,
+  ECO_CONFIRMACION_REPLY,
   buildConfirmPrompt,
   buildRevertCommand,
   esRespuestaConfirmacion,

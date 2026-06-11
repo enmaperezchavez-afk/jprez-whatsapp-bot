@@ -746,6 +746,15 @@ async function processMessage(body) {
         const { getRedis } = require("../store/redis");
         const redis = await getRedis();
 
+        // 0. Guard de eco (Sprint1.8 PR-3): si el mensaje parece una
+        // confirmación del propio bot reenviada, NUNCA confirmar una
+        // acción no ejecutada.
+        if (natural.esEcoConfirmacion(userMessage)) {
+          await sendWhatsAppMessage(senderPhone, natural.ECO_CONFIRMACION_REPLY);
+          botLog("info", "admin_echo_guard", { admin: senderPhone });
+          return;
+        }
+
         // 1. ¿Hay una escritura PENDIENTE de confirmación?
         const pending = await natural.getPendingWrite(redis, senderPhone);
         if (pending) {
