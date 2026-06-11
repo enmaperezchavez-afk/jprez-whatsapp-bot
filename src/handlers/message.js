@@ -59,6 +59,7 @@ const adminTesting = require("../admin-testing-mode");
 const { computePromptHash, checkAndInvalidate } = require("../prompt-version");
 const { TOOL_CONSULTAR_ICDV, consultarICDV } = require("../tools/icdv");
 const { TOOL_CONSULTAR_TASA, consultarTasaDolar } = require("../tools/tasa");
+const { TOOL_PROYECTAR_REAJUSTE, proyectarReajusteTool } = require("../tools/reajuste");
 
 // ============================================
 // WRAPPERS (dependency injection sobre clientMeta)
@@ -355,6 +356,10 @@ const TOOLS = [
   // drop-in de PR-1). Tasa USD/DOP oficial BCRD para conversiones a pesos
   // (regla 13 del vendedor: tasa del día, nunca de memoria).
   TOOL_CONSULTAR_TASA,
+  // Sprint1 PR-3: motor de reajuste ICDV — proyección ESTIMADA de la
+  // cláusula de reajuste sobre el insoluto (doctrina v1.1 sección 6).
+  // Tool hermana de calcular_plan_pago, nunca garantía.
+  TOOL_PROYECTAR_REAJUSTE,
 ];
 
 // Bloque 2: handler del tool enviar_documento. Genera/resuelve la URL del
@@ -866,6 +871,16 @@ async function processMessage(body) {
         // Sprint1 PR-2: tasa USD/DOP oficial BCRD (store del cron en Redis;
         // sin dato degrada con ok:false y Mateo escala, nunca inventa tasa).
         consultar_tasa_dolar: (input) => consultarTasaDolar(input),
+        // Sprint1 PR-3: proyección ESTIMADA del reajuste ICDV. La misma
+        // inferencia de etapa que calcular_plan_pago (Hotfix-30) y la
+        // calculadora se inyecta por DI (evita ciclo handler <-> tool).
+        proyectar_reajuste: (input) => {
+          let etapa = input.etapa;
+          if (input.proyecto === "puertoPlata" && !etapa) {
+            etapa = inferEtapaFromContext(userMessage);
+          }
+          return proyectarReajusteTool({ ...input, etapa }, { calcularPlanPago });
+        },
       },
     });
 
