@@ -735,6 +735,118 @@ async function processMessage(body) {
           return;
         }
       }
+
+      // Sprint1.8 PR-2 — ADMIN NATURAL: escrituras de inventario en
+      // lenguaje natural (texto o audio) SOLO para ADMIN_PHONES.
+      // Confirmación obligatoria antes de escribir; mismo executor que
+      // los slash commands (cero bypass del motor seguro).
+      const { ADMIN_PHONES } = require("../staff");
+      if (ADMIN_PHONES.includes(senderPhone)) {
+        const natural = require("../inventory/natural-admin");
+        const { getRedis } = require("../store/redis");
+        const redis = await getRedis();
+
+        // 1. ¿Hay una escritura PENDIENTE de confirmación?
+        const pending = await natural.getPendingWrite(redis, senderPhone);
+        if (pending) {
+          const respuesta = natural.esRespuestaConfirmacion(userMessage);
+          if (respuesta === "si") {
+            await natural.clearPendingWrite(redis, senderPhone);
+            try {
+              const cmdResult = await executeAdminCommand(pending.parsed, {
+                supervisorPhone: senderPhone,
+                redis,
+              });
+              const revert = natural.buildRevertCommand(pending.parsed, pending.snapshot);
+              const antes = pending.snapshot
+                ? (pending.snapshot.estado || "?") +
+                  (pending.snapshot.precio
+                    ? " · " + natural.formatMonto(Number(String(pending.snapshot.precio).replace(/[^\d.]/g, "")), pending.snapshot.moneda)
+                    : "")
+                : "desconocido";
+              botLog("info", "admin_natural_write", {
+                admin: senderPhone,
+                command: pending.parsed.command,
+                project: pending.parsed.project,
+                unit: pending.parsed.unit,
+                price: pending.parsed.price,
+                antes,
+                didWrite: cmdResult.didWrite,
+              });
+              let reply = cmdResult.reply || "Hecho.";
+              if (cmdResult.didWrite) {
+                reply += "\nAntes: " + antes + ".";
+                if (revert) reply += " Para revertir: " + revert;
+              }
+              await sendWhatsAppMessage(senderPhone, reply);
+            } catch (e) {
+              botLog("error", "admin_natural_write_error", {
+                admin: senderPhone,
+                error: e.message,
+              });
+              await sendWhatsAppMessage(senderPhone, "Error ejecutando la operación: " + e.message);
+            }
+            return;
+          }
+          if (respuesta === "no") {
+            await natural.clearPendingWrite(redis, senderPhone);
+            await sendWhatsAppMessage(senderPhone, "Cancelado — no toqué nada.");
+            return;
+          }
+          // Cualquier otro mensaje: NUNCA escribir sin sí explícito.
+          await natural.clearPendingWrite(redis, senderPhone);
+          await sendWhatsAppMessage(
+            senderPhone,
+            "↩️ Cancelé la operación pendiente (" + pending.parsed.command + " " +
+              (pending.parsed.unit || "") + ") porque no la confirmaste. Sigo con tu mensaje."
+          );
+          // cae al flujo normal con el mensaje actual
+        }
+
+        // 2. ¿El mensaje es un intent de escritura en lenguaje natural?
+        const intent = natural.parseNaturalAdminIntent(userMessage);
+        if (intent) {
+          if (intent.error) {
+            // Mensajes guía del MISMO executor (faltó proyecto/unidad/precio).
+            const guide = await executeAdminCommand(intent, { supervisorPhone: senderPhone, redis });
+            await sendWhatsAppMessage(
+              senderPhone,
+              (guide.reply || "Me falta un dato.") +
+                "\n(También sirve el modo clásico: /" + intent.command + " [proyecto] [unidad]" +
+                (intent.command === "precio" || intent.command === "liberar" ? " [monto]" : "") + ")"
+            );
+            return;
+          }
+          // Snapshot ANTES de escribir, para el preview honesto.
+          let snapshot = null;
+          try {
+            const { resolveProjectTab } = require("../inventory/admin-commands");
+            const resolved = resolveProjectTab(intent.project);
+            const { readUnitSnapshot } = require("../inventory/sheets-writer");
+            const snap = await readUnitSnapshot({ tabName: resolved.tab, unitId: intent.unit });
+            if (snap.ok) snapshot = snap;
+            else if (snap.reason === "unit_not_found") {
+              await sendWhatsAppMessage(
+                senderPhone,
+                "No encontré " + intent.unit + " en " + intent.project + ". Verifica el ID."
+              );
+              return;
+            }
+          } catch (e) {
+            botLog("warn", "admin_natural_snapshot_failed", { admin: senderPhone, error: e.message });
+          }
+          await natural.savePendingWrite(redis, senderPhone, { parsed: intent, snapshot });
+          await sendWhatsAppMessage(senderPhone, natural.buildConfirmPrompt(intent, snapshot));
+          botLog("info", "admin_natural_intent", {
+            admin: senderPhone,
+            command: intent.command,
+            project: intent.project,
+            unit: intent.unit,
+            price: intent.price,
+          });
+          return;
+        }
+      }
     }
 
     // Cargar metadata del cliente (para contexto dinamico + gestion de escalamiento)
