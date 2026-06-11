@@ -50,6 +50,10 @@
       }
     },
     {
+      "src": "api/tasa.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -92,6 +96,10 @@
       "dest": "/api/icdv.js"
     },
     {
+      "src": "/api/tasa",
+      "dest": "/api/tasa.js"
+    },
+    {
       "src": "/dashboard",
       "dest": "/public/dashboard.html"
     },
@@ -112,6 +120,10 @@
     {
       "path": "/api/icdv?cron=1",
       "schedule": "0 14 23-31 * *"
+    },
+    {
+      "path": "/api/tasa?cron=1",
+      "schedule": "0 21 * * *"
     }
   ]
 }
