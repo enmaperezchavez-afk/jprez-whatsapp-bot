@@ -48,7 +48,7 @@ const SCHEMES = {
   pr4: { inicial: 0.40 },
   pse3: { sep: 0.10, comp: 0.30, saldo: 0.60 },
   pse4: { sep: 0.10, comp: 0.30, saldo: 0.60 },
-  crux_t6: { sep: 0.10, comp: 0.20, saldo: 0.70 },
+  crux_t6: { sep: 0.05, comp: 0.25, saldo: 0.70 }, // Hotfix-33: base 5/25/70 (Doctrina v1.1)
   crux_listos: null,
 };
 
@@ -177,18 +177,18 @@ function columnsFor(proyectoId, opts = {}) {
       { label: "Edificio", w: 0.7, align: "center", get: (u) => val(u.edificio) },
       { label: "Apartamento", w: 0.9, align: "left", get: (u) => u.unidad_id || "—" },
       colPrecio,
-      { label: "Separación 10%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
-      { label: "Completivo 30%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.comp : null, cur) },
-      { label: "Saldo 60%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
+      { label: "Separación " + Math.round(scheme.sep * 100) + "%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
+      { label: "Completivo " + Math.round(scheme.comp * 100) + "%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.comp : null, cur) },
+      { label: "Saldo " + Math.round(scheme.saldo * 100) + "%", w: 1.2, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
       colArea, colHab, colBano, colEstatus,
     ];
   } else if (proyectoId === "crux_t6") {
     cols = [
       { label: "Apartamento", w: 0.8, align: "left", get: (u) => u.unidad_id || "—" },
       colPrecio,
-      { label: "Separación 10%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
-      { label: "Completivo 20%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.comp : null, cur) },
-      { label: "Saldo 70%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
+      { label: "Separación " + Math.round(scheme.sep * 100) + "%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.sep : null, cur) },
+      { label: "Completivo " + Math.round(scheme.comp * 100) + "%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.comp : null, cur) },
+      { label: "Saldo " + Math.round(scheme.saldo * 100) + "%", w: 1.1, align: "right", get: (u) => money(priceOf(u) != null ? priceOf(u) * scheme.saldo : null, cur) },
       colArea, colHab, colBano, colParq,
       { label: "Tipo Parqueo", w: 1.6, align: "left", get: (u) => val(u.parqueo_tipo) },
       colEstatus,

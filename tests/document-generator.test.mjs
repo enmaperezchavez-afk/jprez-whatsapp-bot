@@ -127,10 +127,10 @@ describe("Bloque 2 — statusCounts (todas las categorías)", () => {
 });
 
 describe("Bloque 2 — esquemas de pago por proyecto", () => {
-  it("pr4 = inicial 40%, pse3 = 10/30/60, crux_t6 = 10/20/70", () => {
+  it("pr4 = inicial 40%, pse3 = 10/30/60, crux_t6 = 5/25/70 (Hotfix-33, Doctrina v1.1)", () => {
     expect(SCHEMES.pr4).toEqual({ inicial: 0.40 });
     expect(SCHEMES.pse3).toEqual({ sep: 0.10, comp: 0.30, saldo: 0.60 });
-    expect(SCHEMES.crux_t6).toEqual({ sep: 0.10, comp: 0.20, saldo: 0.70 });
+    expect(SCHEMES.crux_t6).toEqual({ sep: 0.05, comp: 0.25, saldo: 0.70 });
     expect(SCHEMES.pr3).toBe(null);
   });
 });
@@ -155,7 +155,7 @@ describe("Bloque 2 — columnas por proyecto (modelo del Director)", () => {
 
   it("crux_t6 incluye Saldo 70% + Tipo Parqueo", () => {
     const l = labels("crux_t6");
-    expect(l).toContain("Completivo 20%");
+    expect(l).toContain("Completivo 25%"); // Hotfix-33: 5/25/70
     expect(l).toContain("Saldo 70%");
     expect(l).toContain("Tipo Parqueo");
   });

@@ -170,7 +170,7 @@ const DOC_TYPE_NAMES = {
 
 // Planes de pago por proyecto (porcentajes)
 const PAYMENT_PLANS = {
-  crux: { separacion: 0.10, completivo: 0.20, entrega: 0.70 }, // Torre 6
+  crux: { separacion: 0.05, completivo: 0.25, entrega: 0.70 }, // Torre 6 — Hotfix-33: base 5/25/70 (Doctrina v1.1 ratificada 10 jun; el 10/20/70 era BUG que doblaba la barrera de entrada). Margenes 5/20/75 y 5/15/80 (con pre-aprobacion bancaria) viven en la doctrina del SKILL, no aqui.
   pr3: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
   pr4: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
   puertoPlata: { separacion: 0.10, completivo: 0.30, entrega: 0.60 },
