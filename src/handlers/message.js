@@ -619,6 +619,9 @@ async function processMessage(body) {
     senderPhone = message.from;
     const messageType = message.type;
     const senderName = value?.contacts?.[0]?.profile?.name || "Desconocido";
+    // VIGÍA: timestamp original que Meta pone al mensaje (epoch segundos).
+    // Si la entrega llega con lag > 5 min, el mensaje vivió un apagón.
+    const messageTsSec = Number(message.timestamp);
 
     // Admin testing mode (hotfix-6): el admin puede activar /test-on para que
     // su phone se "swappee" a testing:<phone> en todos los stores, haciendo
@@ -761,8 +764,87 @@ async function processMessage(body) {
       const { ADMIN_PHONES } = require("../staff");
       if (ADMIN_PHONES.includes(senderPhone)) {
         const natural = require("../inventory/natural-admin");
+        const extintor = require("../extintor");
         const { getRedis } = require("../store/redis");
         const redis = await getRedis();
+
+        // PROTOCOLO EXTINTOR [CORE]: comandos de override del Director.
+        // Corren ANTES que todo (incluido el LLM): el freno y el relay
+        // funcionan aunque el resto del sistema esté en llamas.
+        const extCmd = extintor.parseExtintorCommand(userMessage);
+        if (extCmd) {
+          if (extCmd.command === "status") {
+            const st = await extintor.getStatus();
+            const vigia = require("../vigia");
+            const ventana = await require("../vigia").getVentana(redis).catch(() => null);
+            let reply = "📊 Modo: " + (st.modo === "extintor" ? "🧯 EXTINTOR (manual global)" : "normal");
+            reply += "\nChats pausados: " + st.pausados.length + (st.pausados.length ? " → " + st.pausados.join(", ") : "");
+            if (ventana && !ventana.reported) {
+              reply += "\n🛰️ Vigía: ventana de apagón ABIERTA desde " + ventana.inicio + " (" + Object.keys(ventana.huerfanos || {}).length + " huérfanos)";
+            }
+            void vigia;
+            await sendWhatsAppMessage(senderPhone, reply);
+            return;
+          }
+          if (extCmd.command === "global_on") {
+            // Botón rojo: ÚNICA acción del extintor con confirmación.
+            await natural.savePendingWrite(redis, senderPhone, {
+              parsed: { command: "extintor_global_on", extintor: true },
+            });
+            await sendWhatsAppMessage(
+              senderPhone,
+              "🧯 ¿Confirmo MODO MANUAL GLOBAL? Mateo dejará de responder a TODOS los clientes (cada mensaje entrante te llega a ti) hasta /extintor-off. Los comandos admin siguen activos.\n(responde sí para activar, no para cancelar)"
+            );
+            return;
+          }
+          if (extCmd.command === "global_off") {
+            const r = await extintor.setGlobal(false, senderPhone);
+            await sendWhatsAppMessage(senderPhone, r.ok ? "🟢 Extintor APAGADO — Mateo retoma normal con todos los clientes." : "⚠️ No pude apagar el extintor (" + r.reason + ").");
+            return;
+          }
+          if (extCmd.command === "pause" || extCmd.command === "resume") {
+            if (extCmd.error) {
+              await sendWhatsAppMessage(senderPhone, "No reconocí el número. Formato: \"pausa al 18095551234\" / \"despierta al 18095551234\".");
+              return;
+            }
+            const r = extCmd.command === "pause"
+              ? await extintor.pauseChat(extCmd.phone, senderPhone)
+              : await extintor.resumeChat(extCmd.phone, senderPhone);
+            await sendWhatsAppMessage(
+              senderPhone,
+              r.ok
+                ? (extCmd.command === "pause"
+                    ? "⏸️ Chat " + extCmd.phone + " PAUSADO — Mateo callado ahí y te reenvío todo lo que escriba. \"despierta al " + extCmd.phone + "\" para reactivar."
+                    : "▶️ Chat " + extCmd.phone + " reactivado — Mateo retoma normal.")
+                : "⚠️ No pude (" + r.reason + ")."
+            );
+            return;
+          }
+          if (extCmd.command === "relay") {
+            if (extCmd.error) {
+              await sendWhatsAppMessage(senderPhone, "Relay no salió (" + extCmd.error + "). Formato: \"dile al 18095551234: tu mensaje\".");
+              return;
+            }
+            try {
+              await sendWhatsAppMessage(extCmd.phone, extCmd.texto);
+              // El relay queda en el historial del cliente como mensaje del
+              // bot: cuando Mateo retome, tiene el contexto de lo que el
+              // Director ya dijo.
+              try {
+                const { computePromptHash } = require("../prompt-version");
+                await addMessage(extCmd.phone, "assistant", extCmd.texto, computePromptHash(MATEO_PROMPT_V5_2));
+              } catch (e) {
+                botLog("warn", "extintor_relay_history_failed", { error: e.message });
+              }
+              botLog("warn", "extintor_relay", { admin: senderPhone, to: extCmd.phone, chars: extCmd.texto.length });
+              await sendWhatsAppMessage(senderPhone, "📤 Enviado verbatim a " + extCmd.phone + ".");
+            } catch (e) {
+              botLog("error", "extintor_relay_failed", { admin: senderPhone, to: extCmd.phone, error: e.message });
+              await sendWhatsAppMessage(senderPhone, "❌ El relay a " + extCmd.phone + " falló: " + e.message);
+            }
+            return;
+          }
+        }
 
         // 0. Guard de eco (Sprint1.8 PR-3): si el mensaje parece una
         // confirmación del propio bot reenviada, NUNCA confirmar una
@@ -779,6 +861,17 @@ async function processMessage(body) {
           const respuesta = natural.esRespuestaConfirmacion(userMessage);
           if (respuesta === "si") {
             await natural.clearPendingWrite(redis, senderPhone);
+            // PROTOCOLO EXTINTOR: confirmación del botón rojo global.
+            if (pending.parsed && pending.parsed.extintor) {
+              const r = await extintor.setGlobal(true, senderPhone);
+              await sendWhatsAppMessage(
+                senderPhone,
+                r.ok
+                  ? "🧯 EXTINTOR ACTIVADO — modo manual global. Mateo callado con TODOS los clientes; te reenvío cada entrante. Relay: \"dile al <numero>: <texto>\". Apagar: /extintor-off."
+                  : "⚠️ No pude activar el extintor (" + r.reason + ")."
+              );
+              return;
+            }
             try {
               const cmdResult = await executeAdminCommand(pending.parsed, {
                 supervisorPhone: senderPhone,
@@ -934,6 +1027,64 @@ async function processMessage(body) {
 
     await addMessage(storageKey, "user", userMessage, currentPromptHash);
     const messageHistory = await getHistory(storageKey);
+
+    // PROTOCOLO EXTINTOR + VIGÍA [CORE]: gates de cliente. Corren tras
+    // persistir el mensaje en historial (contexto intacto al retomar) y
+    // ANTES de cualquier respuesta del bot. Fail-safe: todo error de
+    // lectura degrada a flujo normal — el extintor nunca es el incendio.
+    if (!isStaff) {
+      const extintor = require("../extintor");
+      const vigia = require("../vigia");
+      const { ADMIN_PHONES } = require("../staff");
+
+      // 1. VIGÍA: ¿este mensaje vivió un apagón? (lag de entrega > 5 min)
+      const huerfano = vigia.esHuerfano(messageTsSec);
+      if (huerfano) {
+        await vigia.registrarHuerfano({ phone: senderPhone, name: senderName, tsSec: messageTsSec });
+      }
+
+      // 2. EXTINTOR: global o chat pausado → Mateo callado, reenvío al
+      // Director, y nada más.
+      const globalOn = await extintor.isGlobalOn();
+      const pausado = !globalOn && (await extintor.isPaused(senderPhone));
+      if (globalOn || pausado) {
+        const tag = globalOn ? "🧯 [EXTINTOR]" : "⏸️ [PAUSADO]";
+        try {
+          await sendWhatsAppMessage(
+            ADMIN_PHONES[0],
+            tag + " " + senderPhone + " (" + senderName + "): " + userMessage.slice(0, 1200)
+          );
+        } catch (e) {
+          botLog("error", "extintor_forward_failed", { from: senderPhone, error: e.message });
+        }
+        botLog("warn", "extintor_message_held", { from: senderPhone, global: globalOn });
+        return;
+      }
+
+      // 3. VIGÍA: entrega en tiempo real otra vez → reporte de
+      // recuperación al Director (una sola vez por ventana).
+      if (!huerfano) {
+        const st = await extintor.getStatus();
+        const reporte = await vigia.chequearRecuperacion({
+          getMeta: (p) => getClientMeta(p),
+          extintorStatus: st.modo + (st.pausados.length ? " (" + st.pausados.length + " chats pausados)" : ""),
+        });
+        if (reporte) {
+          try {
+            await sendWhatsAppMessage(ADMIN_PHONES[0], reporte);
+          } catch (e) {
+            botLog("error", "vigia_reporte_send_failed", { error: e.message });
+          }
+        }
+      } else {
+        // 4. Disculpa breve al huérfano ANTES de la respuesta normal.
+        try {
+          await sendWhatsAppMessage(senderPhone, vigia.DISCULPA_HUERFANO);
+        } catch (e) {
+          botLog("warn", "vigia_disculpa_failed", { phone: senderPhone, error: e.message });
+        }
+      }
+    }
 
     // Sprint1.8 PR-4: handoff cubeta B DETERMINISTA. Cliente pide hablar
     // con una persona → escalar INMEDIATO con el mensaje doctrinal, sin
