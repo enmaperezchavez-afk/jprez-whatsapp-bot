@@ -77,6 +77,24 @@ async function notifyBookingWithMeta(senderPhone, booking) {
   return notifyEnmanuelBooking(senderPhone, booking, clientMeta, projectName);
 }
 
+// Sprint1.7 PR-4: en modo testing las notificaciones reales se suprimen
+// (el admin se notificaría a sí mismo como cliente hot — spam), pero el
+// Director necesita SABER qué señal se habría disparado. Este aviso va
+// con prefijo [SUPERVISOR] para que distinga la telemetría del sistema
+// de lo que un cliente real vería (mensajes sin prefijo). Best-effort.
+async function avisarSenalTesting(senderPhone, signalType, detalle) {
+  try {
+    await sendWhatsAppMessage(
+      senderPhone,
+      "[SUPERVISOR] (testing) Señal disparada: " + signalType +
+        (detalle ? " — " + detalle : "") +
+        ". El cliente NO ve este mensaje; en producción esto notificaría a Enmanuel."
+    );
+  } catch (e) {
+    botLog("warn", "testing_signal_notice_failed", { admin: senderPhone, signalType, error: e.message });
+  }
+}
+
 // ============================================
 // CONSTANTES DE DOMINIO (PDFs, proyectos, nombres)
 // ============================================
@@ -933,6 +951,7 @@ async function processMessage(body) {
           await notifyWithMeta(senderPhone, userMessage, reply, "escalation");
         } else {
           botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "escalation" });
+          await avisarSenalTesting(senderPhone, "ESCALACION A ENMANUEL");
         }
         await saveClientMeta(storageKey, { escalated: true, escalatedAt: new Date().toISOString() });
         botLog("info", "human_handoff_guard", { phone: senderPhone, idioma: idiomaHandoff });
@@ -1325,6 +1344,7 @@ async function processMessage(body) {
           await notifyWithMeta(senderPhone, userMessage, botReply, "hot");
         } else {
           botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "hot" });
+          await avisarSenalTesting(senderPhone, "LEAD CALIENTE");
         }
         await saveClientMeta(storageKey, { temperature: "hot", hotDetectedAt: new Date().toISOString() });
       }
@@ -1333,6 +1353,7 @@ async function processMessage(body) {
           await notifyWithMeta(senderPhone, userMessage, botReply, "escalation");
         } else {
           botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "escalation" });
+          await avisarSenalTesting(senderPhone, "ESCALACION A ENMANUEL");
         }
         await saveClientMeta(storageKey, { escalated: true, escalatedAt: new Date().toISOString() });
       }
@@ -1343,6 +1364,7 @@ async function processMessage(body) {
           await notifyBookingWithMeta(senderPhone, booking);
         } else {
           botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "booking" });
+          await avisarSenalTesting(senderPhone, "AGENDAMIENTO DE VISITA", booking && booking.project);
         }
         await saveClientMeta(storageKey, {
           scheduledVisit: booking,
@@ -1389,6 +1411,7 @@ async function processMessage(body) {
               await notifyDescuentoOfrecido(senderPhone, discount.monto, discount.contexto, clientMeta);
             } else {
               botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "descuento", monto: discount.monto });
+              await avisarSenalTesting(senderPhone, "DESCUENTO OFRECIDO", "US$" + discount.monto);
             }
             botLog("info", "Descuento detectado y notificado", {
               phone: senderPhone,
@@ -1408,6 +1431,7 @@ async function processMessage(body) {
               await notifyRecomendacionCompetencia(senderPhone, motivo, clientMeta);
             } else {
               botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "recomendar_competencia" });
+              await avisarSenalTesting(senderPhone, "RECOMENDACION DE COMPETENCIA");
             }
             botLog("info", "Recomendacion de competencia detectada", {
               phone: senderPhone,
