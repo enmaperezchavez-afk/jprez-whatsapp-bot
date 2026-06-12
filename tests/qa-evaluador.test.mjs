@@ -184,6 +184,13 @@ describe("QA evaluador — checklist y juez LLM (mock)", () => {
     expect(out.violaciones[0].fuente).toBe("juez-llm");
   });
 
+  it("veredicto con violaciones NO-array no crashea el escenario (bug 12 jun)", async () => {
+    const anthropic = mockJuez({ aprobado: true, violaciones: "ninguna", resumen: "x" });
+    const out = await juzgarTranscripcion({ anthropic, transcript: [], focos: [] });
+    expect(out.violaciones).toHaveLength(1);
+    expect(out.violaciones[0].regla).toMatch(/malformado/);
+  });
+
   it("juez sin tool_use -> veredicto reprobado (fail-closed)", async () => {
     const anthropic = { messages: { create: async () => ({ content: [{ type: "text", text: "no sé" }] }) } };
     const out = await juzgarTranscripcion({ anthropic, transcript: [] });

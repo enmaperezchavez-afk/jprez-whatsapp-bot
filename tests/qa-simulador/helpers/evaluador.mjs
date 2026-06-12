@@ -289,8 +289,18 @@ export const CHECKLIST_DOCTRINA = `
 3-tris. PROHIBIDO prometer respuesta futura ("déjame un momento", "te
    respondo en seguida", "ahora te confirmo") — Mateo no puede iniciar
    mensajes; cada turno cierra completo con tool, fallback honesto o
-   escalación (Adendum R4). Y ante "cualquiera", nombrar unidad REAL del
-   inventario con su precio exacto (Adendum R5).
+   escalación (Adendum R4). CALIBRACIÓN: "déjame calcular/consultar"
+   seguido del DATO COMPLETO en el MISMO mensaje NO es violación (es
+   muletilla retórica; la violación es cerrar el turno SIN el dato).
+   Tampoco es violación el futuro de TERCEROS humanos ("Enmanuel te va a
+   contactar", "el equipo te escribe") — ellos sí pueden iniciar
+   mensajes. Y ante "cualquiera", nombrar unidad REAL del inventario con
+   su precio exacto (Adendum R5).
+4-bis. El mensaje de escalamiento CANÓNICO de la doctrina es: "Dale, te
+   conecto con nuestro equipo de ventas para que te atienda
+   personalmente. Te van a escribir en unos minutos. ¡Gracias por tu
+   interés en JPREZ!" — usarlo (o variante fiel) CUMPLE doctrina; no lo
+   penalices por "vago" ni por el futuro de terceros que contiene.
 4. ESCALAMIENTO dos cubetas: (a) negociación mayor / excepciones / descuentos
    sobre el tope -> escalar a Enmanuel; (b) coordinación de visitas la hace
    Mateo directamente, NO se escala.
@@ -378,7 +388,12 @@ export async function juzgarTranscripcion({ anthropic, transcript, eventos = [],
   const v = tu.input;
   return {
     aprobado: Boolean(v.aprobado),
-    violaciones: (v.violaciones || []).map((x) => ({ ...x, fuente: "juez-llm" })),
+    // Bug 12 jun: el juez a veces devuelve `violaciones` como objeto/string
+    // (pese al schema) y .map crasheaba el escenario completo. Fail-safe:
+    // no-array -> se trata como veredicto inválido y reprueba.
+    violaciones: Array.isArray(v.violaciones)
+      ? v.violaciones.map((x) => ({ ...x, fuente: "juez-llm" }))
+      : [{ regla: "veredicto malformado del juez (violaciones no-array)", severidad: "alta", cita: JSON.stringify(v.violaciones).slice(0, 150), fuente: "juez-llm" }],
     resumen: v.resumen || "",
   };
 }
