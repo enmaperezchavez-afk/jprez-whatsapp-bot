@@ -15,6 +15,7 @@ import {
   checkDescuentoExcesivo,
   checkReservaEquivocada,
   checkCifraFantasma,
+  checkPromesaFutura,
   cargarMontosInventario,
   evaluarProgramatico,
   juzgarTranscripcion,
@@ -83,6 +84,19 @@ describe("QA evaluador — checks programáticos (violación + caso legítimo)",
     expect(checkCifraFantasma("hasta US$315,500 la más grande", montos)).toHaveLength(0);
     // Cifras de plan calculado (sin claim de rango) NO se validan:
     expect(checkCifraFantasma("pones US$16,340 para apartar y US$2,038 mensuales", montos)).toHaveLength(0);
+  });
+
+  it("promesa futura (Sprint1.7 PR-1 / Adendum R4): FAIL automático", () => {
+    // Los 2 casos reales del 11 jun:
+    expect(checkPromesaFutura("Déjame un momento, te respondo en seguida.")).not.toHaveLength(0);
+    expect(checkPromesaFutura("dame un segundo y te confirmo el precio")).not.toHaveLength(0);
+    expect(checkPromesaFutura("ahora te confirmo con el equipo")).toHaveLength(1);
+    expect(checkPromesaFutura("deja lo verifico y te digo")).toHaveLength(1);
+    expect(checkPromesaFutura("se me complicó el envío, deja lo coordino y te lo paso enseguida")).not.toHaveLength(0);
+    // Legítimos: pedir acción AL CLIENTE o futuro de terceros
+    expect(checkPromesaFutura("¿Me repites tu mensaje?")).toHaveLength(0);
+    expect(checkPromesaFutura("Enmanuel te va a contactar pronto por aquí.")).toHaveLength(0);
+    expect(checkPromesaFutura("La cuota te queda en US$2,038 mensuales.")).toHaveLength(0);
   });
 
   it("cargarMontosInventario parsea el fallback real del repo", () => {
