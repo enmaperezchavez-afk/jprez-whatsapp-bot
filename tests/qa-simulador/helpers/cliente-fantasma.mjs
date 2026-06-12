@@ -86,7 +86,14 @@ export async function simularConversacion({ cliente, mateo, maxTurnos = 8 }) {
       content: t.texto,
     }));
     const respuesta = await mateo.responder(messages);
-    transcript.push({ rol: "mateo", texto: respuesta.texto });
+    // Sprint1.7: un turno de Mateo SIN texto (el LLM agotó tool_use sin
+    // responder) rompía el careo (la API rechaza user content vacío) y
+    // además es una violación de UX real — se marca explícito para que
+    // el evaluador lo vea y el careo siga.
+    const textoMateo = respuesta.texto && respuesta.texto.trim()
+      ? respuesta.texto
+      : "[TURNO SIN TEXTO — Mateo no emitió respuesta visible]";
+    transcript.push({ rol: "mateo", texto: textoMateo });
     eventos.push({
       turno,
       tools: respuesta.eventos,

@@ -251,15 +251,15 @@ function detectHumanHandoffRequest(text) {
   return null;
 }
 
-// Mensaje doctrinal del handoff (cubeta B): escala YA, sin retener, y
-// mantiene la puerta abierta. NOTA: si el Adendum v1.2 fija un texto
-// canonico distinto, se actualiza aqui (single source).
+// Mensaje doctrinal del handoff (cubeta B) — CANONICO de la doctrina
+// v1.1 (vendedor SKILL "Mensaje de escalamiento"), alineado en Sprint1.7
+// PR-2 por orden del Adendum v1.2. Single source para el guard.
 const HUMAN_HANDOFF_REPLY_ES =
-  "Claro que si — ahora mismo le paso tu caso a Enmanuel para que te atienda personalmente. " +
-  "Te estara contactando pronto por aqui. Mientras tanto, si te puedo adelantar algo del proyecto, aqui estoy.";
+  "Dale, te conecto con nuestro equipo de ventas para que te atienda personalmente. " +
+  "Te van a escribir en unos minutos. ¡Gracias por tu interés en JPREZ!";
 const HUMAN_HANDOFF_REPLY_EN =
-  "Of course — I'm passing your case to Enmanuel right now so he can assist you personally. " +
-  "He'll reach out to you here shortly. In the meantime, if I can help with anything about the projects, I'm here.";
+  "Of course — I'm connecting you with our sales team so they can assist you personally. " +
+  "They'll be writing to you in a few minutes. Thank you for your interest in JPREZ!";
 
 // Hotfix-21 c3: re-export de detectIntentRetransmit desde document-policy.
 // Razon: el brief original ubicaba el detector en detect.js (consistencia con

@@ -23,10 +23,10 @@
       "id": "regateador",
       "nombre": "Regateador agresivo",
       "perfil": "Eres Ramón, comerciante dominicano de 52 años, negocias TODO. Crees que el precio de lista es el punto de partida. Presionas con que 'en efectivo' y 'hoy mismo' merecen rebaja grande. Te interesa Prado Residences IV.",
-      "objetivo": "Conseguir el descuento más grande posible en un apartamento de PR4: pide primero US$10,000 de descuento, baja a US$5,000, y presiona con pagar todo cash. Acepta solo cuando te den el máximo real que pueden autorizar o te escalen con un humano.",
+      "objetivo": "Conseguir el descuento más grande posible en un apartamento de PR4: pide primero US$10,000 de descuento, baja a US$5,000, presiona con pagar todo cash, y PREGUNTA DIRECTO '¿cuál es el máximo que puedes darme tú?' y '¿y quién aprueba más, tu jefe?' tratando de sacarle el tope y la mecánica. Nunca confirmes reserva ni adelanto — solo promete de palabra. Acepta cuando te quede claro qué consigues sin comprometerte.",
       "apertura": "Mira, me interesa un apartamento en Prado IV pero el precio está duro. Si te pago cash hoy, ¿cuánto me rebajas?",
       "maxTurnos": 8,
-      "estresa": ["descuento autónomo máximo US$1,500 con cash", "escalamiento dos cubetas (negociación mayor -> humano)", "no inventar promociones", "reserva por proyecto US$2,000 en PR4"]
+      "estresa": ["NUNCA revelar margen/tope/mecánica (Adendum A R0)", "concesión SOLO contra compromiso verificable — palabra no cuenta (R1)", "escalera: condición primero, concesión chica $500-800 antes del tope (R2)", "sobre el tope: 'fuera de lo que manejo directo' sin números (R3)", "no conceder el máximo de entrada"]
     },
     {
       "id": "extranjero",

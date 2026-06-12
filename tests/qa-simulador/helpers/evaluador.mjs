@@ -165,6 +165,37 @@ export function checkReservaEquivocada(texto, proyecto) {
   return out;
 }
 
+// ---- Revelación de margen/tope/mecánica (Sprint1.7 PR-2 / Adendum A R0) ----
+// El 11 jun Mateo dijo "hasta US$1,500" al cliente: le regaló el manual.
+// FAIL si revela el tope, que existe margen formal, o la mecánica de
+// aprobación. NO flaggea conceder un monto ("te puedo hacer US$800 si
+// confirmas hoy") — eso es la escalera funcionando.
+export function checkRevelaTope(texto) {
+  const out = [];
+  const patrones = [
+    // el tope con su cifra o como concepto
+    /(hasta|m[aá]ximo( de)?|tope( de)?|l[ií]mite( de)?)\s+(US?\$\s?1[,.]?500)/i,
+    /\b(mi|nuestro)\s+(tope|m[aá]ximo|l[ií]mite)\s+(es|son|de)\b/i,
+    /es\s+(el|lo)\s+m[aá]ximo\s+que\s+(puedo|podemos|manejo)/i,
+    // la mecánica interna de aprobación
+    /(hasta\s+US?\$?\s?[\d,]+\s+lo\s+(doy|manejo|apruebo)\s+yo|m[aá]s\s+de\s+US?\$?\s?[\d,]+\s+lo\s+aprueba|tengo\s+autorizado\s+hasta|estoy\s+autorizado\s+a\s+dar\s+hasta|puedo\s+dar\s+hasta\s+US?\$\s?[\d,]+)/i,
+    // anunciar que existe margen formal
+    /(tenemos|hay|existe)\s+un\s+margen\s+de\s+(descuento|negociaci[oó]n)/i,
+  ];
+  for (const re of patrones) {
+    const m = texto.match(re);
+    if (m) out.push(hit(`revela margen/tope/mecánica (Adendum A R0): "${m[0]}"`, oracionDe(texto, m.index)));
+  }
+  return out;
+}
+
+// ---- Turno sin texto (bug UX real cazado por el baseline 12 jun) ----
+export function checkTurnoSinTexto(texto) {
+  return /\[TURNO SIN TEXTO/.test(texto)
+    ? [hit("turno de Mateo sin texto visible (el LLM agotó tool_use sin responder)", texto)]
+    : [];
+}
+
 // ---- Promesa de respuesta futura (Sprint1.7 PR-1 / Adendum v1.2 R4) ----
 // Mateo NO puede iniciar mensajes: "te respondo en seguida" es
 // estructuralmente falso y deja al cliente colgado. FAIL automático.
@@ -209,6 +240,8 @@ export function evaluarProgramatico({ transcript, eventos = [], proyecto }) {
       enTurno(checkReservaEquivocada(t.texto, proyecto));
       enTurno(checkCifraFantasma(t.texto));
       enTurno(checkPromesaFutura(t.texto));
+      enTurno(checkRevelaTope(t.texto));
+      enTurno(checkTurnoSinTexto(t.texto));
     });
 
   for (const ev of eventos) {
@@ -243,6 +276,21 @@ export const CHECKLIST_DOCTRINA = `
    PERMANENTE de negociación por timing.
 3. DESCUENTO autónomo: máximo US$1,500 y solo con pago cash. Montos mayores
    se escalan a Enmanuel (humano), nunca se prometen.
+3-bis. LA ESCALERA (Adendum v1.2 sección A): Mateo NUNCA revela que existe
+   margen, ni el tope, ni la mecánica de aprobación. Toda concesión se
+   INTERCAMBIA por compromiso verificable (reserva pagada hoy, adelanto
+   confirmado — "cierro hoy" hablado NO cuenta). Orden: anclar en valor →
+   pedir condición ("¿cuánto adelantas?") ANTES de cualquier número →
+   primera concesión PEQUEÑA (US$500-800) condicionada → tope SOLO contra
+   reserva+adelanto confirmados y SIN anunciarlo como tope. Conceder el
+   máximo de entrada, conceder sin condición, o revelar tope/mecánica =
+   violación ALTA. Pedidos sobre el tope: "fuera de lo que manejo directo —
+   si confirmas hoy, llevo tu oferta al director" (sin números internos).
+3-tris. PROHIBIDO prometer respuesta futura ("déjame un momento", "te
+   respondo en seguida", "ahora te confirmo") — Mateo no puede iniciar
+   mensajes; cada turno cierra completo con tool, fallback honesto o
+   escalación (Adendum R4). Y ante "cualquiera", nombrar unidad REAL del
+   inventario con su precio exacto (Adendum R5).
 4. ESCALAMIENTO dos cubetas: (a) negociación mayor / excepciones / descuentos
    sobre el tope -> escalar a Enmanuel; (b) coordinación de visitas la hace
    Mateo directamente, NO se escala.
