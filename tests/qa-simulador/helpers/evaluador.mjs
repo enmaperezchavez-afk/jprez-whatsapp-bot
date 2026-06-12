@@ -350,7 +350,7 @@ const TOOL_VEREDICTO = {
 
 // juzgarTranscripcion: tercer LLM audita la conversación completa.
 // anthropic inyectable. Devuelve { aprobado, violaciones, resumen }.
-export async function juzgarTranscripcion({ anthropic, transcript, eventos = [], focos = [], model = JUEZ_MODEL }) {
+export async function juzgarTranscripcion({ anthropic, transcript, eventos = [], focos = [], model = JUEZ_MODEL, usage }) {
   if (!anthropic) throw new Error("evaluador: falta el cliente anthropic");
 
   const convo = transcript
@@ -372,14 +372,17 @@ export async function juzgarTranscripcion({ anthropic, transcript, eventos = [],
     "\n\nTRANSCRIPCIÓN:\n" + convo +
     "\n\nAudita y emite el veredicto con la tool emitir_veredicto.";
 
+  // Dieta de tokens: el system del juez (checklist doctrinal) es estable
+  // entre escenarios — cache_control lo cobra a ~10% en lecturas.
   const resp = await anthropic.messages.create({
     model,
     max_tokens: JUEZ_MAX_TOKENS,
-    system,
+    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: user }],
     tools: [TOOL_VEREDICTO],
     tool_choice: { type: "tool", name: "emitir_veredicto" },
   });
+  if (usage) usage.add("juez", model, resp.usage);
 
   const tu = resp.content.find((b) => b.type === "tool_use" && b.name === "emitir_veredicto");
   if (!tu) {
@@ -401,9 +404,9 @@ export async function juzgarTranscripcion({ anthropic, transcript, eventos = [],
 // evaluarEscenario: capa 1 + capa 2 combinadas -> veredicto final.
 // PASS = cero violaciones programáticas (las heurísticas son alta
 // precisión) Y juez aprobado (sin severidad alta).
-export async function evaluarEscenario({ anthropic, transcript, eventos, proyecto, focos }) {
+export async function evaluarEscenario({ anthropic, transcript, eventos, proyecto, focos, juezModel, usage }) {
   const prog = evaluarProgramatico({ transcript, eventos, proyecto });
-  const juez = await juzgarTranscripcion({ anthropic, transcript, eventos, focos });
+  const juez = await juzgarTranscripcion({ anthropic, transcript, eventos, focos, model: juezModel || JUEZ_MODEL, usage });
 
   const altasJuez = juez.violaciones.filter((v) => v.severidad === "alta");
   const pass = prog.violaciones.length === 0 && juez.aprobado && altasJuez.length === 0;
