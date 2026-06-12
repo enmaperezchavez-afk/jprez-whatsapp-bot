@@ -1,0 +1,169 @@
+{
+  "$schema": "../tenant.schema.json",
+  "tenant_id": "jprez",
+  "prompt_version": 1,
+
+  "vendedor": {
+    "nombre": "Mateo Reyes",
+    "empresa": "Constructora JPREZ",
+    "tono": "dominicano C+ profesional-cercano",
+    "idiomas": ["es", "en"],
+    "director": "Enmanuel Pérez Chávez"
+  },
+
+  "canal": {
+    "phone_number_id_env": "WHATSAPP_PHONE_NUMBER_ID",
+    "admin_phones": ["18299943102"],
+    "dominio_publico": "https://v0-meta-whatsapp-webhook.vercel.app"
+  },
+
+  "proyectos": [
+    {
+      "key": "crux_t6",
+      "nombre": "Crux del Prado — Torre 6",
+      "ubicacion": "Santo Domingo Norte",
+      "entrega": "2027-07-01",
+      "en_construccion": true,
+      "moneda": "USD",
+      "plan_base": [5, 25, 70],
+      "margenes": [[5, 20, 75], [5, 15, 80]],
+      "nota_margenes": "5/15/80 SOLO con pre-aprobación bancaria documentada (Doctrina v1.1)",
+      "reserva": 1000,
+      "calc_key_legacy": "crux",
+      "sheet_tab": "CRUX_TORRE6",
+      "theme": "crux_t6",
+      "logo": "FINAL_crux",
+      "brochure_drive_id": "1Cvl6RA93inroHe7ixbO6tVyrRWNZo68B"
+    },
+    {
+      "key": "crux_listos",
+      "nombre": "Crux del Prado — Listos para Entrega",
+      "ubicacion": "Santo Domingo Norte",
+      "entrega": null,
+      "en_construccion": false,
+      "moneda": "DOP",
+      "plan_base": null,
+      "nota_margenes": "Contado o financiamiento bancario directo. Sin cláusula ICDV. Negociación caso a caso → escalar.",
+      "reserva": 1000,
+      "calc_key_legacy": null,
+      "sheet_tab": "CRUX_LISTOS",
+      "theme": "crux_listos",
+      "logo": "FINAL_crux",
+      "brochure_drive_id": "1Cvl6RA93inroHe7ixbO6tVyrRWNZo68B"
+    },
+    {
+      "key": "pr3",
+      "nombre": "Prado Residences III",
+      "ubicacion": "Ensanche Paraíso (Av. Churchill)",
+      "entrega": "2026-08-01",
+      "en_construccion": true,
+      "moneda": "USD",
+      "plan_base": [10, 30, 60],
+      "margenes": [[10, 20, 70]],
+      "nota_margenes": "10/20/70 opción PERMANENTE por timing (Doctrina v1.1)",
+      "reserva": 2000,
+      "calc_key_legacy": "pr3",
+      "sheet_tab": "PR3",
+      "theme": "pr3",
+      "logo": "def2_prado3",
+      "brochure_drive_id": "1-_Hfq5kJ5Z-qmK4noK75x69aoilgFUZr"
+    },
+    {
+      "key": "pr4",
+      "nombre": "Prado Residences IV",
+      "ubicacion": "Evaristo Morales",
+      "entrega": "2027-08-01",
+      "en_construccion": true,
+      "moneda": "USD",
+      "plan_base": [10, 30, 60],
+      "margenes": [[10, 20, 70]],
+      "nota_margenes": "10/20/70 opción PERMANENTE por timing (Doctrina v1.1)",
+      "reserva": 2000,
+      "calc_key_legacy": "pr4",
+      "sheet_tab": "PR4",
+      "theme": "pr4",
+      "logo": "def2_prado4",
+      "brochure_drive_id": "1Inj5vdhvRCVnHfAsorEdDeawFaQ1U0KJ"
+    },
+    {
+      "key": "pse3",
+      "nombre": "Prado Suites Puerto Plata — Etapa 3",
+      "ubicacion": "Frente a Playa Dorada, Puerto Plata",
+      "entrega": "2029-03-01",
+      "en_construccion": true,
+      "moneda": "USD",
+      "plan_base": [10, 30, 60],
+      "margenes": [[10, 20, 70]],
+      "nota_margenes": "10/20/70 opción PERMANENTE por timing (Doctrina v1.1)",
+      "reserva": 2000,
+      "calc_key_legacy": "puertoPlata",
+      "etapa_legacy": "E3",
+      "sheet_tab": "PSE3",
+      "theme": "pse3",
+      "logo": "FINAL_pradosuites",
+      "brochure_drive_id": "1vbTbWInLe15Wn-w73Ak_WXuF8B0_sNl6"
+    },
+    {
+      "key": "pse4",
+      "nombre": "Prado Suites Puerto Plata — Etapa 4",
+      "ubicacion": "Frente a Playa Dorada, Puerto Plata",
+      "entrega": "2027-12-01",
+      "en_construccion": true,
+      "moneda": "USD",
+      "plan_base": [10, 30, 60],
+      "margenes": [[10, 20, 70]],
+      "nota_margenes": "10/20/70 opción PERMANENTE por timing (Doctrina v1.1)",
+      "reserva": 2000,
+      "calc_key_legacy": "puertoPlata",
+      "etapa_legacy": "E4",
+      "sheet_tab": "PSE4",
+      "theme": "pse4",
+      "logo": "FINAL_pradosuites",
+      "brochure_drive_id": "1POq7pUxkVlqR7X_yVjSwB6qDUWazaNzi"
+    }
+  ],
+
+  "doctrina": {
+    "fuentes": ["Doctrina Canónica v1.1 (10 jun 2026)", "Adendum v1.2 (11 jun 2026)"],
+    "descuento_autonomo_max_usd": 1500,
+    "descuento_condicion": "solo con pago cash y compromiso verificable (reserva pagada / adelanto confirmado)",
+    "escalera": {
+      "concesion_inicial_usd": [500, 800],
+      "condicion_primero": true,
+      "revelar_tope": false,
+      "revelar_mecanica": false
+    },
+    "cubetas": {
+      "A_comercial_escala": [
+        "pago bruto o contado total",
+        "adelanto gigante (50-80%)",
+        "descuento mayor al tope autónomo",
+        "plan fuera del margen documentado",
+        "alianza B2B / VIP / segunda vivienda"
+      ],
+      "B_handoff_inmediato": [
+        "cliente pide hablar con una persona",
+        "queja o molestia formal",
+        "tema legal o contractual complejo"
+      ],
+      "visita_NO_escala": true
+    },
+    "reglas_duras": [
+      { "id": "R4", "texto": "PROHIBIDO prometer respuesta futura — cada turno cierra completo" },
+      { "id": "R5", "texto": "números reales siempre: nombrar unidad REAL del inventario con precio exacto" },
+      { "id": "R6", "texto": "prosa siempre — cero etiquetas tipo factura, cero bullets" },
+      { "id": "RANGOS", "texto": "desde/hasta exactos del inventario vivo, jamás redondeados ni de memoria" },
+      { "id": "TASA", "texto": "conversión DOP solo con tasa de VENTA de la tool, citada con fecha" },
+      { "id": "ICDV", "texto": "reajuste solo construcción activa, SIEMPRE estimado, cesa al entregar" },
+      { "id": "FERIA", "texto": "Feria de Mayo 2026 EXPIRADA — jamás ofrecerla; el 10/20/70 sigue por timing" },
+      { "id": "BPV", "texto": "no existe Bono Primera Vivienda como argumento de venta" }
+    ],
+    "handoff_canonico_es": "Dale, te conecto con nuestro equipo de ventas para que te atienda personalmente. Te van a escribir en unos minutos. ¡Gracias por tu interés en JPREZ!"
+  },
+
+  "integraciones": {
+    "sheet_id_env": "GOOGLE_SHEETS_ID",
+    "axiom_dataset": "jprez-bot",
+    "modelo": "claude-sonnet-4-6"
+  }
+}
