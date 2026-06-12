@@ -129,12 +129,13 @@ describe("QA simulador — arnés de Mateo (LLM mockeado)", () => {
 describe("QA simulador — cliente fantasma y driver", () => {
   const persona = PERSONAS[0];
 
-  it("las 5 personas del brief existen con shape completo", () => {
+  it("las 6 personas existen con shape completo (5 del brief 1.5 + quiere-humano del 1.8)", () => {
     expect(PERSONAS.map((p) => p.id)).toEqual([
       "primerizo",
       "inversionista",
       "regateador",
       "extranjero",
+      "quiere-humano",
       "dificil",
     ]);
     for (const p of PERSONAS) {

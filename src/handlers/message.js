@@ -917,6 +917,29 @@ async function processMessage(body) {
     await addMessage(storageKey, "user", userMessage, currentPromptHash);
     const messageHistory = await getHistory(storageKey);
 
+    // Sprint1.8 PR-4: handoff cubeta B DETERMINISTA. Cliente pide hablar
+    // con una persona → escalar INMEDIATO con el mensaje doctrinal, sin
+    // pasar por el LLM (cero chance de "a ver si te lo resuelvo yo").
+    // Si ya está escalado (holding), el flujo holding lo maneja.
+    if (!isStaff) {
+      const { detectHumanHandoffRequest, HUMAN_HANDOFF_REPLY_ES, HUMAN_HANDOFF_REPLY_EN } = require("../detect");
+      const yaEscalado = clientMeta?.escalated === true && isEscalationActive(clientMeta);
+      const idiomaHandoff = yaEscalado ? null : detectHumanHandoffRequest(userMessage);
+      if (idiomaHandoff) {
+        const reply = idiomaHandoff === "en" ? HUMAN_HANDOFF_REPLY_EN : HUMAN_HANDOFF_REPLY_ES;
+        await sendWhatsAppMessage(senderPhone, reply);
+        await addMessage(storageKey, "assistant", reply, currentPromptHash);
+        if (!inTesting) {
+          await notifyWithMeta(senderPhone, userMessage, reply, "escalation");
+        } else {
+          botLog("info", "notify_suppressed_testing", { admin: senderPhone, signalType: "escalation" });
+        }
+        await saveClientMeta(storageKey, { escalated: true, escalatedAt: new Date().toISOString() });
+        botLog("info", "human_handoff_guard", { phone: senderPhone, idioma: idiomaHandoff });
+        return;
+      }
+    }
+
     // Inyectar contexto dinamico del cliente al system prompt (solo flujo de cliente).
     // clientContext viene de meta:<phone> (historico), profileContext viene de
     // profile:<phone> (perfil Mateo v5.2). Ambos coexisten hasta unificarse en Día 6.
