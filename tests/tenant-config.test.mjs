@@ -103,9 +103,10 @@ describe("V6-F1 — PARIDAD de comportamiento (config ↔ código actual)", () =
       expect(getTheme(p.key).palette.accent, p.key).toMatch(/^#/);
       if (LOGO_KEYS[p.key]) expect(LOGO_KEYS[p.key], p.key).toBe(p.logo);
     }
-    // NOTA (no-assert): PROJECT_META.location dice "SANTIAGO" para Crux y el
-    // frozen prompt dice "SDN" — discrepancia ABIERTA reportada al Director;
-    // la ubicación NO se valida hasta que él la zanje.
+    // Hotfix-34 (Director zanjó 12 jun): Crux del Prado está en Santo
+    // Domingo Norte — los headers de sus PDFs decían "SANTIAGO".
+    expect(PROJECT_META.crux_t6.location).toBe("SANTO DOMINGO NORTE");
+    expect(PROJECT_META.crux_listos.location).toBe("SANTO DOMINGO NORTE");
   });
 
   it("brochures = BROCHURE_DRIVE_IDS del handler", () => {
