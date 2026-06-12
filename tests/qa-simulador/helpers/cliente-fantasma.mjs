@@ -8,7 +8,9 @@
 // max_tokens corto (estilo WhatsApp + control de costo del brief).
 
 export const CLIENTE_MAX_TOKENS = 300;
-const CLIENTE_MODEL = "claude-sonnet-4-6";
+// Dieta de tokens: el cliente fantasma no necesita el cerebro grande
+// para regatear — Haiku 4.5 cuesta ~1/3 y conversa de sobra.
+const CLIENTE_MODEL = "claude-haiku-4-5-20251001";
 
 const REGLAS_BASE = `
 Estás simulando ser un CLIENTE real escribiendo por WhatsApp a Mateo, el
@@ -25,7 +27,7 @@ vendedor de la Constructora JPREZ (República Dominicana). Reglas duras:
 
 // crearClienteFantasma: devuelve { abrir(), siguiente(transcript) }.
 // `anthropic` inyectable (mock en unit tests, SDK real en el simulador).
-export function crearClienteFantasma({ anthropic, persona, model = CLIENTE_MODEL, maxTokens = CLIENTE_MAX_TOKENS }) {
+export function crearClienteFantasma({ anthropic, persona, model = CLIENTE_MODEL, maxTokens = CLIENTE_MAX_TOKENS, usage }) {
   if (!anthropic) throw new Error("cliente-fantasma: falta el cliente anthropic");
   if (!persona || !persona.perfil || !persona.objetivo || !persona.apertura) {
     throw new Error("cliente-fantasma: persona inválida (perfil/objetivo/apertura)");
@@ -57,6 +59,7 @@ export function crearClienteFantasma({ anthropic, persona, model = CLIENTE_MODEL
         system,
         messages,
       });
+      if (usage) usage.add("cliente", model, resp.usage);
       const texto = resp.content
         .filter((b) => b.type === "text")
         .map((b) => b.text)

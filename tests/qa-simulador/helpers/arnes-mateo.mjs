@@ -135,7 +135,7 @@ export function toolNamesSinHandler() {
 // bot real: LLM + tool loop + strip chain + post-processor. `anthropic`
 // es el cliente del SDK (inyectable: los tests unitarios pasan un mock,
 // el simulador real pasa el SDK con ANTHROPIC_API_KEY).
-export function crearMateo({ anthropic, tasaDoc, model = MODEL, maxTokens = MATEO_MAX_TOKENS, promptVariant = "v5" } = {}) {
+export function crearMateo({ anthropic, tasaDoc, model = MODEL, maxTokens = MATEO_MAX_TOKENS, promptVariant = "v5", usage } = {}) {
   if (!anthropic) throw new Error("arnes-mateo: falta el cliente anthropic");
   // V6 F2: el A/B del certificador corre el MISMO careo y el MISMO juez
   // sobre ambos prompts — la única variable es el system.
@@ -166,6 +166,7 @@ export function crearMateo({ anthropic, tasaDoc, model = MODEL, maxTokens = MATE
           messages: convo,
           tools: TOOLS,
         });
+        if (usage) usage.add("mateo", model, resp.usage);
         for (const b of resp.content) {
           if (b.type === "text" && b.text.trim()) textos.push(b.text);
         }

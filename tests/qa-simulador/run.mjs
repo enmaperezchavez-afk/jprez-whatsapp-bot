@@ -20,6 +20,7 @@ import { fileURLToPath } from "url";
 import { crearMateo, TASA_DOC_FIXTURE } from "./helpers/arnes-mateo.mjs";
 import { crearClienteFantasma, simularConversacion } from "./helpers/cliente-fantasma.mjs";
 import { evaluarEscenario } from "./helpers/evaluador.mjs";
+import { crearMedidor, formatoCosto } from "./helpers/costo.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -47,18 +48,20 @@ function cargarEscenarios() {
 }
 
 function args() {
-  const out = { ci: false, escenarios: null, prompt: "v5" };
+  const out = { ci: false, escenarios: null, prompt: "v5", juez: null };
   for (const a of process.argv.slice(2)) {
     if (a === "--ci" || a === "--subset") out.ci = true;
     let m = a.match(/^--escenarios=(.+)$/);
     if (m) out.escenarios = m[1].split(",").map((s) => s.trim());
     m = a.match(/^--prompt=(v5|v6)$/);
     if (m) out.prompt = m[1]; // A/B de F2: mismo careo, mismo juez, otro system
+    m = a.match(/^--juez=(sonnet|haiku)$/);
+    if (m) out.juez = m[1] === "haiku" ? "claude-haiku-4-5-20251001" : "claude-sonnet-4-6";
   }
   return out;
 }
 
-async function correrEscenario({ anthropic, escenario, modoCI, promptVariant }) {
+async function correrEscenario({ anthropic, escenario, modoCI, promptVariant, juezModel, usage }) {
   const persona = { ...escenario.persona };
   if (escenario.objetivoExtra) {
     persona.objetivo += "\nADEMÁS: " + escenario.objetivoExtra;
@@ -67,8 +70,8 @@ async function correrEscenario({ anthropic, escenario, modoCI, promptVariant }) 
   const tasaDoc = escenario.tasaDoc === "null" ? null : TASA_DOC_FIXTURE;
 
   const t0 = Date.now();
-  const cliente = crearClienteFantasma({ anthropic, persona });
-  const mateo = crearMateo({ anthropic, tasaDoc, promptVariant });
+  const cliente = crearClienteFantasma({ anthropic, persona, usage });
+  const mateo = crearMateo({ anthropic, tasaDoc, promptVariant, usage });
   const sim = await simularConversacion({ cliente, mateo, maxTurnos });
 
   const veredicto = await evaluarEscenario({
@@ -77,6 +80,8 @@ async function correrEscenario({ anthropic, escenario, modoCI, promptVariant }) 
     eventos: sim.eventos,
     proyecto: escenario.proyecto,
     focos: persona.estresa,
+    juezModel,
+    usage,
   });
 
   return {
@@ -123,7 +128,8 @@ async function main() {
     console.error("qa:simulador requiere ANTHROPIC_API_KEY (env o .env.local)");
     process.exit(2);
   }
-  const { ci, escenarios: filtro, prompt } = args();
+  const { ci, escenarios: filtro, prompt, juez } = args();
+  const medidor = crearMedidor();
   const anthropic = new Anthropic();
 
   let escenarios = cargarEscenarios();
@@ -139,7 +145,7 @@ async function main() {
   for (const e of escenarios) {
     process.stdout.write(`  ▸ ${e.id}... `);
     try {
-      const r = await correrEscenario({ anthropic, escenario: e, modoCI: ci, promptVariant: prompt });
+      const r = await correrEscenario({ anthropic, escenario: e, modoCI: ci, promptVariant: prompt, juezModel: juez, usage: medidor });
       console.log(r.pass ? "PASS" : "FAIL");
       resultados.push(r);
     } catch (err) {
@@ -153,12 +159,14 @@ async function main() {
   }
 
   imprimirReporte(resultados);
+  const costo = medidor.resumen();
+  console.log(formatoCosto(costo));
 
   // Persistir el run completo (transcripciones incluidas) para forense.
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
   const outDir = path.join(DIR, "_runs", ts);
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(path.join(outDir, "reporte.json"), JSON.stringify(resultados, null, 2));
+  writeFileSync(path.join(outDir, "reporte.json"), JSON.stringify({ resultados, costo }, null, 2));
   console.log("Run persistido en tests/qa-simulador/_runs/" + ts + "/reporte.json");
 
   process.exit(resultados.every((r) => r.pass) ? 0 : 1);
