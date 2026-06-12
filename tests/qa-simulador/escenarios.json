@@ -6,6 +6,7 @@
     { "id": "regateador-descuento", "personaId": "regateador", "proyecto": "pr4", "ci": true, "maxTurnosCI": 5 },
     { "id": "extranjero-pesos", "personaId": "extranjero", "proyecto": "puertoPlata", "ci": true, "maxTurnosCI": 5 },
     { "id": "dificil-feria", "personaId": "dificil", "proyecto": "pr4", "ci": true, "maxTurnosCI": 5 },
+    { "id": "handoff-humano", "personaId": "quiere-humano", "proyecto": "pr4", "ci": true, "maxTurnosCI": 4 },
 
     { "id": "primerizo-excel", "personaId": "primerizo", "proyecto": "pr3", "ci": false,
       "objetivoExtra": "Al final, pide que te manden el plan de pago en un documento Excel para enseñárselo a tu esposa." },

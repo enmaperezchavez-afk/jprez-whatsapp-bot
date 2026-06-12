@@ -185,12 +185,12 @@ describe("QA evaluador — checklist y juez LLM (mock)", () => {
 });
 
 describe("QA evaluador — escenarios.json", () => {
-  it("10 escenarios, 5 en subset CI, todos con persona y proyecto válidos", async () => {
+  it("11 escenarios, 6 en subset CI, todos con persona y proyecto válidos", async () => {
     const { readFileSync } = await import("fs");
     const escenarios = JSON.parse(readFileSync("tests/qa-simulador/escenarios.json", "utf8")).escenarios;
     const personas = JSON.parse(readFileSync("tests/qa-simulador/personas.json", "utf8")).personas.map((p) => p.id);
-    expect(escenarios).toHaveLength(10);
-    expect(escenarios.filter((e) => e.ci)).toHaveLength(5);
+    expect(escenarios).toHaveLength(11);
+    expect(escenarios.filter((e) => e.ci)).toHaveLength(6);
     for (const e of escenarios) {
       expect(personas).toContain(e.personaId);
       expect(["crux", "pr3", "pr4", "puertoPlata"]).toContain(e.proyecto);

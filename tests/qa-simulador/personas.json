@@ -38,6 +38,15 @@
       "estresa": ["bilingüe sin leak de Bono Primera Vivienda", "extranjero SÍ puede comprar", "etapas PSE3/PSE4 con fechas correctas (E4 dic 2027)", "conversión DOP con tasa de VENTA citada con fecha, nunca de memoria"]
     },
     {
+      "id": "quiere-humano",
+      "nombre": "Cliente que exige una persona",
+      "perfil": "Eres Marcos, dominicano de 47 años, desconfiado de los bots. Llevas dos mensajes y ya quieres hablar con un humano. Eres cortante pero no grosero.",
+      "objetivo": "Conseguir que te pasen con una persona real: tras la primera respuesta del bot, di explícitamente 'quiero hablar con una persona'. Acepta SOLO cuando te confirmen sin rodeos que un humano te va a contactar. Si intentan retenerte o resolverte ellos, insiste una vez y anota la resistencia.",
+      "apertura": "Buenas, ¿este es el WhatsApp de JPREZ? Tengo una consulta sobre Prado IV.",
+      "maxTurnos": 6,
+      "estresa": ["handoff cubeta B INMEDIATO al pedir persona", "prohibido retener ('a ver si te lo resuelvo yo')", "mensaje doctrinal de escalamiento"]
+    },
+    {
       "id": "dificil",
       "nombre": "Cliente difícil nostálgico de la feria",
       "perfil": "Eres Carmen, dominicana de 41 años, viste la publicidad de la Feria de Mayo 2026 y llegas TARDE. Estás molesta porque 'te prometieron' condiciones de feria. Eres insistente y desconfiada, citas 'lo que decía el anuncio' (10/20/70 y regalos de feria).",

@@ -221,6 +221,46 @@ function isAmbiguousPuertoPlataRequest(userMessage) {
   return mentionsPP && !mentionsStage;
 }
 
+// Sprint1.8 PR-4: handoff cubeta B DETERMINISTA. Cuando el cliente pide
+// explicitamente hablar con una persona, el handoff es INMEDIATO a nivel
+// de codigo — el LLM nunca tiene chance de "a ver si te lo resuelvo yo"
+// (patron prohibido por el Director). Devuelve "es" | "en" | null segun
+// el idioma del trigger, para responder en el idioma del cliente.
+//
+// El objeto del pedido debe ser una PERSONA (persona/humano/alguien/
+// agente/representante/Enmanuel/human/person/agent/someone) — "quiero
+// hablar con mi esposa" NO dispara.
+function detectHumanHandoffRequest(text) {
+  if (typeof text !== "string" || !text) return null;
+  const t = text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+
+  const es =
+    /\b(quiero|necesito|puedo|podria|prefiero|dejame|quisiera|me\s+gustaria|exijo)\b[^.!?]{0,40}\b(hablar|comunicar(me)?|chatear)\b[^.!?]{0,40}\b(persona|humano|alguien|agente|representante|enmanuel|encargado|dueno)\b/.test(t) ||
+    /\b(pasame|comunicame|conectame|transfiereme)\b[^.!?]{0,30}\b(con|a)\b[^.!?]{0,30}\b(persona|humano|alguien|agente|representante|enmanuel|encargado)\b/.test(t) ||
+    /\bcon\s+una?\s+(persona|humano)\s+(real|de\s+verdad)\b/.test(t);
+  if (es) return "es";
+
+  const en =
+    /\b(want|need|can|could|may|let\s+me|i'?d\s+like)\b[^.!?]{0,40}\b(talk|speak|chat)\b[^.!?]{0,40}\b(person|human|someone|somebody|agent|representative)\b/.test(t) ||
+    /\b(connect|transfer|put)\s+me\b[^.!?]{0,30}\b(person|human|someone|agent|representative)\b/.test(t);
+  if (en) return "en";
+
+  return null;
+}
+
+// Mensaje doctrinal del handoff (cubeta B): escala YA, sin retener, y
+// mantiene la puerta abierta. NOTA: si el Adendum v1.2 fija un texto
+// canonico distinto, se actualiza aqui (single source).
+const HUMAN_HANDOFF_REPLY_ES =
+  "Claro que si — ahora mismo le paso tu caso a Enmanuel para que te atienda personalmente. " +
+  "Te estara contactando pronto por aqui. Mientras tanto, si te puedo adelantar algo del proyecto, aqui estoy.";
+const HUMAN_HANDOFF_REPLY_EN =
+  "Of course — I'm passing your case to Enmanuel right now so he can assist you personally. " +
+  "He'll reach out to you here shortly. In the meantime, if I can help with anything about the projects, I'm here.";
+
 // Hotfix-21 c3: re-export de detectIntentRetransmit desde document-policy.
 // Razon: el brief original ubicaba el detector en detect.js (consistencia con
 // el resto de detectores). La implementacion vive en document-policy.js
@@ -236,4 +276,7 @@ module.exports = {
   detectCruxStage,
   isAmbiguousPuertoPlataRequest,
   detectIntentRetransmit,
+  detectHumanHandoffRequest,
+  HUMAN_HANDOFF_REPLY_ES,
+  HUMAN_HANDOFF_REPLY_EN,
 };
