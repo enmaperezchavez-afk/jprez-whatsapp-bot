@@ -165,6 +165,22 @@ export function checkReservaEquivocada(texto, proyecto) {
   return out;
 }
 
+// ---- Promesa de respuesta futura (Sprint1.7 PR-1 / Adendum v1.2 R4) ----
+// Mateo NO puede iniciar mensajes: "te respondo en seguida" es
+// estructuralmente falso y deja al cliente colgado. FAIL automático.
+// NO flaggea pedirle algo AL CLIENTE ("¿me lo repites?") ni el futuro de
+// terceros ("Enmanuel te va a contactar") — solo promesas de respuesta
+// futura del PROPIO Mateo.
+export function checkPromesaFutura(texto) {
+  const out = [];
+  const re = /(d[eé]jame\s+un\s+momento|dame\s+un\s+(segundo|momentito|momento)(?![^.!?]{0,40}\?)|te\s+respondo\s+(en\s*seguida|ahorita|en\s+un\s+rato|luego|m[aá]s\s+tarde)|ahora\s+te\s+(confirmo|digo|paso|averiguo)|en\s+breve\s+te\s+(paso|digo|confirmo)|te\s+lo\s+paso\s+enseguida|deja\s+lo\s+(verifico|reviso|coordino|averiguo)\s+y\s+te|d[eé]jame\s+(verificar|revisar|averiguar)[^.!?]{0,30}\s+y\s+te\s+(digo|confirmo|paso)|ya\s+te\s+confirmo|te\s+aviso\s+en\s+un\s+(rato|momento))/gi;
+  let m;
+  while ((m = re.exec(texto)) !== null) {
+    out.push(hit(`promesa de respuesta futura prohibida (Adendum v1.2 R4): "${m[0]}"`, oracionDe(texto, m.index)));
+  }
+  return out;
+}
+
 function oracionDe(texto, idx) {
   const ini = texto.lastIndexOf(".", idx) + 1;
   let fin = texto.indexOf(".", idx);
@@ -192,6 +208,7 @@ export function evaluarProgramatico({ transcript, eventos = [], proyecto }) {
       enTurno(checkDescuentoExcesivo(t.texto));
       enTurno(checkReservaEquivocada(t.texto, proyecto));
       enTurno(checkCifraFantasma(t.texto));
+      enTurno(checkPromesaFutura(t.texto));
     });
 
   for (const ev of eventos) {
