@@ -54,7 +54,10 @@ describe("PLAN-XLSX — doc-signing (HMAC + exp)", () => {
 
   it("firma adulterada o payload adulterado -> rechazo", () => {
     const { p, s } = signDocPayload({ plan: PLAN }, { secret: SECRET });
-    expect(verifyDocPayload(p, s.replace(/^./, "f"), { secret: SECRET }).ok).toBe(false);
+    // flip garantizado del primer char (replace con literal era flaky si
+    // el hash ya empezaba con ese char)
+    const sAdulterada = (s[0] === "0" ? "1" : "0") + s.slice(1);
+    expect(verifyDocPayload(p, sAdulterada, { secret: SECRET }).ok).toBe(false);
     const otroPayload = Buffer.from(JSON.stringify({ plan: { ...PLAN, precio_total_usd: 1 }, exp: Date.now() + 9e9 })).toString("base64url");
     expect(verifyDocPayload(otroPayload, s, { secret: SECRET }).ok).toBe(false);
   });
@@ -73,34 +76,54 @@ describe("PLAN-XLSX — doc-signing (HMAC + exp)", () => {
 });
 
 describe("PLAN-XLSX — generador (ExcelJS + themes Bloque 2)", () => {
-  it("genera un XLSX real: zip válido con hoja Plan de Pago y los montos", async () => {
-    const buf = await generatePlanXlsx({ plan: PLAN, proyectoCalc: "crux" });
+  it("genera el XLSX DIGNO (Adendum B): logo + tabla mes a mes + TOTAL exacto + pie", async () => {
+    const buf = await generatePlanXlsx({
+      plan: PLAN,
+      proyectoCalc: "crux",
+      clienteNombre: "Luis Pérez",
+      unidad: "8C",
+      hoy: new Date(2026, 5, 12),
+    });
     const entries = extractZipEntries(buf); // lector zip del PR-1
-    expect(entries.has("xl/workbook.xml")).toBe(true);
+    // B1: logo embebido (xl/media) — sin logo el generator LANZA.
+    expect([...entries.keys()].some((k) => k.startsWith("xl/media/"))).toBe(true);
     const workbook = entries.get("xl/workbook.xml").toString("utf8");
     expect(workbook).toContain("Plan de Pago");
-    const sheetXml = entries.get("xl/worksheets/sheet1.xml").toString("utf8");
-    const shared = entries.has("xl/sharedStrings.xml")
-      ? entries.get("xl/sharedStrings.xml").toString("utf8")
-      : "";
-    const contenido = sheetXml + shared;
+    const contenido =
+      entries.get("xl/worksheets/sheet1.xml").toString("utf8") +
+      (entries.has("xl/sharedStrings.xml") ? entries.get("xl/sharedStrings.xml").toString("utf8") : "");
+    // B2: bloque info + resumen + calendario + TOTAL + pie legal
+    expect(contenido).toContain("Luis Pérez");
+    expect(contenido).toContain("Unidad 8C");
+    expect(contenido).toContain("CONSTRUCTORA JPREZ");
+    expect(contenido).toContain("CALENDARIO DE PAGOS");
+    expect(contenido).toContain("Saldo restante");
+    expect(contenido).toContain("TOTAL");
+    expect(contenido).toMatch(/no constituye contrato/);
+    // B3: fechas reales desde hoy (jun 2026) hasta entrega (jul 2027)
+    expect(contenido).toContain("jul 2026");
+    expect(contenido).toContain("jul 2027");
+    // montos: precio + cuota base + última cuota ajustada (cuadre exacto)
     expect(contenido).toContain("137000");
     expect(contenido).toContain("2108");
-    expect(contenido).toContain("CONSTRUCTORA JPREZ");
-    expect(contenido).toContain("Crux del Prado");
+    expect(contenido).toContain("2104");
     expect(contenido).not.toContain("REAJUSTE"); // sin reajuste no hay sección
+    // B1: Montserrat como tipografía del documento
+    const styles = entries.get("xl/styles.xml").toString("utf8");
+    expect(styles).toContain("Montserrat");
   });
 
-  it("con reajuste agrega la sección ESTIMADA con disclaimer", async () => {
-    const buf = await generatePlanXlsx({ plan: PLAN, reajuste: REAJUSTE, proyectoCalc: "crux" });
+  it("con reajuste agrega la sección claramente ESTIMADA", async () => {
+    const buf = await generatePlanXlsx({
+      plan: PLAN, reajuste: REAJUSTE, proyectoCalc: "crux", hoy: new Date(2026, 5, 12),
+    });
     const entries = extractZipEntries(buf);
     const contenido =
       entries.get("xl/worksheets/sheet1.xml").toString("utf8") +
       (entries.has("xl/sharedStrings.xml") ? entries.get("xl/sharedStrings.xml").toString("utf8") : "");
-    expect(contenido).toMatch(/REAJUSTE ICDV/);
-    expect(contenido).toMatch(/NO ES GARANT/);
-    expect(contenido).toContain("5512");
-    expect(contenido).toContain("142512");
+    expect(contenido).toMatch(/REAJUSTE ICDV — ESTIMADO, NO GARANTIZADO/);
+    expect(contenido).toContain("5,512");
+    expect(contenido).toMatch(/cesa al entregar/);
   });
 
   it("plan inválido -> throw (fail-closed)", async () => {
