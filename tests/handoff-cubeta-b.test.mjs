@@ -38,11 +38,14 @@ describe("HANDOFF — detector determinista", () => {
     expect(detectHumanHandoffRequest(null)).toBeNull();
   });
 
-  it("mensajes doctrinales: escalan sin retener y mantienen la puerta abierta", () => {
-    expect(HUMAN_HANDOFF_REPLY_ES).toMatch(/Enmanuel/);
+  it("mensajes doctrinales: el CANÓNICO v1.1 del vendedor SKILL (alineado Sprint1.7)", () => {
+    // Single source: el guard usa el mismo "Mensaje de escalamiento" del SKILL.
+    const skill = readFileSync(".claude/skills/vendedor-whatsapp-jprez/SKILL.md", "utf8");
+    expect(skill).toContain(HUMAN_HANDOFF_REPLY_ES);
+    expect(HUMAN_HANDOFF_REPLY_ES).toMatch(/equipo de ventas/);
     expect(HUMAN_HANDOFF_REPLY_ES).toMatch(/personalmente/);
     expect(HUMAN_HANDOFF_REPLY_ES).not.toMatch(/te lo resuelvo yo|seguro\?|primero/i);
-    expect(HUMAN_HANDOFF_REPLY_EN).toMatch(/Enmanuel/);
+    expect(HUMAN_HANDOFF_REPLY_EN).toMatch(/sales team/);
     expect(HUMAN_HANDOFF_REPLY_EN).toMatch(/personally/);
   });
 });

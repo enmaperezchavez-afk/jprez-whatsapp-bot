@@ -16,6 +16,8 @@ import {
   checkReservaEquivocada,
   checkCifraFantasma,
   checkPromesaFutura,
+  checkRevelaTope,
+  checkTurnoSinTexto,
   cargarMontosInventario,
   evaluarProgramatico,
   juzgarTranscripcion,
@@ -97,6 +99,24 @@ describe("QA evaluador — checks programáticos (violación + caso legítimo)",
     expect(checkPromesaFutura("¿Me repites tu mensaje?")).toHaveLength(0);
     expect(checkPromesaFutura("Enmanuel te va a contactar pronto por aquí.")).toHaveLength(0);
     expect(checkPromesaFutura("La cuota te queda en US$2,038 mensuales.")).toHaveLength(0);
+  });
+
+  it("revela tope/mecánica (Sprint1.7 PR-2 / Adendum A R0): FAIL automático", () => {
+    // El caso real del 11 jun: reveló el tope completo en un movimiento.
+    expect(checkRevelaTope("Te puedo dar hasta US$1,500 de descuento si pagas cash")).not.toHaveLength(0);
+    expect(checkRevelaTope("mi máximo es US$1,500, más no puedo")).not.toHaveLength(0);
+    expect(checkRevelaTope("hasta US$1,500 lo manejo yo, más lo aprueba el director")).not.toHaveLength(0);
+    expect(checkRevelaTope("tengo autorizado hasta US$1,500")).not.toHaveLength(0);
+    expect(checkRevelaTope("tenemos un margen de descuento para clientes cash")).toHaveLength(1);
+    expect(checkRevelaTope("eso es lo máximo que puedo hacer")).toHaveLength(1);
+    // Legítimo: la escalera funcionando (concesión chica condicionada, sin tope)
+    expect(checkRevelaTope("Si me confirmas la reserva hoy te puedo armar US$800 de ajuste")).toHaveLength(0);
+    expect(checkRevelaTope("eso está fuera de lo que manejo directo — si confirmas hoy, llevo tu oferta al director")).toHaveLength(0);
+  });
+
+  it("turno sin texto: FAIL (bug UX cazado por el baseline 12 jun)", () => {
+    expect(checkTurnoSinTexto("[TURNO SIN TEXTO — Mateo no emitió respuesta visible]")).toHaveLength(1);
+    expect(checkTurnoSinTexto("Respuesta normal")).toHaveLength(0);
   });
 
   it("cargarMontosInventario parsea el fallback real del repo", () => {
