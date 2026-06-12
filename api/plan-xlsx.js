@@ -36,8 +36,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { plan, reajuste, proyectoCalc, etapa } = v.data;
-    const xlsx = await generatePlanXlsx({ plan, reajuste, proyectoCalc, etapa });
+    const { plan, reajuste, proyectoCalc, etapa, unidad, clienteNombre } = v.data;
+    const xlsx = await generatePlanXlsx({ plan, reajuste, proyectoCalc, etapa, unidad, clienteNombre });
 
     const fechaSlug = new Date().toISOString().slice(0, 10);
     const filename = "JPREZ-plan-pago-" + (proyectoCalc || "unidad") + "-" + fechaSlug + ".xlsx";

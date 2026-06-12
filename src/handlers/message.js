@@ -1062,6 +1062,9 @@ async function processMessage(body) {
               proyectarReajuste: (i) => proyectarReajusteTool(i, { calcularPlanPago }),
               sendDocument,
               phone: senderPhone,
+              // Sprint1.7 PR-3 (Adendum B2): el nombre del cliente sale
+              // impreso en el documento.
+              clienteNombre: senderName,
             }
           );
         },

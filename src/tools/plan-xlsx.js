@@ -21,11 +21,13 @@ const { VERCEL_DOMAIN } = require("../proxy");
 const TOOL_GENERAR_PLAN_XLSX = {
   name: "generar_plan_pago_xlsx",
   description:
-    "Genera un Excel (.xlsx) con el plan de pago desglosado de una unidad y se lo envía al cliente por WhatsApp como documento, " +
+    "Genera un Excel (.xlsx) con el plan de pago COMPLETO de una unidad (resumen + calendario de cuotas mes a mes con fechas reales y saldos) y se lo envía al cliente por WhatsApp, " +
     "con la identidad visual del proyecto. Úsala cuando el cliente pida 'mándame el plan', 'me lo pasas en Excel', 'un documento con los números', " +
     "o después de negociar un plan para formalizarlo en archivo. Di al cliente 'te lo mando ahora mismo' y USA esta herramienta — NO prometas " +
-    "enviar algo sin invocarla. Con incluir_reajuste=true el Excel agrega la proyección ESTIMADA del reajuste ICDV como sección aparte " +
-    "(solo proyectos en construcción; preséntala como estimado, nunca garantía). El link del documento vence en 7 días.",
+    "enviar algo sin invocarla. Pasa la unidad concreta si el cliente eligió una (Adendum: documentos con unidad REAL). " +
+    "IMPORTANTE precio_usd = SIEMPRE el precio de LISTA del inventario: un precio con descuento solo entra al documento cuando el cliente YA ACEPTÓ la condición " +
+    "(reserva/adelanto confirmado) — mientras esté condicionado, el documento dice precio de lista y el descuento se conversa, no se imprime. " +
+    "Con incluir_reajuste=true agrega la proyección ESTIMADA del reajuste ICDV (solo construcción; nunca garantía). El link vence en 7 días.",
   input_schema: {
     type: "object",
     properties: {
@@ -54,6 +56,11 @@ const TOOL_GENERAR_PLAN_XLSX = {
         type: "boolean",
         description:
           "true = agrega al Excel la proyección ESTIMADA del reajuste ICDV (solo construcción activa). Default false.",
+      },
+      unidad: {
+        type: "string",
+        description:
+          "OPCIONAL pero recomendado: la unidad REAL del inventario que el cliente eligió (ej: '15-102', '11A'). Sale impresa en el documento.",
       },
     },
     required: ["proyecto", "precio_usd"],
@@ -101,7 +108,14 @@ async function generarPlanXlsxTool(input, deps = {}) {
   // 3. URL firmada (exp 7d) + envío por WhatsApp.
   try {
     const sign = deps.signPayload || signDocPayload;
-    const { p, s } = sign({ plan, reajuste, proyectoCalc: input.proyecto, etapa: input.etapa });
+    const { p, s } = sign({
+      plan,
+      reajuste,
+      proyectoCalc: input.proyecto,
+      etapa: input.etapa,
+      unidad: input.unidad,
+      clienteNombre: deps.clienteNombre,
+    });
     const baseUrl = deps.baseUrl || VERCEL_DOMAIN;
     const url = baseUrl + "/api/plan-xlsx?p=" + encodeURIComponent(p) + "&s=" + encodeURIComponent(s);
     const filename = "JPREZ - Plan de Pago - " + plan.proyecto + ".xlsx";
