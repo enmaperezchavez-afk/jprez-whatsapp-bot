@@ -62,8 +62,8 @@ const PROJECT_META = {
   pr4: { name: "Prado Residences IV", currency: "USD", priceField: "precio_usd", title: "PRADO RESIDENCES IV", location: "SANTO DOMINGO", inicio_construccion: null, logo: "prado4" },
   pse3: { name: "Prado Suites Puerto Plata — Etapa 3", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 3", location: "PUERTO - PLATA", inicio_construccion: "Enero 2028", logo: "pradosuites" },
   pse4: { name: "Prado Suites Puerto Plata — Etapa 4", currency: "USD", priceField: "precio_usd", title: "PRADO SUITES PUERTO PLATA — ETAPA 4", location: "PUERTO - PLATA", inicio_construccion: "En construcción", logo: "pradosuites" },
-  crux_t6: { name: "Crux del Prado — Torre 6", currency: "USD", priceField: "precio_usd", title: "CRUX DEL PRADO — TORRE 6", location: "SANTIAGO", inicio_construccion: "En construcción", logo: "crux" },
-  crux_listos: { name: "Crux del Prado — Listos para Entrega", currency: "DOP", priceField: "precio_dop", title: "CRUX DEL PRADO — LISTOS PARA ENTREGA", location: "SANTIAGO", inicio_construccion: null, logo: "crux" },
+  crux_t6: { name: "Crux del Prado — Torre 6", currency: "USD", priceField: "precio_usd", title: "CRUX DEL PRADO — TORRE 6", location: "SANTO DOMINGO NORTE", inicio_construccion: "En construcción", logo: "crux" },
+  crux_listos: { name: "Crux del Prado — Listos para Entrega", currency: "DOP", priceField: "precio_dop", title: "CRUX DEL PRADO — LISTOS PARA ENTREGA", location: "SANTO DOMINGO NORTE", inicio_construccion: null, logo: "crux" },
 };
 
 const VALID_PROJECTS = Object.keys(PROJECT_META);
