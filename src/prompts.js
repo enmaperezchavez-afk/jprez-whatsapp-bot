@@ -45,6 +45,10 @@ const { GLOSSARY_LAYER } = require("./prompts/glossary-layer");
 const { COMMERCIAL_LAYER } = require("./prompts/commercial-layer");
 const { OVERRIDES_LAYER } = require("./prompts/overrides-layer");
 const { STYLE_LAYER } = require("./prompts/style-layer");
+// MATEO V6 F2: compilador detras de flag (PROMPT_V6=1, default OFF en
+// prod). El A/B del certificador es el gate para encenderlo (F3).
+const { compileV6Core } = require("./prompts/compile-v6");
+const TENANT_CONFIG_V6 = require("../config/tenants/jprez.json");
 
 // ============================================
 // CARGA DEL SKILL (conocimiento de venta dinamico)
@@ -854,6 +858,28 @@ function buildStaticBlock(inventoryContent) {
   ].join("\n");
 }
 
+// V6: nucleo compilado + doctrina de config + ejemplos de oro reemplazan
+// a MATEO_V5_2 + glossary + commercial + overrides + style + vendedor
+// skill. Se CONSERVAN: inventario vivo + skills operativos de tools.
+function buildStaticBlockV6(inventoryContent) {
+  return [
+    compileV6Core(TENANT_CONFIG_V6),
+    "",
+    "---",
+    "",
+    "INVENTARIO Y PRECIOS DETALLADOS (consulta siempre antes de cotizar):",
+    "",
+    inventoryContent,
+    "",
+    "---",
+    "",
+    CALCULATOR_SKILL_CONTENT,
+    MARKET_RD_SKILL_CONTENT,
+  ].join("\n");
+}
+
+const STATIC_BLOCK_V6 = buildStaticBlockV6(INVENTORY_CONTENT);
+
 const STATIC_BLOCK = buildStaticBlock(INVENTORY_CONTENT);
 
 // Hotfix-22 V2 b4 + c1 + c2: validacion de orden ejecutada al cold start,
@@ -876,7 +902,11 @@ const STATIC_BLOCK = buildStaticBlock(INVENTORY_CONTENT);
   }
 }
 
-function buildSystemPromptBlocks() {
+function isV6Enabled() {
+  return process.env.PROMPT_V6 === "1";
+}
+
+function buildSystemPromptBlocks(opts) {
   const now = new Date();
   const iso = now.toISOString().slice(0, 10);
   const legible = now.toLocaleDateString("es-DO", {
@@ -897,7 +927,8 @@ function buildSystemPromptBlocks() {
   // requests/dia desperdiciados antes).
   const dynamicHeader = fechaHeader + "\n";
 
-  return { staticBlock: STATIC_BLOCK, dynamicHeader };
+  const useV6 = opts && typeof opts.v6 === "boolean" ? opts.v6 : isV6Enabled();
+  return { staticBlock: useV6 ? STATIC_BLOCK_V6 : STATIC_BLOCK, dynamicHeader, v6: useV6 };
 }
 
 // buildSystemPrompt: backwards-compat wrapper. Algunos tests existentes
@@ -917,7 +948,7 @@ function buildSystemPrompt() {
 // (Redis cache → Sheets → fallback hardcoded). El handler usa esta
 // función. Si el loader falla por completo, cae a INVENTORY_CONTENT
 // cargado al cold start (que viene del archivo .md en repo).
-async function buildSystemPromptBlocksAsync() {
+async function buildSystemPromptBlocksAsync(opts) {
   // Lazy import para evitar ciclos al cargar el módulo y para que tests
   // que NO usan inventario dinámico no paguen el costo de cargar el loader.
   const { loadInventory } = require("./inventory/loader");
@@ -938,7 +969,10 @@ async function buildSystemPromptBlocksAsync() {
     botLog("warn", "inventory_loader_threw_using_fallback", { error: e.message });
   }
 
-  const staticBlock = buildStaticBlock(inventoryMarkdown);
+  // V6 F2: mismo flag que la variante sync — el handler hereda el
+  // switch sin tocarse (default OFF hasta que el A/B lo gane).
+  const useV6 = opts && typeof opts.v6 === "boolean" ? opts.v6 : isV6Enabled();
+  const staticBlock = useV6 ? buildStaticBlockV6(inventoryMarkdown) : buildStaticBlock(inventoryMarkdown);
 
   // dynamicHeader idéntico al de buildSystemPromptBlocks() para que el
   // contrato de retorno sea consistente.
@@ -955,7 +989,7 @@ async function buildSystemPromptBlocksAsync() {
   const fechaHeader = "Hoy es: " + iso + " (" + legible + ")\nHora actual: " + hora + " (Santo Domingo)";
   const dynamicHeader = fechaHeader + "\n";
 
-  return { staticBlock, dynamicHeader };
+  return { staticBlock, dynamicHeader, v6: useV6 };
 }
 
 // ============================================
@@ -1033,6 +1067,8 @@ PROYECTOS ACTIVOS (disponibilidad Y PRECIOS: usa /inventario — datos vivos del
 REGLAS: Solo texto plano WhatsApp. Nada de markdown. Maximo 1-2 emojis si aplica.`;
 
 module.exports = {
+  buildStaticBlockV6,
+  isV6Enabled,
   buildSystemPrompt,
   buildSystemPromptBlocks,
   buildSystemPromptBlocksAsync,

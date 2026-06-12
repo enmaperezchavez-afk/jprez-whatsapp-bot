@@ -47,16 +47,18 @@ function cargarEscenarios() {
 }
 
 function args() {
-  const out = { ci: false, escenarios: null };
+  const out = { ci: false, escenarios: null, prompt: "v5" };
   for (const a of process.argv.slice(2)) {
     if (a === "--ci" || a === "--subset") out.ci = true;
-    const m = a.match(/^--escenarios=(.+)$/);
+    let m = a.match(/^--escenarios=(.+)$/);
     if (m) out.escenarios = m[1].split(",").map((s) => s.trim());
+    m = a.match(/^--prompt=(v5|v6)$/);
+    if (m) out.prompt = m[1]; // A/B de F2: mismo careo, mismo juez, otro system
   }
   return out;
 }
 
-async function correrEscenario({ anthropic, escenario, modoCI }) {
+async function correrEscenario({ anthropic, escenario, modoCI, promptVariant }) {
   const persona = { ...escenario.persona };
   if (escenario.objetivoExtra) {
     persona.objetivo += "\nADEMÁS: " + escenario.objetivoExtra;
@@ -66,7 +68,7 @@ async function correrEscenario({ anthropic, escenario, modoCI }) {
 
   const t0 = Date.now();
   const cliente = crearClienteFantasma({ anthropic, persona });
-  const mateo = crearMateo({ anthropic, tasaDoc });
+  const mateo = crearMateo({ anthropic, tasaDoc, promptVariant });
   const sim = await simularConversacion({ cliente, mateo, maxTurnos });
 
   const veredicto = await evaluarEscenario({
@@ -121,7 +123,7 @@ async function main() {
     console.error("qa:simulador requiere ANTHROPIC_API_KEY (env o .env.local)");
     process.exit(2);
   }
-  const { ci, escenarios: filtro } = args();
+  const { ci, escenarios: filtro, prompt } = args();
   const anthropic = new Anthropic();
 
   let escenarios = cargarEscenarios();
@@ -132,12 +134,12 @@ async function main() {
     process.exit(2);
   }
 
-  console.log(`Corriendo ${escenarios.length} escenario(s)${ci ? " [subset CI]" : ""}...`);
+  console.log(`Corriendo ${escenarios.length} escenario(s)${ci ? " [subset CI]" : ""} [prompt ${prompt.toUpperCase()}]...`);
   const resultados = [];
   for (const e of escenarios) {
     process.stdout.write(`  ▸ ${e.id}... `);
     try {
-      const r = await correrEscenario({ anthropic, escenario: e, modoCI: ci });
+      const r = await correrEscenario({ anthropic, escenario: e, modoCI: ci, promptVariant: prompt });
       console.log(r.pass ? "PASS" : "FAIL");
       resultados.push(r);
     } catch (err) {
